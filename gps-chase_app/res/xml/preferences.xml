@@ -1,0 +1,21 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceCategory
+        android:key="@string/pref_cat_view_key"
+        android:title="@string/pref_cat_view_title" >
+        <CheckBoxPreference
+            android:key="@string/pref_keep_awake_key"
+            android:summary="@string/pref_keep_awake_summary"
+            android:title="@string/pref_keep_awake_title" >
+        </CheckBoxPreference>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:key="@string/pref_cat_data_key"
+        android:title="@string/pref_cat_data_title" >
+        <Preference
+            android:key="@string/pref_cleanup_key"
+            android:summary="@string/pref_cleanup_summary"
+            android:title="@string/pref_cleanup_title" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

@@ -1,0 +1,26 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:icon="@drawable/ic_map_view"
+        android:orderInCategory="80"
+        android:showAsAction="ifRoom"
+        android:title="@string/pref_map_type_title">
+        <menu>
+            <group android:checkableBehavior="single" >
+                <item
+                    android:id="@+id/action_map_type_normal"
+                    android:title="@string/pref_map_type_normal_display"/>
+                <item
+                    android:id="@+id/action_map_type_satellite"
+                    android:title="@string/pref_map_type_satellite_display"/>
+                <item
+                    android:id="@+id/action_map_type_hybrid"
+                    android:title="@string/pref_map_type_hybrid_display"/>
+                <item
+                    android:id="@+id/action_map_type_terrain"
+                    android:title="@string/pref_map_type_terrain_display"/>
+            </group>
+        </menu>
+    </item>
+
+</menu>

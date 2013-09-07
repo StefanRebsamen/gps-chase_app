@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="48dp"
+     >
+
+    <TextView
+        android:id="@+id/textView_player"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="8dip"
+        android:layout_marginTop="8dip"
+        android:text="Stefan"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+        
+    <TextView
+        android:id="@+id/textView_trail_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="false"
+        android:layout_below="@id/textView_player"
+        android:layout_centerVertical="true"
+        android:layout_marginBottom="8dip"
+        android:layout_marginLeft="8dip"
+        android:text="Trail"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+    
+    <TextView
+        android:id="@+id/textView_started"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/textView_player"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginRight="8dip"
+        android:text="2013/08/02 08:15"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <TextView
+        android:id="@+id/textView_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/textView_trail_name"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="8dip"
+        android:text="12:34:56"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+</RelativeLayout>
+
