@@ -1,8 +1,15 @@
 package ch.gpschase.app;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.ActionBar;
 import android.app.ActionBar.OnNavigationListener;
@@ -26,12 +33,15 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
+import android.location.Location;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.text.TextWatcher;
+import android.util.JsonWriter;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
@@ -49,7 +59,9 @@ import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
+import ch.gpschase.app.ChaseService.Checkpoint;
 import ch.gpschase.app.data.Contract;
+import ch.gpschase.app.data.Client;
 
 
 public class MainActivity extends Activity {
@@ -181,6 +193,13 @@ public class MainActivity extends Activity {
 			public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
 
 				switch (item.getItemId()) {
+				case R.id.action_publish_trail:
+					// finish action mode
+					finish();
+					// upload trail to server
+					publishTrail(trailId);
+					return true;
+					
 				case R.id.action_delete_trail:
 					// finish action mode
 					finish();
@@ -255,6 +274,12 @@ public class MainActivity extends Activity {
 		@Override
 		public boolean onOptionsItemSelected(MenuItem item) {
 			switch (item.getItemId()) {
+			case R.id.action_browse_trails:				
+				// switch to browse activity
+				Intent intent = new Intent(getActivity(), BrowseTrailsActivity.class);
+				startActivity(intent);				
+				return true;
+				
 			case R.id.action_new_trail:
 				createNewTrail();
 				return true;
@@ -398,6 +423,53 @@ public class MainActivity extends Activity {
 
 			return name;
 		}
+		
+		/**
+		 * 
+		 * @param trailId
+		 */
+		private void publishTrail(long trailId) {
+			
+			/**
+			 *
+			 */
+			class PublishTask extends AsyncTask<Long, Void, Boolean> 
+			{				
+				ProgressDialog pd;
+
+				@Override
+				protected void onPreExecute() {
+					pd = new ProgressDialog(getActivity());
+					pd.show();
+				}
+				
+				@Override
+				protected Boolean doInBackground(Long... params) {
+					try {
+
+						Client client = new Client(getActivity());
+						client.publishTrail(params[0]);
+						return true;
+					}
+					catch (Exception ex) {
+						Log.e("publishTrail", "Error while exporting as JSON", ex);				
+						return false;
+					}
+				}
+
+				@Override
+				protected void onPostExecute(Boolean result) {
+					pd.dismiss();
+					if (!result) {
+						// TODO show dialog to inform user about failure
+						
+					}
+				}				
+			}
+			
+			new PublishTask().execute(trailId);			
+		}
+		
 	}
 
 	/**
@@ -830,12 +902,12 @@ public class MainActivity extends Activity {
 		actionBar.setDisplayShowTitleEnabled(true);		
 			
 		Tab chasesTab = actionBar.newTab().setText(R.string.tab_title_chases).setTag(chasesFragment);
-		chasesTab.setTabListener(new TabListener(chasesFragment, FRAGMENT_TAG_CHASES));
+		chasesTab.setTabListener(new TabListener<ChasesFragment>(chasesFragment, FRAGMENT_TAG_CHASES));
 		chasesTab.setIcon(R.drawable.ic_chase);
 		actionBar.addTab(chasesTab);	
 		
 		Tab trailsTab = actionBar.newTab().setText(R.string.tab_title_trails).setTag(trailsFragment);
-		trailsTab.setTabListener(new TabListener(trailsFragment, FRAGMENT_TAG_TRAILS));
+		trailsTab.setTabListener(new TabListener<TrailsFragment>(trailsFragment, FRAGMENT_TAG_TRAILS));
 		trailsTab.setIcon(R.drawable.ic_trail);
 		actionBar.addTab(trailsTab);
 		

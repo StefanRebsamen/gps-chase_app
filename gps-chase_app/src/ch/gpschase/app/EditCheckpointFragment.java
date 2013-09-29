@@ -294,7 +294,6 @@ public class EditCheckpointFragment extends Fragment {
 
 		// load data into UI elements
 		Uri checkpointIdUri = Contract.Checkpoints.getUriId(checkpointId);
-		Activity act = getActivity();
 		cursor = getActivity().getContentResolver().query(checkpointIdUri, Contract.Checkpoints.READ_PROJECTION, null, null, null);
 		if (cursor.moveToNext()) {
 			checkBoxShowOnMap.setChecked(cursor.getInt(Contract.Checkpoints.READ_PROJECTION_LOC_SHOW_INDEX) != 0);
@@ -309,8 +308,6 @@ public class EditCheckpointFragment extends Fragment {
 		layoutImages.removeAllViews();
 
 		ImageManager imageManager = App.getImageManager();
-		int size = (int) TypedValue
-				.applyDimension(TypedValue.COMPLEX_UNIT_DIP, ImageManager.THUMB_SIZE, getResources().getDisplayMetrics());
 
 		Uri imageDirUri = Contract.Images.getUriDir(checkpointId);
 		cursor = getActivity().getContentResolver().query(imageDirUri, Contract.Images.READ_PROJECTION, null, null,

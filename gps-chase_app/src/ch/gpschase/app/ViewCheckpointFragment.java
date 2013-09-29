@@ -159,7 +159,6 @@ public class ViewCheckpointFragment extends Fragment {
 			
 			// load data into UI elements
 			Uri checkpointIdUri = Contract.Checkpoints.getUriId(checkpointId);
-			Activity act = getActivity();
 			cursor = getActivity().getContentResolver().query(checkpointIdUri, Contract.Checkpoints.READ_PROJECTION, null, null, null);
 			if (cursor.moveToNext()) {
 				String txt;
@@ -190,8 +189,7 @@ public class ViewCheckpointFragment extends Fragment {
 			// load images
 			layoutImages.removeAllViews();			
 			
-			ImageManager imageManager = App.getImageManager();
-			int size = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, ImageManager.THUMB_SIZE, getResources().getDisplayMetrics());						
+			ImageManager imageManager = App.getImageManager();					
 			
 			Uri imageDirUri = Contract.Images.getUriDir(checkpointId);		
 			cursor = getActivity().getContentResolver().query(imageDirUri, Contract.Images.READ_PROJECTION, null, null, Contract.Images.DEFAULT_SORT_ORDER);
@@ -218,7 +216,6 @@ public class ViewCheckpointFragment extends Fragment {
 	private void updateDistance() {
 		if (textViewDistance != null) {
 			// format distance
-			String str;
 			if (!Float.valueOf(distance).equals(Float.NaN)) {
 				textViewDistance.setText(String.format("%.0f m", distance));
 			} else {

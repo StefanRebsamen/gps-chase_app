@@ -267,9 +267,6 @@ public class ChaseTrailActivity extends Activity {
 		}
 	};
 
-	// id of the chase we're doing
-	private long chaseId;
-
 	// map fragment to be reused
 	private TrailMapFragment map;
 
@@ -307,9 +304,6 @@ public class ChaseTrailActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		Log.d("ChaseTrailActivity", "onCreate");
-
-		// keep id of the chase
-		chaseId = ContentUris.parseId(getIntent().getData());
 
 		// start service
 		Intent intent = new Intent(Intent.ACTION_DEFAULT,
@@ -649,30 +643,5 @@ public class ChaseTrailActivity extends Activity {
 		return null;
 	}
 
-		
-	/**
-	 * 
-	 */
-	private void showCheckpointView() {
-		// show fragment if neccessary
-		if (checkpointView.isHidden()) {
-			FragmentTransaction ft = getFragmentManager().beginTransaction();
-			ft.show(checkpointView);
-			ft.commit();				
-		}
-	}
 
-	/**
-	 * 
-	 */
-	private void hideCheckpointView() {
-		// remove fragment if it exists		
-		if (!checkpointView.isHidden()) {
-			FragmentTransaction ft = getFragmentManager().beginTransaction();
-			ft.hide(checkpointView);
-			ft.commit();
-		}
-	}
-	
-	
 }

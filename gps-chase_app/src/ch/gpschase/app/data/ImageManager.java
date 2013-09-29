@@ -2,6 +2,7 @@ package ch.gpschase.app.data;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,7 +53,9 @@ public class ImageManager {
 		return (BitmapFactory.decodeFile(file.getAbsolutePath()));
 	}
 
-		
+	
+	
+	
 	public boolean add(long imageId, File src) {
 		
 		try {
@@ -60,21 +63,8 @@ public class ImageManager {
 			if (src == null || !src.exists()) {
 				throw new IllegalArgumentException();
 			}
-			
-			// get bitmap for full file
-			Bitmap fullBitmap = BitmapFactory.decodeFile(src.getAbsolutePath());
-			if (fullBitmap == null) {
-				throw new Exception("Unable to decode bitmap from file " + src);
-			}
 
-			Log.v("ImageManager", "original image: width = " + fullBitmap.getWidth() + ", heigth" + fullBitmap.getHeight());
-			
-			// scale to full image size
-			Matrix m = new Matrix();
-			m.setRectToRect(new RectF(0, 0, fullBitmap.getWidth(), fullBitmap.getHeight()), new RectF(0, 0, FULL_SIZE, FULL_SIZE), Matrix.ScaleToFit.CENTER);
-			fullBitmap = Bitmap.createBitmap(fullBitmap, 0, 0, fullBitmap.getWidth(), fullBitmap.getHeight(), m, true);
-			
-			// rotate picture if necessary
+			// determine rotation from Exif data
 			ExifInterface ei = new ExifInterface(src.getAbsolutePath());
 			int orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
 			int rotation = 0;
@@ -90,7 +80,51 @@ public class ImageManager {
 			    case ExifInterface.ORIENTATION_ROTATE_270:
 			        rotation = 270;
 			        break;			        
-			}						
+			}
+			
+			// get bitmap for full file
+			Bitmap fullBitmap = BitmapFactory.decodeFile(src.getAbsolutePath());
+
+			return add(imageId, fullBitmap, rotation);
+		}
+		catch (Exception ex) {
+			Log.e(this.getClass().getSimpleName(), "Error while adding image", ex);
+			return false;
+		}			
+    }
+	
+	
+	public boolean add(long imageId, InputStream src) {
+		
+		try {
+			// file has to exist
+			if (src == null) {
+				throw new IllegalArgumentException();
+			}
+			
+			// get bitmap for full file
+			Bitmap fullBitmap = BitmapFactory.decodeStream(src);
+
+			return add(imageId, fullBitmap, 0);
+		}
+		catch (Exception ex) {
+			Log.e(this.getClass().getSimpleName(), "Error while adding image", ex);
+			return false;
+		}			
+    }	
+
+	
+	private boolean add(long imageId, Bitmap fullBitmap, int rotation) {
+		
+		try {
+			Log.v("ImageManager", "original image: width = " + fullBitmap.getWidth() + ", heigth" + fullBitmap.getHeight());
+			
+			// scale to full image size
+			Matrix m = new Matrix();
+			m.setRectToRect(new RectF(0, 0, fullBitmap.getWidth(), fullBitmap.getHeight()), new RectF(0, 0, FULL_SIZE, FULL_SIZE), Matrix.ScaleToFit.CENTER);
+			fullBitmap = Bitmap.createBitmap(fullBitmap, 0, 0, fullBitmap.getWidth(), fullBitmap.getHeight(), m, true);
+			
+			// rotate picture if necessary					
 			if (rotation != 0) {			
 		      m = new Matrix();
 		      m.postRotate(rotation);
@@ -119,8 +153,7 @@ public class ImageManager {
 	}
 
 	
-	public Bitmap delete(long imageId) {
-				
+	public Bitmap delete(long imageId) {				
 		getFullFile(imageId).delete();
 		getThumbFile(imageId).delete();
 		
@@ -128,12 +161,12 @@ public class ImageManager {
 	}
 	
 	
-	private File getFullFile(long imageId) {
+	public File getFullFile(long imageId) {
 		return new File((app.getExternalFilesDir(Environment.DIRECTORY_PICTURES)), FILE_PREFIX +"_" + imageId + "_" + FILE_FULL + "." + FILE_SUFFIX);
 	}
 
 
-	private File getThumbFile(long imageId) {
+	public File getThumbFile(long imageId) {
 		return new File((app.getExternalFilesDir(Environment.DIRECTORY_PICTURES)), FILE_PREFIX +"_" + imageId + "_" + FILE_THUMB + "." + FILE_SUFFIX);
 	}
 		

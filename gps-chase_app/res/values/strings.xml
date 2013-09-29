@@ -14,7 +14,8 @@
     <string name="action_new_chase">New Chase</string>
     <string name="action_delete_chase">Delete Chase</string>
     <string name="action_edit_trail">Edit</string>
-    <string name="action_publish_trail">Publish</string>
+    <string name="action_publish_trail">Share</string>
+    <string name="action_browse_trails">Find Trails</string>
     <string name="dialog_delete_trail_title">Delete Trail</string>
     <string name="dialog_delete_trail_message">Delete the selected trail?</string>
     <string name="dialog_new_trail_title">New Trail Title</string>

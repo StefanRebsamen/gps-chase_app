@@ -138,6 +138,7 @@ public final class Contract {
 
 		private static final String PATH_DIR = "checkpoints";		
 		private static final String PATH_ID = "checkpoint";
+
 		
 		/**
 		 * @return Uri for listening records
@@ -185,6 +186,14 @@ public final class Contract {
 		/*
 		 * Column definitions
 		 */
+
+		/**
+		 * Column name for the UUID of the checkpoint
+		 * <P>
+		 * Type: TEXT
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_UUID = "uuid";
 		
 		/**
 		 * Column name for reference to the trail the checkpoint belongs to
@@ -246,7 +255,8 @@ public final class Contract {
 		 * Standard projection
 		 */
 		public static final String[] READ_PROJECTION = new String[] { 
-			_ID,					// 
+			_ID,					//
+			COLUMN_NAME_UUID,		//
 			COLUMN_NAME_NO,			//
 			COLUMN_NAME_LOC_LNG,	// 
 			COLUMN_NAME_LOC_LAT,	// 
@@ -255,11 +265,12 @@ public final class Contract {
 		};
 
 		public static final int READ_PROJECTION_ID_INDEX = 0;
-		public static final int READ_PROJECTION_NO_INDEX = 1;
-		public static final int READ_PROJECTION_LOC_LNG_INDEX = 2;
-		public static final int READ_PROJECTION_LOC_LAT_INDEX = 3;
-		public static final int READ_PROJECTION_LOC_SHOW_INDEX = 4;
-		public static final int READ_PROJECTION_HINT_INDEX = 5;
+		public static final int READ_PROJECTION_UUID_INDEX = 1;
+		public static final int READ_PROJECTION_NO_INDEX = 2;
+		public static final int READ_PROJECTION_LOC_LNG_INDEX = 3;
+		public static final int READ_PROJECTION_LOC_LAT_INDEX = 4;
+		public static final int READ_PROJECTION_LOC_SHOW_INDEX = 5;
+		public static final int READ_PROJECTION_HINT_INDEX = 6;
 		
 	}
 	
@@ -323,6 +334,14 @@ public final class Contract {
 		/*
 		 * Column definitions
 		 */
+
+		/**
+		 * Column name for the UUID of the image
+		 * <P>
+		 * Type: TEXT
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_UUID = "uuid";
 		
 		/**
 		 * Column name for reference to the checkpoint the image belongs to
@@ -359,12 +378,14 @@ public final class Contract {
 		 */
 		public static final String[] READ_PROJECTION = new String[] { 
 			_ID,							//
+			COLUMN_NAME_UUID,				//
 			COLUMN_NAME_CHECKPOINT_ID,		//
 			COLUMN_NAME_NO,					//
 			COLUMN_NAME_DESCRIPTION,		//
 		};
 
 		public static final int READ_PROJECTION_ID_INDEX = 0;
+		public static final int READ_PROJECTION_UUID_INDEX = 1;
 		public static final int READ_PROJECTION_NO_INDEX = 2;
 		public static final int READ_PROJECTION_DESCRIPTION_INDEX = 3;
 			

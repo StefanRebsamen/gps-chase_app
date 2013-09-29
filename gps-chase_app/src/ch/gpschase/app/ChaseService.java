@@ -50,7 +50,6 @@ public class ChaseService extends Service  {
 	public class Checkpoint {
 		
 		private long id;
-		private long no;
 		private Location location;
 		private boolean showLocation;
 		private Hit hit;

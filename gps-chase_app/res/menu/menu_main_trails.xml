@@ -8,4 +8,11 @@
         android:icon="@drawable/ic_new_trail"
         />
     
+    <item
+        android:id="@+id/action_browse_trails"
+        android:orderInCategory="30"
+        android:showAsAction="always"
+        android:title="@string/action_browse_trails"
+        />
+    
 </menu>

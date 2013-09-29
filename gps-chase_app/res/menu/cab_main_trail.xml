@@ -6,5 +6,11 @@
         android:showAsAction="always"
         android:icon="@drawable/ic_delete"
         android:title="@string/action_delete_trail"/>  
+
+    <item
+        android:id="@+id/action_publish_trail"
+        android:orderInCategory="20"
+        android:showAsAction="always"
+        android:title="@string/action_publish_trail"/>  
     
 </menu>

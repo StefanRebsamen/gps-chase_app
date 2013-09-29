@@ -22,7 +22,6 @@ public class SettingsActivity extends Activity {
 	 * 
 	 */
 	public static class SettingsFragment extends PreferenceFragment {
-		private static final String PreferenceCategory = null;
 
 		@Override
 		public void onCreate(Bundle savedInstanceState) {

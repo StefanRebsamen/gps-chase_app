@@ -17,6 +17,7 @@
 package ch.gpschase.app.data;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -45,7 +46,7 @@ public class Provider extends ContentProvider {
 	/**
 	 * The database version
 	 */
-	private static final int DATABASE_VERSION = 3;
+	private static final int DATABASE_VERSION = 4;
 
 	/**
 	 * A projection map used to select columns from trails table
@@ -154,6 +155,7 @@ public class Provider extends ContentProvider {
 		// create and initialize projection map for table checkpoints
 		checkpointsProjectionMap = new HashMap<String, String>();
 		checkpointsProjectionMap.put(Contract.Checkpoints._ID, Contract.Checkpoints._ID);
+		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_UUID, Contract.Checkpoints.COLUMN_NAME_UUID);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_NO, Contract.Checkpoints.COLUMN_NAME_NO);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, Contract.Checkpoints.COLUMN_NAME_LOC_LAT);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, Contract.Checkpoints.COLUMN_NAME_LOC_LNG);
@@ -163,6 +165,7 @@ public class Provider extends ContentProvider {
 		// create and initialize projection map for table images
 		imagesProjectionMap = new HashMap<String, String>();
 		imagesProjectionMap.put(Contract.Images._ID, Contract.Images._ID);
+		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_UUID, Contract.Images.COLUMN_NAME_UUID);
 		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_CHECKPOINT_ID, Contract.Images.COLUMN_NAME_CHECKPOINT_ID);
 		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_NO, Contract.Images.COLUMN_NAME_NO);
 		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_DESCRIPTION, Contract.Images.COLUMN_NAME_DESCRIPTION);
@@ -217,6 +220,7 @@ public class Provider extends ContentProvider {
 			db.execSQL("CREATE TABLE " + Contract.Checkpoints.TABLE_NAME								// 
 					+ " (" 																				//
 					+ Contract.Checkpoints._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"					//
+					+ Contract.Checkpoints.COLUMN_NAME_UUID + " TEXT					NULL,"			//
 					+ Contract.Checkpoints.COLUMN_NAME_TRAIL_ID + " INTEGER				NOT NULL," 		//
 					+ Contract.Checkpoints.COLUMN_NAME_NO + " INTEGER					NOT NULL,"		//
 					+ Contract.Checkpoints.COLUMN_NAME_HINT + " TEXT					NULL,"			//
@@ -231,6 +235,7 @@ public class Provider extends ContentProvider {
 			db.execSQL("CREATE TABLE " + Contract.Images.TABLE_NAME										// 
 					+ " (" 																				//
 					+ Contract.Images._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"						//
+					+ Contract.Images.COLUMN_NAME_UUID + " TEXT 						NULL,"			//
 					+ Contract.Images.COLUMN_NAME_CHECKPOINT_ID + " INTEGER				NOT NULL,"		//
 					+ Contract.Images.COLUMN_NAME_NO + " INTEGER						NOT NULL,"		//
 					+ Contract.Images.COLUMN_NAME_DESCRIPTION + " TEXT					NULL,"			//
@@ -452,9 +457,15 @@ public class Provider extends ContentProvider {
 		switch (uriMatcher.match(uri)) {		
 			case URI_TRAIL_DIR:
 				tableName =  Contract.Trails.TABLE_NAME;
+				// set name if none is set
 				if (values.containsKey(Contract.Trails.COLUMN_NAME_NAME) == false) {
 					Resources r = Resources.getSystem();
 					values.put(Contract.Trails.COLUMN_NAME_NAME, r.getString(android.R.string.untitled));
+				}
+				// create a new UUID if none is set
+				if (TextUtils.isEmpty(values.getAsString(Contract.Trails.COLUMN_NAME_UUID)) )
+				{
+					values.put(Contract.Trails.COLUMN_NAME_UUID, UUID.randomUUID().toString());
 				}
 				break;
 				
@@ -462,12 +473,22 @@ public class Provider extends ContentProvider {
 				tableName =  Contract.Checkpoints.TABLE_NAME;
 				parentId = Long.parseLong(uri.getPathSegments().get(1));				
 				values.put(Contract.Checkpoints.COLUMN_NAME_TRAIL_ID, parentId);
+				// create a new UUID if none is set
+				if (TextUtils.isEmpty(values.getAsString(Contract.Checkpoints.COLUMN_NAME_UUID)) )
+				{
+					values.put(Contract.Checkpoints.COLUMN_NAME_UUID, UUID.randomUUID().toString());
+				}
 				break;
 
 			case URI_IMAGE_DIR:
 				tableName =  Contract.Images.TABLE_NAME;				
 				parentId = Long.parseLong(uri.getPathSegments().get(1));				
 				values.put(Contract.Images.COLUMN_NAME_CHECKPOINT_ID, parentId);
+				// create a new UUID if none is set
+				if (TextUtils.isEmpty(values.getAsString(Contract.Images.COLUMN_NAME_UUID)) )
+				{
+					values.put(Contract.Images.COLUMN_NAME_UUID, UUID.randomUUID().toString());
+				}
 				break;
 
 			case URI_CHASE_DIR:
