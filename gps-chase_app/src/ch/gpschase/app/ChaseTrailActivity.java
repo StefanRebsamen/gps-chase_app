@@ -3,59 +3,36 @@ package ch.gpschase.app;
 import java.util.ArrayList;
 import java.util.Random;
 
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
-import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.ComponentName;
-import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.ApplicationInfo;
-import android.database.Cursor;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationProvider;
-import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
-import android.media.ToneGenerator;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.PowerManager;
-import android.os.SystemClock;
 import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.WindowManager;
-import android.widget.Chronometer;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
-import android.widget.FrameLayout;
-import android.widget.ImageButton;
-import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
-import ch.gpschase.app.ChaseService.Chase;
 import ch.gpschase.app.ChaseService.Checkpoint;
-import ch.gpschase.app.data.Contract;
+
+import com.google.android.gms.maps.model.LatLng;
 
 public class ChaseTrailActivity extends Activity {
 
@@ -247,13 +224,13 @@ public class ChaseTrailActivity extends Activity {
 
 				// feed mock location if one is set. To make it more realistic
 				// for the location manager,
-				// we weobble a bit arounf the set mock location
+				// we wobble a bit around the set mock location
 				if (mockLocation != null) {
 					double offset = rnd.nextDouble() * 1 / 11111; // approx 1 m
 					Location loc = new Location(mockLocation);
 					loc.setLatitude(loc.getLatitude() + offset);
-					locationManager.setTestProviderLocation(
-							mockLocationProviderName, loc);
+					loc.setTime(System.currentTimeMillis());
+					// locationManager.setTestProviderLocation(mockLocationProviderName, loc);
 				}
 
 				// wait a second

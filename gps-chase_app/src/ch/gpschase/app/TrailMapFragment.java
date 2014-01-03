@@ -10,8 +10,6 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.PreferenceManager;
-import android.util.AttributeSet;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -340,7 +338,8 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 				Integer.valueOf(GoogleMap.MAP_TYPE_SATELLITE).toString(), 								//
 				Integer.valueOf(GoogleMap.MAP_TYPE_HYBRID).toString(),									//
 				Integer.valueOf(GoogleMap.MAP_TYPE_TERRAIN).toString() });								//
-		pref.setDefaultValue(Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString());
+		pref.setDefaultValue(Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString());					//
+		pref.setSummary("%s");	// TODO update after value is changed
 		return pref;
 	}
 
@@ -523,6 +522,14 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		refreshIcons();
 	}
 
+	/**
+	 * Returns the selected point
+	 * @return Id of the selected point or 0
+	 */
+	public long getSelectedPoint() {
+		return selectedPoint != null ? selectedPoint.id : 0;
+	}
+	
 	/**
 	 * Gets the point for a marker
 	 * 

@@ -35,11 +35,19 @@ public class ImageManager {
 	
 	private App app;
 	
+	/**
+	 * Constructor
+	 * @param app
+	 */
 	public ImageManager(App app) {
 		this.app = app;
 	}
 
-	
+	/**
+	 * Return the full size image
+	 * @param imageId
+	 * @return
+	 */
 	public Bitmap getFull(long imageId) {
 		File file = getFullFile(imageId);
 		BitmapFactory.Options opt = new BitmapFactory.Options();
@@ -47,7 +55,11 @@ public class ImageManager {
 		return BitmapFactory.decodeFile(file.getAbsolutePath(), opt);
 	}
 
-	
+	/**
+	 * Returns the thumb nail
+	 * @param imageId
+	 * @return
+	 */
 	public Bitmap getThumb(long imageId) {
 		File file = getThumbFile(imageId);		
 		return (BitmapFactory.decodeFile(file.getAbsolutePath()));
@@ -55,7 +67,12 @@ public class ImageManager {
 
 	
 	
-	
+	/**
+	 * 
+	 * @param imageId
+	 * @param src
+	 * @return
+	 */
 	public boolean add(long imageId, File src) {
 		
 		try {
@@ -93,7 +110,12 @@ public class ImageManager {
 		}			
     }
 	
-	
+	/**
+	 * 
+	 * @param imageId
+	 * @param src
+	 * @return
+	 */
 	public boolean add(long imageId, InputStream src) {
 		
 		try {
@@ -113,7 +135,13 @@ public class ImageManager {
 		}			
     }	
 
-	
+	/**
+	 * 
+	 * @param imageId
+	 * @param fullBitmap
+	 * @param rotation
+	 * @return
+	 */
 	private boolean add(long imageId, Bitmap fullBitmap, int rotation) {
 		
 		try {
@@ -132,6 +160,9 @@ public class ImageManager {
 			}
 			
 			Log.v("ImageManager", "scaled and rotated image: width = " + fullBitmap.getWidth() + ", heigth" + fullBitmap.getHeight());
+			
+			// delete old files
+			delete(imageId);
 			
 			// save full image
 			FileOutputStream fullOs = new FileOutputStream(getFullFile(imageId));
@@ -152,25 +183,45 @@ public class ImageManager {
 		}
 	}
 
-	
+	/**
+	 * 
+	 * @param imageId
+	 * @return
+	 */
 	public Bitmap delete(long imageId) {				
 		getFullFile(imageId).delete();
 		getThumbFile(imageId).delete();
 		
 		return null;		
 	}
+
+	/**
+	 * Returns if the file for the given image exist 
+	 * @param imageId
+	 * @return
+	 */
+	public boolean exists(long imageId) {				
+		return getFullFile(imageId).exists() && getThumbFile(imageId).exists();
+	}
 	
-	
+	/**
+	 * 
+	 * @param imageId
+	 * @return
+	 */
 	public File getFullFile(long imageId) {
 		return new File((app.getExternalFilesDir(Environment.DIRECTORY_PICTURES)), FILE_PREFIX +"_" + imageId + "_" + FILE_FULL + "." + FILE_SUFFIX);
 	}
 
-
+	/**
+	 * 
+	 * @param imageId
+	 * @return
+	 */
 	public File getThumbFile(long imageId) {
 		return new File((app.getExternalFilesDir(Environment.DIRECTORY_PICTURES)), FILE_PREFIX +"_" + imageId + "_" + FILE_THUMB + "." + FILE_SUFFIX);
 	}
 		
-	
 	/**
 	 * Clean
 	 */
@@ -191,7 +242,7 @@ public class ImageManager {
 				}
 			}
 			else {
-				// strang file name --> delete it
+				// strange file name --> delete it
 				file.delete();
 				Log.v(this.getClass().getSimpleName(), "Deleted file " + file.getName() + " because name doesn't match pattern");
 			}

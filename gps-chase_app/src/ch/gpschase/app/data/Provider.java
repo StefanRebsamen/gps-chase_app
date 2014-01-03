@@ -46,7 +46,7 @@ public class Provider extends ContentProvider {
 	/**
 	 * The database version
 	 */
-	private static final int DATABASE_VERSION = 4;
+	private static final int DATABASE_VERSION = 6;
 
 	/**
 	 * A projection map used to select columns from trails table
@@ -149,8 +149,13 @@ public class Provider extends ContentProvider {
 		trailsProjectionMap = new HashMap<String, String>();
 		trailsProjectionMap.put(Contract.Trails._ID, Contract.Trails._ID);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_UUID, Contract.Trails.COLUMN_NAME_UUID);
+		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_UPDATED, Contract.Trails.COLUMN_NAME_UPDATED);
+		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_UPLOADED, Contract.Trails.COLUMN_NAME_UPLOADED);
+		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_SHARED, Contract.Trails.COLUMN_NAME_SHARED);
+		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_DOWNLOADED, Contract.Trails.COLUMN_NAME_DOWNLOADED);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_NAME, Contract.Trails.COLUMN_NAME_NAME);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_DESCRIPTION, Contract.Trails.COLUMN_NAME_DESCRIPTION);
+		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_PASSWORD, Contract.Trails.COLUMN_NAME_PASSWORD);
 
 		// create and initialize projection map for table checkpoints
 		checkpointsProjectionMap = new HashMap<String, String>();
@@ -213,8 +218,13 @@ public class Provider extends ContentProvider {
 					+ " (" 																				//
 					+ Contract.Trails._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"						//
 					+ Contract.Trails.COLUMN_NAME_UUID + " TEXT 						NULL,"			//
+					+ Contract.Trails.COLUMN_NAME_UPDATED + " INTEGER 					NULL,"			//
+					+ Contract.Trails.COLUMN_NAME_UPLOADED + " INTEGER 					NULL,"			//
+					+ Contract.Trails.COLUMN_NAME_SHARED + " INTEGER 					NULL,"			//
+					+ Contract.Trails.COLUMN_NAME_DOWNLOADED + " INTEGER				NULL,"			//
 					+ Contract.Trails.COLUMN_NAME_NAME + " TEXT							NOT NULL,"		//
 					+ Contract.Trails.COLUMN_NAME_DESCRIPTION + " TEXT					NULL"			//
+					+ Contract.Trails.COLUMN_NAME_PASSWORD + " TEXT 					NULL,"			//
 					+ ");");
 
 			db.execSQL("CREATE TABLE " + Contract.Checkpoints.TABLE_NAME								// 
@@ -273,7 +283,8 @@ public class Provider extends ContentProvider {
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			
+			db.execSQL("ALTER TABLE " + Contract.Trails.TABLE_NAME										// 
+					+ " ADD COLUMN " + Contract.Trails.COLUMN_NAME_SHARED + " INTEGER NULL;");			
 		}
 				
 		@Override
@@ -619,7 +630,6 @@ public class Provider extends ContentProvider {
 				finalWhere = finalWhere + " AND " + where;
 			}
 			break;
-
 
 		case URI_CHECKPOINT_ID:
 			tableName = Contract.Checkpoints.TABLE_NAME;

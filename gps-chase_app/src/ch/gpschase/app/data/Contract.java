@@ -58,7 +58,7 @@ public final class Contract {
 		public static Uri getUriId(long Id) {
 			return ContentUris.withAppendedId(new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath(PATH_ID).build(), Id) ;
 		}
-				
+		
 		/*
 		 * MIME type definitions
 		 */
@@ -87,6 +87,38 @@ public final class Contract {
 		public static final String COLUMN_NAME_UUID = "uuid";
 		
 		/**
+		 * Timestamp when the trail was last updated
+		 * <P>
+		 * Type: INTEGER
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_UPDATED = "updated";
+
+		/**
+		 * Timestamp when the trail was last uploaded
+		 * <P>
+		 * Type: INTEGER
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_UPLOADED = "uploaded";
+
+		/**
+		 * Timestamp when the trail was last shared
+		 * <P>
+		 * Type: INTEGER
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_SHARED = "shared";
+		
+		/**
+		 * Timestamp when the trail was last downloaded
+		 * <P>
+		 * Type: INTEGER
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_DOWNLOADED = "downloaded";
+		
+		/**
 		 * Column name for the name of the trail
 		 * <P>
 		 * Type: TEXT
@@ -102,7 +134,14 @@ public final class Contract {
 		 */
 		public static final String COLUMN_NAME_DESCRIPTION = "description";
 
-		
+		/**
+		 * Password to edit the trail (MD5-Hash)
+		 * <P>
+		 * Type: TEXT
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_PASSWORD = "password";
+				
 		/**
 		 * The default sort order for this table
 		 */
@@ -115,14 +154,24 @@ public final class Contract {
 		public static final String[] READ_PROJECTION = new String[] { 
 			_ID,						//
 			COLUMN_NAME_UUID,			//
+			COLUMN_NAME_UPDATED,		//
+			COLUMN_NAME_UPLOADED,		//
+			COLUMN_NAME_SHARED,			//
+			COLUMN_NAME_DOWNLOADED,		//
 			COLUMN_NAME_NAME,			//
-			COLUMN_NAME_DESCRIPTION		// 
+			COLUMN_NAME_DESCRIPTION,	// 
+			COLUMN_NAME_PASSWORD		//
 		};
 
 		public static final int READ_PROJECTION_ID_INDEX = 0;
 		public static final int READ_PROJECTION_UUID_INDEX = 1;
-		public static final int READ_PROJECTION_NAME_INDEX = 2;
-		public static final int READ_PROJECTION_DESCRIPTION_INDEX = 3;
+		public static final int READ_PROJECTION_UPDATED_INDEX = 2;
+		public static final int READ_PROJECTION_SHARED_INDEX = 3;
+		public static final int READ_PROJECTION_UPLOADED_INDEX = 4;
+		public static final int READ_PROJECTION_DOWNLOADED_INDEX = 5;
+		public static final int READ_PROJECTION_NAME_INDEX = 6;
+		public static final int READ_PROJECTION_DESCRIPTION_INDEX = 7;
+		public static final int READ_PROJECTION_PASSWORD_INDEX = 8;
 	}
 	
 
