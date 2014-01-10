@@ -3,7 +3,7 @@
     <item
         android:id="@+id/action_new_trail"
         android:orderInCategory="20"
-        android:showAsAction="always"
+        android:showAsAction="ifRoom"
         android:title="@string/action_new_trail"
         android:icon="@drawable/ic_new_trail"
         />

@@ -151,7 +151,6 @@ public class Provider extends ContentProvider {
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_UUID, Contract.Trails.COLUMN_NAME_UUID);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_UPDATED, Contract.Trails.COLUMN_NAME_UPDATED);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_UPLOADED, Contract.Trails.COLUMN_NAME_UPLOADED);
-		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_SHARED, Contract.Trails.COLUMN_NAME_SHARED);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_DOWNLOADED, Contract.Trails.COLUMN_NAME_DOWNLOADED);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_NAME, Contract.Trails.COLUMN_NAME_NAME);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_DESCRIPTION, Contract.Trails.COLUMN_NAME_DESCRIPTION);
@@ -193,6 +192,8 @@ public class Provider extends ContentProvider {
 		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_UUID, Contract.Trails.COLUMN_NAME_UUID);
 		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_NAME, Contract.Trails.COLUMN_NAME_NAME);
 		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_DESCRIPTION, Contract.Trails.COLUMN_NAME_DESCRIPTION);
+		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_UPDATED, Contract.Trails.COLUMN_NAME_UPDATED);
+		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_DOWNLOADED, Contract.Trails.COLUMN_NAME_DOWNLOADED);
 		
 		// create an initialize projection map for table hits
 		hitsProjectionMap = new HashMap<String, String>();
@@ -217,26 +218,25 @@ public class Provider extends ContentProvider {
 			db.execSQL("CREATE TABLE " + Contract.Trails.TABLE_NAME										// 
 					+ " (" 																				//
 					+ Contract.Trails._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"						//
-					+ Contract.Trails.COLUMN_NAME_UUID + " TEXT 						NULL,"			//
-					+ Contract.Trails.COLUMN_NAME_UPDATED + " INTEGER 					NULL,"			//
-					+ Contract.Trails.COLUMN_NAME_UPLOADED + " INTEGER 					NULL,"			//
-					+ Contract.Trails.COLUMN_NAME_SHARED + " INTEGER 					NULL,"			//
-					+ Contract.Trails.COLUMN_NAME_DOWNLOADED + " INTEGER				NULL,"			//
-					+ Contract.Trails.COLUMN_NAME_NAME + " TEXT							NOT NULL,"		//
-					+ Contract.Trails.COLUMN_NAME_DESCRIPTION + " TEXT					NULL"			//
-					+ Contract.Trails.COLUMN_NAME_PASSWORD + " TEXT 					NULL,"			//
+					+ Contract.Trails.COLUMN_NAME_UUID + " TEXT NOT NULL,"								//
+					+ Contract.Trails.COLUMN_NAME_UPDATED + " INTEGER NOT NULL DEFAULT 0,"				//
+					+ Contract.Trails.COLUMN_NAME_UPLOADED + " INTEGER NOT NULL DEFAULT 0,"				//
+					+ Contract.Trails.COLUMN_NAME_DOWNLOADED + " INTEGER NOT NULL DEFAULT 0,"			//
+					+ Contract.Trails.COLUMN_NAME_NAME + " TEXT	NOT NULL,"								//
+					+ Contract.Trails.COLUMN_NAME_DESCRIPTION + " TEXT NULL,"							//
+					+ Contract.Trails.COLUMN_NAME_PASSWORD + " TEXT	NULL"								//
 					+ ");");
 
 			db.execSQL("CREATE TABLE " + Contract.Checkpoints.TABLE_NAME								// 
 					+ " (" 																				//
 					+ Contract.Checkpoints._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"					//
-					+ Contract.Checkpoints.COLUMN_NAME_UUID + " TEXT					NULL,"			//
-					+ Contract.Checkpoints.COLUMN_NAME_TRAIL_ID + " INTEGER				NOT NULL," 		//
-					+ Contract.Checkpoints.COLUMN_NAME_NO + " INTEGER					NOT NULL,"		//
-					+ Contract.Checkpoints.COLUMN_NAME_HINT + " TEXT					NULL,"			//
-					+ Contract.Checkpoints.COLUMN_NAME_LOC_LNG + " REAL					NOT NULL,"		//
-					+ Contract.Checkpoints.COLUMN_NAME_LOC_LAT + " REAL					NOT NULL," 		//
-					+ Contract.Checkpoints.COLUMN_NAME_LOC_SHOW + " INTEGER				NOT NULL,"		//
+					+ Contract.Checkpoints.COLUMN_NAME_UUID + " TEXT NULL,"								//
+					+ Contract.Checkpoints.COLUMN_NAME_TRAIL_ID + " INTEGER NOT NULL," 					//
+					+ Contract.Checkpoints.COLUMN_NAME_NO + " INTEGER NOT NULL,"						//
+					+ Contract.Checkpoints.COLUMN_NAME_HINT + " TEXT NULL,"								//
+					+ Contract.Checkpoints.COLUMN_NAME_LOC_LNG + " REAL	NOT NULL,"						//
+					+ Contract.Checkpoints.COLUMN_NAME_LOC_LAT + " REAL	NOT NULL," 						//
+					+ Contract.Checkpoints.COLUMN_NAME_LOC_SHOW + " INTEGER	NOT NULL,"					//
 					+ "FOREIGN KEY( " + Contract.Checkpoints.COLUMN_NAME_TRAIL_ID + ") "				//
 					+ "  REFERENCES " + Contract.Trails.TABLE_NAME + "(" + Contract.Trails._ID + ") "	//
 					+ "  ON DELETE CASCADE ON UPDATE CASCADE"
@@ -245,10 +245,10 @@ public class Provider extends ContentProvider {
 			db.execSQL("CREATE TABLE " + Contract.Images.TABLE_NAME										// 
 					+ " (" 																				//
 					+ Contract.Images._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"						//
-					+ Contract.Images.COLUMN_NAME_UUID + " TEXT 						NULL,"			//
-					+ Contract.Images.COLUMN_NAME_CHECKPOINT_ID + " INTEGER				NOT NULL,"		//
-					+ Contract.Images.COLUMN_NAME_NO + " INTEGER						NOT NULL,"		//
-					+ Contract.Images.COLUMN_NAME_DESCRIPTION + " TEXT					NULL,"			//
+					+ Contract.Images.COLUMN_NAME_UUID + " TEXT NULL,"									//
+					+ Contract.Images.COLUMN_NAME_CHECKPOINT_ID + " INTEGER	NOT NULL,"					//
+					+ Contract.Images.COLUMN_NAME_NO + " INTEGER NOT NULL  DEFAULT 0,"					//
+					+ Contract.Images.COLUMN_NAME_DESCRIPTION + " TEXT NULL,"							//
 					+ "FOREIGN KEY( " + Contract.Images.COLUMN_NAME_CHECKPOINT_ID + ") "						//
 					+ "  REFERENCES " + Contract.Checkpoints.TABLE_NAME + "(" + Contract.Checkpoints._ID + ") "	//
 					+ "  ON DELETE CASCADE ON UPDATE CASCADE"
@@ -257,10 +257,10 @@ public class Provider extends ContentProvider {
 			db.execSQL("CREATE TABLE " + Contract.Chases.TABLE_NAME										// 
 					+ " (" 																				//
 					+ Contract.Chases._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"						//
-					+ Contract.Chases.COLUMN_NAME_TRAIL_ID + " INTEGER 					NOT NULL,"		//
-					+ Contract.Chases.COLUMN_NAME_PLAYER + " TEXT						NULL,"			//
-					+ Contract.Chases.COLUMN_NAME_STARTED + " INTEGER					NOT NULL,"		//
-					+ Contract.Chases.COLUMN_NAME_FINISHED + " INTEGER					NULL,"			//
+					+ Contract.Chases.COLUMN_NAME_TRAIL_ID + " INTEGER NOT NULL,"						//
+					+ Contract.Chases.COLUMN_NAME_PLAYER + " TEXT NULL,"								//
+					+ Contract.Chases.COLUMN_NAME_STARTED + " INTEGER NOT NULL,"						//
+					+ Contract.Chases.COLUMN_NAME_FINISHED + " INTEGER NULL,"							//
 					+ "FOREIGN KEY( " + Contract.Chases.COLUMN_NAME_TRAIL_ID + ") "						//
 					+ "  REFERENCES " + Contract.Trails.TABLE_NAME + "(" + Contract.Trails._ID + ") "	//
 					+ "  ON DELETE CASCADE ON UPDATE CASCADE"
@@ -269,9 +269,9 @@ public class Provider extends ContentProvider {
 			db.execSQL("CREATE TABLE " + Contract.Hits.TABLE_NAME										// 
 					+ " (" 																				//
 					+ Contract.Hits._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"							//
-					+ Contract.Hits.COLUMN_NAME_CHASE_ID + " INTEGER					NOT NULL,"		//
-					+ Contract.Hits.COLUMN_NAME_CHECKPOINT_ID + " INTEGER				NOT NULL," 		//
-					+ Contract.Hits.COLUMN_NAME_TIME + " INTEGER						NOT NULL,"		//
+					+ Contract.Hits.COLUMN_NAME_CHASE_ID + " INTEGER NOT NULL,"							//
+					+ Contract.Hits.COLUMN_NAME_CHECKPOINT_ID + " INTEGER NOT NULL," 					//
+					+ Contract.Hits.COLUMN_NAME_TIME + " INTEGER NOT NULL,"								//
 					+ "FOREIGN KEY( " + Contract.Hits.COLUMN_NAME_CHASE_ID + ") "									//
 					+ "  REFERENCES " + Contract.Chases.TABLE_NAME + "(" + Contract.Chases._ID + ") "				//
 					+ "  ON DELETE CASCADE ON UPDATE CASCADE,"														//
@@ -283,8 +283,8 @@ public class Provider extends ContentProvider {
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			db.execSQL("ALTER TABLE " + Contract.Trails.TABLE_NAME										// 
-					+ " ADD COLUMN " + Contract.Trails.COLUMN_NAME_SHARED + " INTEGER NULL;");			
+//			db.execSQL("ALTER TABLE " + Contract.Trails.TABLE_NAME										// 
+//					+ " ADD COLUMN " + Contract.Trails.COLUMN_NAME_SHARED + " INTEGER NULL;");			
 		}
 				
 		@Override

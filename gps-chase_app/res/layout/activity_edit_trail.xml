@@ -1,35 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".EditTrailActivity" >
+    android:orientation="vertical" >
 
-    <LinearLayout
-        android:id="@+id/layout_map"
+    <View
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical" >
-    </LinearLayout>
+        android:layout_height="2dp"
+        android:background="@color/actionBar_divider" />
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:paddingBottom="32dp"
-        android:paddingLeft="8dp"
-        android:paddingRight="8dp"
-        android:paddingTop="8dp" >
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
 
         <LinearLayout
-            android:id="@+id/layout_checkpoint_edit"
+            android:id="@+id/layout_map"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/white_overlay"
-            android:gravity="bottom"
+            android:layout_height="match_parent"
             android:orientation="vertical" >
         </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:paddingBottom="32dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="8dp" >
+
+            <LinearLayout
+                android:id="@+id/layout_checkpoint_edit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/white_overlay"
+                android:gravity="bottom"
+                android:orientation="vertical" >
+            </LinearLayout>
+        </FrameLayout>
     </FrameLayout>
 
-</FrameLayout>
+</LinearLayout>

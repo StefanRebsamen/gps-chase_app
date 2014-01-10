@@ -38,10 +38,11 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import ch.gpschase.app.data.Client;
 import ch.gpschase.app.data.Contract;
 import ch.gpschase.app.data.ImageManager;
+import ch.gpschase.app.data.Trail;
 import ch.gpschase.app.util.Link;
+import ch.gpschase.app.util.UploadTask;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -198,6 +199,8 @@ public class EditTrailActivity extends Activity {
 		@Override
 		public void onStart() {
 			super.onStart();
+			
+			
 		}
 
 		@Override
@@ -519,7 +522,7 @@ public class EditTrailActivity extends Activity {
 					imageView.setAdjustViewBounds(true);
 					imageView.setImageBitmap(App.getImageManager().getFull(imageIdFinal));
 
-					return new AlertDialog.Builder(getActivity()).setTitle(R.string.dialog_delete_image_title)
+					return new AlertDialog.Builder(getActivity()).setTitle(R.string.action_delete_image)
 							.setMessage(R.string.dialog_delete_image_message).setView(imageView).setIcon(R.drawable.ic_delete)
 							.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
 								public void onClick(DialogInterface dialog, int whichButton) {
@@ -693,6 +696,8 @@ public class EditTrailActivity extends Activity {
 
 		Log.d("EditTrailActivit", "onStart");
 
+		// TODO check if trail is not downloaded
+		
 		// clear old checkpoints
 		map.clearPoints();
 		checkpointList.clear();
@@ -835,7 +840,7 @@ public class EditTrailActivity extends Activity {
 		class DeleteDialogFragment extends DialogFragment {
 			@Override
 			public Dialog onCreateDialog(Bundle savedInstanceState) {
-				return new AlertDialog.Builder(getActivity()).setTitle(R.string.dialog_delete_checkpoint_title)
+				return new AlertDialog.Builder(getActivity()).setTitle(R.string.action_delete_checkpoint)
 						.setMessage(R.string.dialog_delete_checkpoint_message).setIcon(R.drawable.ic_delete)
 						.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int whichButton) {
@@ -976,70 +981,12 @@ public class EditTrailActivity extends Activity {
 	 * @param shareLink A link will be sent through any capable app after uploading the link 
 	 */
 	private void uploadTrail(boolean shareLink) {
-			
-		final boolean share = shareLink;
-		
-		/**
-		 *
-		 */
-		class UploadTask extends AsyncTask<Long, Void, UUID> {
-			ProgressDialog pd = null;
-			
-			@Override
-			protected void onPreExecute() {
-				pd = new ProgressDialog(EditTrailActivity.this);				
-				pd.setIndeterminate(true);
-				pd.setMessage(getResources().getText(R.string.dialog_uploading));
-				pd.setIcon(R.drawable.ic_upload);
-				pd.show();
-			}
-
-			@Override
-			protected UUID doInBackground(Long... params) {
-				try {
-					Client client = new Client(EditTrailActivity.this);
-					UUID trailUuid = client.uploadTrail(params[0]);
-					return trailUuid;
-				} catch (Exception ex) {
-					Log.e("uploadTrail", "Error while uploading trail", ex);
-					return null;
-				}
-			}
-
-			@Override
-			protected void onPostExecute(UUID result) {
-				pd.dismiss();
-				if (result == null) {
-					// show dialog to inform user about failure
-					new AlertDialog.Builder(EditTrailActivity.this)						//
-						.setIcon(android.R.drawable.ic_dialog_alert)					//
-						.setTitle(R.string.dialog_upload_trail_error_title)				//
-						.setMessage(R.string.dialog_upload_trail_error_message)			//
-						.setPositiveButton(R.string.dialog_ok, null)					//
-						.show();														//
-					return;
-				}
-				
-				if (share) {
-					// create link
-					Uri link = Link.createDownloadLink(result);
-					
-					// send through any app that is capable 
-					Intent sendIntent = new Intent();
-					sendIntent.setAction(Intent.ACTION_SEND);
-					sendIntent.putExtra(Intent.EXTRA_SUBJECT, "Link to trail '" + name + "'");
-					sendIntent.putExtra(Intent.EXTRA_TEXT, "Please use app GPS Chase to download trail '" + name + "': " + link);
-					sendIntent.setType("text/plain");
-					startActivity(Intent.createChooser(sendIntent, getResources().getText(R.string.dialog_share_trail_title)));					
-				}
-			}
-		}
-		
+						
 		// deselect checkpoint (saves changes)
 		selectCheckpoint(0);
 		
 		// execute task
-		new UploadTask().execute(trailId);
+		new UploadTask(this, trailId, shareLink).execute();
 	}
 		
 }

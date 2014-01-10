@@ -1,25 +1,24 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-               
-    <item
-        android:id="@+id/action_chase_trail"
-        android:orderInCategory="10"
-        android:showAsAction="always"
-        android:icon="@drawable/ic_chase"
-        android:title="@string/action_chase_trail"/>
-         
+
     <item
         android:id="@+id/action_edit_trail"
-        android:orderInCategory="20"
-        android:showAsAction="always"
+        android:orderInCategory="10"
+        android:showAsAction="ifRoom"
         android:icon="@drawable/ic_edit"
         android:title="@string/action_edit_trail"/>
-      
+    
+    <item
+        android:id="@+id/action_new_chase"
+        android:orderInCategory="20"
+        android:showAsAction="ifRoom"
+        android:icon="@drawable/ic_new_chase"
+        android:title="@string/action_new_chase"/>
+               
      <item
         android:id="@+id/action_delete_trail"
         android:orderInCategory="30"
-        android:showAsAction="always"
+        android:showAsAction="never"
         android:icon="@drawable/ic_delete"
         android:title="@string/action_delete_trail"/>  
-    
-       
+           
 </menu>

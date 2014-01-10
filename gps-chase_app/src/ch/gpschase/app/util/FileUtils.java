@@ -1,4 +1,4 @@
-package ch.gpschase.app.data;
+package ch.gpschase.app.util;
 
 import java.io.File;
 import java.io.FileInputStream;

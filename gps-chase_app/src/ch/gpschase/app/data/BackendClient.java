@@ -11,7 +11,6 @@ import java.net.ProtocolException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.http.HttpResponse;
@@ -22,12 +21,16 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
 
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.location.Location;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.JsonReader;
@@ -36,18 +39,16 @@ import android.util.JsonWriter;
 import ch.gpschase.app.App;
 
 /**
- * 
+ * API to use against backend
  */
-public class Client {
+public class BackendClient {
 
 	/** Field names for JSON **/
 	private class Json {
 		private static final String TRAIL_UUID = "uuid";
 		private static final String TRAIL_UPDATED = "updated";
-		private static final String TRAIL_UPLOADED = "uploaded";
 		private static final String TRAIL_NAME = "name";
 		private static final String TRAIL_DESCRIPTION = "descr";
-		private static final String TRAIL_PASSWORD = "pwd";
 		private static final String TRAIL_CHECKPOINTS = "chkpts";
 
 		private static final String CHECKPOINT_UUID = "uuid";
@@ -63,9 +64,11 @@ public class Client {
 	private final static Uri BASE_URI = Uri.parse("http://192.168.0.20:5000");
 
 	/**
-	 * 
+	 * Exception thrown to signal an error within the client 
 	 */
 	public class ClientException extends Exception {
+
+		private static final long serialVersionUID = 1L;
 
 		public ClientException(String message) {
 			super(message);
@@ -75,65 +78,33 @@ public class Client {
 			super(message, ex);
 		}
 	}
-
-	/**
-	 * 
-	 */
-	public class TrailInfo {
-		public UUID uuid;
-		public long id = 0; // 0 if not locally existant
-		public long updated;
-		public long uploaded;
-		public long downloaded;
-		public String name;
-		public String description;
-	}
-	
-	/**
-	 * 
-	 */
-	private class Image {
-		long id;
-		UUID uuid;
-		String description;
-	}	
-	
-	/**
-	 * 
-	 */
-	private class Checkpoint {
-		UUID uuid;
-		long id;
-		String hint;
-		boolean showLocation;
-		double locLng;
-		double locLat;
-		final List<Image> images = new ArrayList<Image>();
-	}
-
-	/**
-	 * 
-	 */
-	private class Trail extends TrailInfo {
-		final List<Checkpoint> checkpoints = new ArrayList<Checkpoint>();
-		public String password;		
-	}	
 		
 	/**
 	 * 
 	 */
 	private class UploadData {
-		// id and UUID of the trail
-		long id;
+		// UUID of the trail
 		UUID uuid;
 		// trail as JSON
 		public String json;
 		// list of images
 		public final List<Image> images = new ArrayList<Image>();
 	}
+
+	// context to use
+	private Context context;
+
 	
 	/**
-	 * 
+	 * Constructor
+	 * @param context
+	 */
+	public BackendClient(Context context) {
+		this.context = context;
+	}
+	
+	/**
+	 * Build the URI from the trail
 	 * @param trailUuid
 	 * @return
 	 */
@@ -142,7 +113,7 @@ public class Client {
 	}
 
 	/**
-	 * 
+	 * Returns the backend URI for the given image
 	 * @param trailUuid
 	 * @param imageUuid
 	 * @return
@@ -152,73 +123,14 @@ public class Client {
 	}
 
 	/**
-	 * 
+	 * Returns the backend URI for image list of the given trail 
 	 * @param trailUuid
 	 * @return
 	 */
 	private Uri getTrailImagesUri(UUID trailUuid) {
-		return BASE_URI.buildUpon().appendPath("trail").appendPath(trailUuid.toString()).appendPath("images") .build();
+		return getTrailUri(trailUuid).buildUpon().appendPath("images") .build();
 	}
 
-	// context to use
-	private Context context;
-
-	/**
-	 * Constructor
-	 * 
-	 * @param context
-	 */
-	public Client(Context context) {
-		this.context = context;
-	}
-
-	/**
-	 * @deprecated	Was used during development
-	 * @param context
-	 * @param trailId
-	 */
-	private void assignUUIDS(long trailId) {
-
-		// update trail
-		Uri trailUri = Contract.Trails.getUriId(trailId);
-		Cursor trailCursor = context.getContentResolver().query(trailUri, Contract.Trails.READ_PROJECTION, null, null, null);
-		if (!trailCursor.moveToFirst()) {
-			throw new InvalidParameterException("Trail " + trailId + " not found");
-		}
-		if (TextUtils.isEmpty(trailCursor.getString(Contract.Trails.READ_PROJECTION_UUID_INDEX))) {
-			ContentValues values = new ContentValues();
-			values.put(Contract.Trails.COLUMN_NAME_UUID, UUID.randomUUID().toString());
-			context.getContentResolver().update(Contract.Trails.getUriId(trailId), values, null, null);
-		}
-		
-		// update checkpoints
-		Uri checkpointsUri = Contract.Checkpoints.getUriDir(trailId);
-		Cursor checkpointsCursor = context.getContentResolver().query(checkpointsUri, Contract.Checkpoints.READ_PROJECTION, null, null,
-				Contract.Checkpoints.DEFAULT_SORT_ORDER);
-		while (checkpointsCursor.moveToNext()) {
-			if (TextUtils.isEmpty(checkpointsCursor.getString(Contract.Checkpoints.READ_PROJECTION_UUID_INDEX))) {
-				ContentValues values = new ContentValues();
-				values.put(Contract.Checkpoints.COLUMN_NAME_UUID, UUID.randomUUID().toString());
-				Uri checkpointIdUri = Contract.Checkpoints.getUriId(checkpointsCursor
-						.getLong(Contract.Checkpoints.READ_PROJECTION_ID_INDEX));
-				context.getContentResolver().update(checkpointIdUri, values, null, null);
-			}
-			
-			// update images
-			Uri imageDirUri = Contract.Images.getUriDir(checkpointsCursor.getLong(Contract.Checkpoints.READ_PROJECTION_ID_INDEX));
-			Cursor imagesCursor = context.getContentResolver().query(imageDirUri, Contract.Images.READ_PROJECTION, null, null,
-					Contract.Images.DEFAULT_SORT_ORDER);
-			while (imagesCursor.moveToNext()) {
-				if (TextUtils.isEmpty(imagesCursor.getString(Contract.Images.READ_PROJECTION_UUID_INDEX))) {
-					ContentValues values = new ContentValues();
-					values.put(Contract.Images.COLUMN_NAME_UUID, UUID.randomUUID().toString());
-					Uri imageIdUri = Contract.Images.getUriId(imagesCursor.getLong(Contract.Images.READ_PROJECTION_ID_INDEX));
-					context.getContentResolver().update(imageIdUri, values, null, null);
-				}
-			}
-		}
-		checkpointsCursor.close();
-	}
 
 	/**
 	 * Goes through specified trail and collects the data to upload
@@ -227,7 +139,7 @@ public class Client {
 	 * @param trailId
 	 * @return
 	 */
-	private UploadData getUploadData(long trailId) throws IOException, InvalidParameterException {
+	private UploadData createUploadData(long trailId) throws IOException, InvalidParameterException {
 
 		// make sure trail exists
 		Uri trailUri = Contract.Trails.getUriId(trailId);
@@ -252,12 +164,9 @@ public class Client {
 
 		writer.name(Json.TRAIL_UUID).value(trailCursor.getString(Contract.Trails.READ_PROJECTION_UUID_INDEX));
 		writer.name(Json.TRAIL_UPDATED).value(trailCursor.getLong(Contract.Trails.READ_PROJECTION_UPDATED_INDEX));
-		writer.name(Json.TRAIL_UPLOADED).value(trailCursor.getLong(Contract.Trails.READ_PROJECTION_UPLOADED_INDEX));
 		writer.name(Json.TRAIL_NAME).value(trailCursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX));
 		writer.name(Json.TRAIL_DESCRIPTION).value(trailCursor.getString(Contract.Trails.READ_PROJECTION_DESCRIPTION_INDEX));
-		writer.name(Json.TRAIL_PASSWORD).value(trailCursor.getString(Contract.Trails.READ_PROJECTION_PASSWORD_INDEX));
 
-		data.id = trailCursor.getLong(Contract.Trails.READ_PROJECTION_ID_INDEX);
 		data.uuid = UUID.fromString(trailCursor.getString(Contract.Trails.READ_PROJECTION_UUID_INDEX));
 
 		trailCursor.close();
@@ -328,15 +237,12 @@ public class Client {
 		try {
 			HttpResponse response;
 			int statusCode;
-			
-			// make sure everything has an UUID
-			//assignUUIDS(trailId);
 
-			// get data to publish
-			UploadData data = getUploadData(trailId);
+			// create data to upload
+			UploadData data = createUploadData(trailId);
 
 			// create HTTP client
-			HttpClient http = new DefaultHttpClient();
+			HttpClient http = createHttpClient();
 						
 			// retrieve a list of images on server
 			String json = getJson(http, getTrailImagesUri(data.uuid));
@@ -345,7 +251,6 @@ public class Client {
 			reader.beginArray();
 			while (reader.hasNext()) {
 				reader.beginObject();
-				TrailInfo trail = new TrailInfo();
 				while (reader.hasNext()) {
 					String name = reader.nextName();
 					if (name.equals(Json.IMAGE_UUID)) {
@@ -428,7 +333,7 @@ public class Client {
 	
 		try {
 			// create HTTP client
-			HttpClient http = new DefaultHttpClient();
+			HttpClient http = createHttpClient();
 			
 			// get response from server as JSON
 			String json = getJson(http, getTrailUri(trailUuid));
@@ -444,18 +349,11 @@ public class Client {
 					trail.uuid = UUID.fromString(reader.nextString());
 				} else if (name.equals(Json.TRAIL_UPDATED)) {
 					trail.updated = reader.nextLong();
-				} else if (name.equals(Json.TRAIL_UPLOADED)) {
-					trail.uploaded = reader.nextLong();
 				} else if (name.equals(Json.TRAIL_NAME)) {
 					trail.name = reader.nextString();
 				} else if (name.equals(Json.TRAIL_DESCRIPTION)) {
 					if (reader.peek() == JsonToken.STRING)
 						trail.description = reader.nextString();
-					else
-						reader.skipValue();
-				} else if (name.equals(Json.TRAIL_PASSWORD)) {
-					if (reader.peek() == JsonToken.STRING)
-						trail.password = reader.nextString();
 					else
 						reader.skipValue();
 				} else if (name.equals(Json.TRAIL_CHECKPOINTS)) {
@@ -478,8 +376,8 @@ public class Client {
 							} else if (name.equals(Json.CHECKPOINT_LOCATION)) {
 								// location comes as an array (lng,lat)
 								reader.beginArray();
-								checkpoint.locLng = reader.nextDouble();
-								checkpoint.locLat = reader.nextDouble();
+								checkpoint.location.setLongitude(reader.nextDouble());
+								checkpoint.location.setLatitude(reader.nextDouble());
 								reader.endArray();
 							} else if (name.equals(Json.CHECKPOINT_IMAGES)) {
 								// images
@@ -527,11 +425,9 @@ public class Client {
 			// update or insert trail
 			values.put(Contract.Trails.COLUMN_NAME_UUID, trail.uuid.toString());
 			values.put(Contract.Trails.COLUMN_NAME_UPDATED, trail.updated);
-			values.put(Contract.Trails.COLUMN_NAME_UPLOADED, trail.uploaded);
 			values.put(Contract.Trails.COLUMN_NAME_DOWNLOADED, System.currentTimeMillis());
 			values.put(Contract.Trails.COLUMN_NAME_NAME, trail.name);
 			values.put(Contract.Trails.COLUMN_NAME_DESCRIPTION, trail.description);
-			values.put(Contract.Trails.COLUMN_NAME_PASSWORD, trail.password);
 
 			Uri trailDirUri = Contract.Trails.getUriDir();
 			Cursor trailCursor = context.getContentResolver().query(trailDirUri, Contract.Trails.READ_PROJECTION, 
@@ -561,11 +457,11 @@ public class Client {
 				values.put(Contract.Checkpoints.COLUMN_NAME_UUID, checkpoint.uuid.toString());
 				values.put(Contract.Checkpoints.COLUMN_NAME_NO, trail.checkpoints.indexOf(checkpoint) + 1);
 				values.put(Contract.Checkpoints.COLUMN_NAME_LOC_SHOW, checkpoint.showLocation ? 1 : 0);
-				values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, checkpoint.locLng);
-				values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, checkpoint.locLat);
+				values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, checkpoint.location.getLongitude());
+				values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, checkpoint.location.getLatitude());
 				values.put(Contract.Checkpoints.COLUMN_NAME_HINT, checkpoint.hint);
 
-				// see if checkpoints already exists
+				// see if checkpoint already exists
 				if (checkpointCursor.moveToFirst()) {
 					do {
 						UUID uuid =  UUID.fromString(checkpointCursor.getString(Contract.Checkpoints.READ_PROJECTION_UUID_INDEX));
@@ -598,10 +494,10 @@ public class Client {
 					values.put(Contract.Images.COLUMN_NAME_NO, checkpoint.images.indexOf(image) + 1);
 					values.put(Contract.Images.COLUMN_NAME_DESCRIPTION, image.description);
 
-					// see if checkpoints already exists
-					if (checkpointCursor.moveToFirst()) {
+					// see if image already exists
+					if (imageCursor.moveToFirst()) {
 						do {
-							UUID uuid =  UUID.fromString(checkpointCursor.getString(Contract.Images.READ_PROJECTION_UUID_INDEX));
+							UUID uuid =  UUID.fromString(imageCursor.getString(Contract.Images.READ_PROJECTION_UUID_INDEX));
 							if (image.uuid.equals(uuid)) {
 								image.id = imageCursor.getLong(Contract.Images.READ_PROJECTION_ID_INDEX);
 								break;
@@ -763,6 +659,17 @@ public class Client {
 //	}
 
 
+	/**
+	 * Factory method to create  HTTP client with the necessary parameters set 
+	 * @return create HTTP client
+	 */
+	private HttpClient createHttpClient() {		
+		HttpParams params = new BasicHttpParams();
+		HttpConnectionParams.setConnectionTimeout(params, 5000);
+		HttpConnectionParams.setSoTimeout(params, 10000);
+		return new DefaultHttpClient(params);
+	}
+	
 	/**
 	 * Retrieves a JSON document from the specified URI
 	 * @param http

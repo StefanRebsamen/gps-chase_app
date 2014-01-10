@@ -1,12 +1,12 @@
-package ch.gpschase.app;
+package ch.gpschase.app.util;
 
 /**
  * 
  */
-public class Utils {
+public class Duration {
 
 	
-	public static String formatDuration(long duration) {
+	public static String format(long duration) {
 		
 		if (duration < 0) {
 			return "";

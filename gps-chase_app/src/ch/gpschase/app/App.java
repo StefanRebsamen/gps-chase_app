@@ -2,9 +2,11 @@ package ch.gpschase.app;
 
 import ch.gpschase.app.data.ImageManager;
 import android.app.Application;
-import android.content.pm.ApplicationInfo;
 import android.os.Debug;
 
+/**
+ * 
+ */
 public class App extends Application {
 
     //sensible place to declare a log tag for the application
@@ -15,10 +17,9 @@ public class App extends Application {
 
     //keep references to our global resources
     private static ImageManager imageManager = null;
-
     
     /**
-     * 
+     * Returns the ImageManager instance 
      */
     public static ImageManager getImageManager() {
         if (imageManager == null) {
@@ -38,6 +39,10 @@ public class App extends Application {
     }
 
     
+    /**
+     * Return if the app runs in the debugger
+     * @return True if is is debuggable
+     */
     public static boolean isDebuggable() {
         if (instance == null)
             throw new IllegalStateException("Application not created yet!");

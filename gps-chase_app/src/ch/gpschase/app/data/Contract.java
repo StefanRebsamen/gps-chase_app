@@ -1,6 +1,8 @@
 package ch.gpschase.app.data;
 
 import android.content.ContentUris;
+import android.content.Context;
+import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
@@ -22,7 +24,7 @@ public final class Contract {
 	 * Constants for table trails
 	 */
 	public static final class Trails implements BaseColumns {
-
+		
 		/**
 		 * The table name offered by this provider
 		 */
@@ -101,14 +103,6 @@ public final class Contract {
 		 * </P>
 		 */
 		public static final String COLUMN_NAME_UPLOADED = "uploaded";
-
-		/**
-		 * Timestamp when the trail was last shared
-		 * <P>
-		 * Type: INTEGER
-		 * </P>
-		 */
-		public static final String COLUMN_NAME_SHARED = "shared";
 		
 		/**
 		 * Timestamp when the trail was last downloaded
@@ -156,7 +150,6 @@ public final class Contract {
 			COLUMN_NAME_UUID,			//
 			COLUMN_NAME_UPDATED,		//
 			COLUMN_NAME_UPLOADED,		//
-			COLUMN_NAME_SHARED,			//
 			COLUMN_NAME_DOWNLOADED,		//
 			COLUMN_NAME_NAME,			//
 			COLUMN_NAME_DESCRIPTION,	// 
@@ -166,14 +159,13 @@ public final class Contract {
 		public static final int READ_PROJECTION_ID_INDEX = 0;
 		public static final int READ_PROJECTION_UUID_INDEX = 1;
 		public static final int READ_PROJECTION_UPDATED_INDEX = 2;
-		public static final int READ_PROJECTION_SHARED_INDEX = 3;
-		public static final int READ_PROJECTION_UPLOADED_INDEX = 4;
-		public static final int READ_PROJECTION_DOWNLOADED_INDEX = 5;
-		public static final int READ_PROJECTION_NAME_INDEX = 6;
-		public static final int READ_PROJECTION_DESCRIPTION_INDEX = 7;
-		public static final int READ_PROJECTION_PASSWORD_INDEX = 8;
-	}
-	
+		public static final int READ_PROJECTION_UPLOADED_INDEX = 3;
+		public static final int READ_PROJECTION_DOWNLOADED_INDEX = 4;
+		public static final int READ_PROJECTION_NAME_INDEX = 5;
+		public static final int READ_PROJECTION_DESCRIPTION_INDEX = 6;
+		public static final int READ_PROJECTION_PASSWORD_INDEX = 7;				
+
+	}	
 
 	/**
 	 * Constants for table checkpoints
@@ -419,7 +411,7 @@ public final class Contract {
 		/**
 		 * The default sort order for this table
 		 */
-		public static final String DEFAULT_SORT_ORDER = COLUMN_NAME_NO + " ASC";
+		public static final String DEFAULT_SORT_ORDER = _ID + " ASC," +  COLUMN_NAME_NO + " ASC";
 		
 		
 		/**
@@ -599,7 +591,9 @@ public final class Contract {
 			COLUMN_NAME_FINISHED,				// 
 			Trails.COLUMN_NAME_UUID,			//
 			Trails.COLUMN_NAME_NAME,			//
-			Trails.COLUMN_NAME_DESCRIPTION		// 
+			Trails.COLUMN_NAME_DESCRIPTION,		// 
+			Trails.COLUMN_NAME_UPDATED,			// 
+			Trails.COLUMN_NAME_DOWNLOADED		// 
 		};
 
 		public static final int READ_PROJECTION_EX_ID_INDEX = 0;
@@ -610,6 +604,8 @@ public final class Contract {
 		public static final int READ_PROJECTION_EX_TRAIL_UUID_INDEX = 5;
 		public static final int READ_PROJECTION_EX_TRAIL_NAME_INDEX = 6;
 		public static final int READ_PROJECTION_EX_TRAIL_DESCRIPTION_INDEX = 7;		
+		public static final int READ_PROJECTION_EX_TRAIL_UPDATED_INDEX = 8;		
+		public static final int READ_PROJECTION_EX_TRAIL_DOWNLOADED_INDEX = 9;		
 	}	
 
 	

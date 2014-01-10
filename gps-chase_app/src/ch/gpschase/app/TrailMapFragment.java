@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.ListPreference;
+import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -35,11 +37,17 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+/**
+ * Fragment to display a trail (or parts of it) on a GoogleMaps map
+ */
 public class TrailMapFragment extends com.google.android.gms.maps.MapFragment implements OnSharedPreferenceChangeListener {
 
 	private static final int BOUNDS_PADDING = 72;
 
-	private static final int TRAILLINE_COLOR = 0xFF9933CC;
+	/**
+	 * Color used to draw the trail line
+	 */	
+	public int traiLineColor = 0;
 
 	/**
 	 * Default zoom factor for camera
@@ -74,7 +82,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 
 		
 	/**
-	 * Class for en entry in the markers list
+	 * An entry in the markers list
 	 */
 	private class Point {
 		public Marker marker;
@@ -109,6 +117,8 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		;
+		
 		// we provide an option menu
 		this.setHasOptionsMenu(true);
 
@@ -216,6 +226,12 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		refreshTrailLine(true);
 	}
 
+	@Override
+	public void onAttach (Activity activity) {
+		super.onAttach(activity);
+		// read color from resource
+		traiLineColor = getResources().getColor(R.color.purple_dark);
+	}
 	
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -325,7 +341,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	public static ListPreference getMapTypePreference(Context context) {
 
 		// define preference and return it
-		ListPreference pref = new ListPreference(context);
+		final ListPreference pref = new ListPreference(context);
 		pref.setTitle(context.getString(R.string.pref_map_type_title));
 		pref.setKey(context.getString(R.string.pref_map_type_key));
 		pref.setEntries(new String[] {																	// 
@@ -339,7 +355,17 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 				Integer.valueOf(GoogleMap.MAP_TYPE_HYBRID).toString(),									//
 				Integer.valueOf(GoogleMap.MAP_TYPE_TERRAIN).toString() });								//
 		pref.setDefaultValue(Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString());					//
-		pref.setSummary("%s");	// TODO update after value is changed
+		pref.setSummary("%s");
+		
+		pref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {			
+			@Override
+			public boolean onPreferenceChange(Preference preference, Object newValue) {
+				// update summary
+				int index = pref.findIndexOfValue((String)newValue);
+				pref.setSummary(pref.getEntries()[index]);
+				return true;
+			}
+		});
 		return pref;
 	}
 
@@ -441,7 +467,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	}
 
 	/**
-	 * 
+	 * Sets the index of the given point
 	 */
 	public void setPointIndex(long pointId, int newIndex) {
 
@@ -561,7 +587,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	}
 
 	/**
-	 * 
+	 * Refreshes all the icons
 	 */
 	private void refreshIcons() {
 		int index = 0;
@@ -592,7 +618,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	}
 
 	/**
-	 * 
+	 * Refreshes the trail line
 	 */
 	private void refreshTrailLine(boolean recreate) {
 
@@ -602,7 +628,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		}
 
 		if (trailLine == null) {
-			trailLine = map.addPolyline(new PolylineOptions().width(5).color(TRAILLINE_COLOR));
+			trailLine = map.addPolyline(new PolylineOptions().width(5).color(traiLineColor));
 		}
 
 		List<LatLng> points = new ArrayList<LatLng>(pointList.size());

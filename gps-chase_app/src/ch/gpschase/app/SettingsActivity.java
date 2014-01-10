@@ -12,11 +12,12 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 
 /**
- *
+ * Activity to allow the user to change settings
  */
 public class SettingsActivity extends Activity {
 
-	private static final String FRAGMENT_TAG_SETTINGS = "settings";
+	// tag for preferences fragment
+	private static final String FRAGMENT_TAG = "prefs";
 
 	/**
 	 * 
@@ -40,7 +41,8 @@ public class SettingsActivity extends Activity {
 			button.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 				@Override
 				public boolean onPreferenceClick(Preference arg0) {
-					// TODO cleanup data
+					// cleanup data
+					App.getImageManager().cleanupFiles();
 					return true;
 				}
 			});
@@ -51,14 +53,17 @@ public class SettingsActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// load layout
+		setContentView(R.layout.activity_settings);
+		
 		// adjust action bar
 		ActionBar actionBar = getActionBar();
 		actionBar.setDisplayHomeAsUpEnabled(true);
 		actionBar.setTitle(R.string.activity_title_settings);
 		
 		// add fragment (if not already recreated)
-		if (getFragmentManager().findFragmentByTag(FRAGMENT_TAG_SETTINGS) == null) {
-			getFragmentManager().beginTransaction().replace(android.R.id.content, new SettingsFragment(), FRAGMENT_TAG_SETTINGS).commit();
+		if (getFragmentManager().findFragmentByTag(FRAGMENT_TAG) == null) {
+			getFragmentManager().beginTransaction().replace(R.id.layout_container, new SettingsFragment(), FRAGMENT_TAG).commit();
 		}
 	}
 

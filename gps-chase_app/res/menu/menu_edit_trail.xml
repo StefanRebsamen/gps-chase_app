@@ -9,14 +9,12 @@
                 android:id="@+id/action_upload"
                 android:icon="@drawable/ic_upload"
                 android:orderInCategory="20"
-                android:showAsAction="always"
                 android:title="@string/action_upload_trail">
             </item>
             <item
                 android:id="@+id/action_share"
                 android:icon="@drawable/ic_add_person"
                 android:orderInCategory="21"
-                android:showAsAction="always"
                 android:title="@string/action_share_trail">
             </item>
         </menu>

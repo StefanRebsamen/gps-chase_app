@@ -1,43 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">GPS Chase</string>
+    <string name="app_name">GPSchase</string>
     <string name="action_settings">Settings</string>
 
     <string name="field_description">Description</string>
     <string name="field_show_on_map">Show on map</string>    
-
-    <string name="activity_title_chases">Chases</string>
-    <string name="action_new_chase">New Chase</string>
-    <string name="action_delete_chase">Delete Chase</string>
-    <string name="dialog_select_trail_title">Choose Trail</string>
-    <string name="dialog_player_title">Player Name</string>
-    <string name="dialog_player_message">Please enter the name of the player:</string>
-    <string name="dialog_delete_chase_title">Delete Chase</string>
-    <string name="dialog_delete_chase_message">Delete the selected chase?</string>
-
-    <string name="activity_title_trails">Trails</string>
+ 
     <string name="tab_title_chases">Chases</string>
     <string name="tab_title_trails">Trails</string>
     <string name="action_new_trail">New</string>
-    <string name="action_delete_trail">Delete</string>
-    <string name="action_edit_trail">Edit</string>
-    <string name="action_share_trail">Share</string>
-    <string name="action_chases">Show Chases</string>
+    <string name="action_delete_trail">Delete Trail</string>
+    <string name="action_edit_trail">Edit Trail</string>
+    <string name="action_share_trail">Share Trail</string>
     <string name="dialog_delete_trail_title">Delete Trail</string>
     <string name="dialog_delete_trail_message">Delete the selected trail?</string>
-    <string name="dialog_new_trail_title">New Trail Title</string>
-    <string name="dialog_new_trail_message">Please enter a name for the new trail:</string>
+    <string name="dialog_new_trail_title">New Trail</string>
+    <string name="dialog_new_trail_message">Name for the new trail:</string>
     <string name="dialog_share_trail_title">Share Trail</string>
     <string name="share_trail_message">By following the appended link, you will be able to play a great game!</string>
-    <string name="dialog_downloading">Downloading...</string>
+    <string name="dialog_downloading">Downloading ...</string>
     <string name="dialog_download_trail_error_title">Error</string>
-    <string name="dialog_download_trail_error_message">An error occurred while downloading a trail.</string>    
+    <string name="dialog_download_trail_error_message">An error occurred while downloading the trail.</string>    
+    <string name="action_new_chase">New Chase</string>
+    <string name="action_continue_chase">Continue Chase</string>
+    <string name="action_delete_chase">Delete Chase</string>
+    <string name="dialog_new_chase_player">Name of the player:</string>
+    <string name="dialog_new_chase_default_player">Player</string>
+    <string name="dialog_delete_chase_message">Delete the selected chase?</string>
     
     <string name="activity_title_edit_trail">Edit Trail</string>
-    <string name="action_chase_trail">Chase Trail</string>
-    <string name="action_delete_checkpoint">Delete</string>
-    <string name="dialog_delete_checkpoint_title">Delete Checkpoint</string>
+    <string name="action_delete_checkpoint">Delete Checkpoint</string>
     <string name="dialog_delete_checkpoint_message">Delete the selected checkpoint?</string>    
     <string name="action_new_image">Add Image</string>
     <string name="action_upload_trail">Upload</string>
@@ -47,18 +40,18 @@
     <string name="action_reorder_checkpoint_forward">Forward</string>
     <string name="dialog_show_image_title">Image</string>
     <string name="action_delete_image">Delete Image</string>
-    <string name="dialog_delete_image_title">Delete Image</string>
     <string name="dialog_delete_image_message">Delete the image?</string>
     <string name="dialog_add_image_error_title">Error</string>
     <string name="dialog_add_image_error_message">An error occurred while adding the image.</string>    
     <string name="context_menu_image_title">Image</string>
-    <string name="dialog_uploading">Uploading...</string>
+    <string name="dialog_uploading">Uploading ...</string>
     <string name="dialog_upload_trail_error_title">Error</string>
     <string name="dialog_upload_trail_error_message">An error occurred while uploading the trail.</string>    
     <string name="dialog_share_trail_error_title">Error</string>
     <string name="dialog_share_trail_error_message">An error occurred while sharing the trail.</string>    
     
     <string name="activity_title_chase_trail">Chase Trail</string>
+    <string name="action_download_trail">Download Trail</string>
     <string name="text_checkpoint_not_shown">not on map</string>    
     <string name="toast_finished_chase">Chase has been finished</string>
     

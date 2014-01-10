@@ -2,6 +2,7 @@ package ch.gpschase.app;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
@@ -33,43 +34,15 @@ public class ChaseService extends Service  {
 
 	/** represents an hit of checkpoint */
 	public class Hit {
-		private long id;
-		private long time;
-		
-		public long getId() {
-			return id;
-		}
-		
-		public long getTime() {
-			return time;
-		}
-		
+		public  long id;
+		public long time;			
 	}
 
 	/** represents a checkpoint */
-	public class Checkpoint {
+	public class Checkpoint  extends ch.gpschase.app.data.Checkpoint{
 		
-		private long id;
-		private Location location;
-		private boolean showLocation;
 		private Hit hit;
-				
-		public long getId() {
-			return id;
-		}
-
-		public Location getLocation() {
-			return location;
-		}
-
-		public boolean isShowLocation() {
-			return showLocation;
-		}
-
-		public Hit getHit() {
-			return hit;
-		}
-		
+						
 		public boolean isHit() {
 			return hit != null;
 		}
@@ -82,48 +55,23 @@ public class ChaseService extends Service  {
 	/** represents the chase */
 	public class Chase {
 		
-		private long id;
-		private long started; 
-		private long finished;
-		private final List<Checkpoint> checkpoints = new ArrayList<Checkpoint>();
-		private long trailId;
-		private String trailName;
-		private String player;
+		public long id;
+		public long started; 
+		public long finished;
+		public final List<Checkpoint> checkpoints = new ArrayList<Checkpoint>();
+		public long trailId;
+		public UUID trailUuid;
+		public String trailName;
+		public boolean trailDownloaded;
+		public String player;
 		
 		// the next checkpoint we need to hit
 		private Checkpoint nextCheckpoint; 
-
-		public long getId() {
-			return id;
-		}		
-		public Iterable<Checkpoint> getCheckpoints() {
-			return checkpoints;
-		}
-
-		public long getStarted() {
-			return started;
-		}
-
-		public long getFinished() {
-			return finished;
-		}
 
 		public Checkpoint getNextCheckpoint() {
 			return nextCheckpoint;
 		}
 
-		public long getTrailId() {
-			return trailId;
-		}
-		
-		public String getTrailName() {
-			return trailName;
-		}
-		
-		public String getPlayer() {
-			return player;
-		}			
-		
 		/**
 		 * 
 		 * @return
@@ -302,12 +250,32 @@ public class ChaseService extends Service  {
 
 		// load some information about the chase into an object tree
 		long chaseId = ContentUris.parseId(intent.getData());
+		
+		// load data
+		try {
+			load(chaseId);
+			return START_STICKY;
+		}
+		catch (Exception ex)
+		{
+			return START_NOT_STICKY;			
+		}		
+	}
+
+	/**
+	 * Loads the data from the database
+	 * @param chaseId
+	 * @throws IllegalArgumentException
+	 */
+	private void load(long chaseId) throws IllegalArgumentException {
 		Uri chaseUri = Contract.Chases.getUriId(chaseId);
 		Cursor cursorChase;
 		cursorChase = getContentResolver().query(chaseUri, Contract.Chases.READ_PROJECTION, null, null, null);
 		if (!cursorChase.moveToNext()) {
-			return START_NOT_STICKY;
+			cursorChase.close();
+			throw new IllegalArgumentException("Chase not found");
 		}
+		
 		chase = new Chase();
 		chase.id = cursorChase.getLong(Contract.Chases.READ_PROJECTION_ID_INDEX);
 		chase.trailId = cursorChase.getLong(Contract.Chases.READ_PROJECTION_TRAIL_ID_INDEX);
@@ -320,7 +288,9 @@ public class ChaseService extends Service  {
 		Uri trailUri = Contract.Trails.getUriId(chase.trailId);
 		Cursor trailCursor = getContentResolver().query(trailUri, Contract.Trails.READ_PROJECTION, null, null, null);
 		if (trailCursor.moveToNext()) {
+			chase.trailUuid = UUID.fromString(trailCursor.getString(Contract.Trails.READ_PROJECTION_UUID_INDEX));			
 			chase.trailName = trailCursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX);			
+			chase.trailDownloaded = trailCursor.getLong(Contract.Trails.READ_PROJECTION_DOWNLOADED_INDEX) != 0;			
 		}
 		trailCursor.close();	
 			
@@ -330,7 +300,6 @@ public class ChaseService extends Service  {
 		while (checkpointsCursor.moveToNext()) {			
 			Checkpoint checkpoint = new Checkpoint();
 			checkpoint.id = checkpointsCursor.getLong(Contract.Checkpoints.READ_PROJECTION_ID_INDEX);
-			checkpoint.location = new Location("gpschase");
 			checkpoint.location.setLatitude(checkpointsCursor.getDouble(Contract.Checkpoints.READ_PROJECTION_LOC_LAT_INDEX));
 			checkpoint.location.setLongitude(checkpointsCursor.getDouble(Contract.Checkpoints.READ_PROJECTION_LOC_LNG_INDEX));
 			checkpoint.showLocation = checkpointsCursor.getInt(Contract.Checkpoints.READ_PROJECTION_LOC_SHOW_INDEX) != 0;
@@ -362,10 +331,29 @@ public class ChaseService extends Service  {
 				break;
 			}
 		}
-		
-		return START_STICKY;
 	}
 
+	/**
+	 * Reloas the data of the chase
+	 */
+	public boolean reload() {
+
+		// does a chase exist?
+		if (chase != null) {			
+			// load data
+			try {
+				load(chase.id);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
+	}
 
 	private final LocalBinder localBinder = new LocalBinder();
 	

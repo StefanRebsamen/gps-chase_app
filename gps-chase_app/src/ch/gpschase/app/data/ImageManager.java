@@ -19,7 +19,9 @@ import android.os.Environment;
 import android.util.Log;
 
 /**
+ * Manage the image.
  * 
+ * Is create through the app
  */
 public class ImageManager {
 	
