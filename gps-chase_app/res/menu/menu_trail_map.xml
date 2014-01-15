@@ -9,16 +9,16 @@
             <group android:checkableBehavior="single" >
                 <item
                     android:id="@+id/action_map_type_normal"
-                    android:title="@string/pref_map_type_normal_display"/>
+                    android:title="@string/pref_map_type_normal"/>
                 <item
                     android:id="@+id/action_map_type_satellite"
-                    android:title="@string/pref_map_type_satellite_display"/>
+                    android:title="@string/pref_map_type_satellite"/>
                 <item
                     android:id="@+id/action_map_type_hybrid"
-                    android:title="@string/pref_map_type_hybrid_display"/>
+                    android:title="@string/pref_map_type_hybrid"/>
                 <item
                     android:id="@+id/action_map_type_terrain"
-                    android:title="@string/pref_map_type_terrain_display"/>
+                    android:title="@string/pref_map_type_terrain"/>
             </group>
         </menu>
     </item>

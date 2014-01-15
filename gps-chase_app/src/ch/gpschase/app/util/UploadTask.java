@@ -11,13 +11,14 @@ import android.os.AsyncTask;
 import android.util.Log;
 import ch.gpschase.app.data.BackendClient;
 import ch.gpschase.app.data.Trail;
+import ch.gpschase.app.data.TrailInfo;
 import ch.gpschase.app.EditTrailActivity;
 import ch.gpschase.app.R;
 
 	/**
 	 *
 	 */
-	public class UploadTask extends AsyncTask<Void, Void, UUID> {
+	public class UploadTask extends AsyncTask<Void, Void, Boolean> {
 		
 		// context
 		private Context context;
@@ -25,9 +26,9 @@ import ch.gpschase.app.R;
 		// progress dialog
 		private ProgressDialog pd = null;
 
-		// trail id
-		long trailId;
-		
+		// trail
+		TrailInfo trail;
+				
 		// indicates if the link to the trail should be shared afterwards
 		boolean shareLink;
 		
@@ -37,11 +38,11 @@ import ch.gpschase.app.R;
 		 * @param trailId
 		 * @param shareLink
 		 */
-		public UploadTask(Context context, long trailId, boolean shareLink) {
+		public UploadTask(Context context, TrailInfo trail, boolean shareLink) {
 			super();
 
 			this.context = context;
-			this.trailId = trailId;
+			this.trail = trail;
 			this.shareLink = shareLink;
 		}
 		
@@ -52,26 +53,26 @@ import ch.gpschase.app.R;
 			pd.setIndeterminate(true);
 			pd.setMessage(context.getResources().getText(R.string.dialog_uploading));
 			pd.setIcon(R.drawable.ic_upload);
-			pd.setTitle(R.string.action_download_trail);			
+			pd.setTitle(R.string.action_upload_trail);			
 			pd.show();
 		}
 
 		@Override
-		protected UUID doInBackground(Void... params) {
+		protected Boolean doInBackground(Void... params) {
 			try {
 				BackendClient client = new BackendClient(context);
-				UUID trailUuid = client.uploadTrail(trailId);
-				return trailUuid;
+				client.uploadTrail(trail);
+				return true;
 			} catch (Exception ex) {
 				Log.e("uploadTrail", "Error while uploading trail", ex);
-				return null;
+				return false;
 			}
 		}
 
 		@Override
-		protected void onPostExecute(UUID result) {
+		protected void onPostExecute(Boolean result) {
 			pd.dismiss();
-			if (result == null) {
+			if (!result) {
 				// show dialog to inform user about failure
 				new AlertDialog.Builder(context)						//
 					.setIcon(android.R.drawable.ic_dialog_alert)					//
@@ -84,17 +85,14 @@ import ch.gpschase.app.R;
 			
 			if (shareLink) {
 				// create link
-				Uri link = Link.createDownloadLink(result);							
-				
-				// get the name of the trail
-				String name = Trail.getName(context, trailId);
-				
+				Uri link = TrailDownloadLink.createDownloadLink(trail);							
+								
 				// send through any app that is capable 
 				CharSequence appName = context.getResources().getText(R.string.app_name);
 				Intent sendIntent = new Intent();
-				sendIntent.setAction(Intent.ACTION_SEND);
-				sendIntent.putExtra(Intent.EXTRA_SUBJECT, "Link to trail '" + name + "'");
-				sendIntent.putExtra(Intent.EXTRA_TEXT, "Please use the Android app " + appName + " to download trail '" + name + "': " + link);
+				sendIntent.setAction(Intent.ACTION_SEND);	// TODO set text properly
+				sendIntent.putExtra(Intent.EXTRA_SUBJECT, "Link to trail '" + trail.name + "'");
+				sendIntent.putExtra(Intent.EXTRA_TEXT, "Please use the Android app " + appName + " to download trail '" + trail.name + "': " + link);
 				sendIntent.setType("text/plain");
 				context.startActivity(Intent.createChooser(sendIntent, context.getResources().getText(R.string.dialog_share_trail_title)));					
 			}

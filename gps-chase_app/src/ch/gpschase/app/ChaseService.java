@@ -11,6 +11,7 @@ import com.google.android.gms.location.LocationRequest;
 
 import ch.gpschase.app.data.Contract;
 import ch.gpschase.app.data.Contract.Checkpoints;
+import ch.gpschase.app.data.TrailInfo;
 import android.app.Service;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -24,13 +25,13 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 
 /**
  * Service which does the real work behind chasing a trail. Acts as a lasting connection to the LocationManager,
  * even when the chasing activity isn't active.
  */
 public class ChaseService extends Service  {
-
 
 	/** represents an hit of checkpoint */
 	public class Hit {
@@ -59,10 +60,9 @@ public class ChaseService extends Service  {
 		public long started; 
 		public long finished;
 		public final List<Checkpoint> checkpoints = new ArrayList<Checkpoint>();
-		public long trailId;
-		public UUID trailUuid;
-		public String trailName;
-		public boolean trailDownloaded;
+
+		public TrailInfo trail;
+		
 		public String player;
 		
 		// the next checkpoint we need to hit
@@ -232,6 +232,7 @@ public class ChaseService extends Service  {
 	
 	@Override
 	public void onCreate() {
+		Log.d("ChaseService", "onCreate");		
 		// create and connect location client
 		locationClient = new LocationClient(this, locationCallback, locationCallback);
 		locationClient.connect();
@@ -239,6 +240,7 @@ public class ChaseService extends Service  {
 
 	@Override
 	public void onDestroy() {
+		Log.d("ChaseService", "onDestroy");		
 		// disconnect and destroy location client
 		locationClient.removeLocationUpdates(locationCallback);
 		locationClient.disconnect();
@@ -247,6 +249,7 @@ public class ChaseService extends Service  {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		Log.d("ChaseService", "onStartCommand");		
 
 		// load some information about the chase into an object tree
 		long chaseId = ContentUris.parseId(intent.getData());
@@ -277,25 +280,27 @@ public class ChaseService extends Service  {
 		}
 		
 		chase = new Chase();
+		chase.trail = new TrailInfo();
 		chase.id = cursorChase.getLong(Contract.Chases.READ_PROJECTION_ID_INDEX);
-		chase.trailId = cursorChase.getLong(Contract.Chases.READ_PROJECTION_TRAIL_ID_INDEX);
+		chase.trail.id = cursorChase.getLong(Contract.Chases.READ_PROJECTION_TRAIL_ID_INDEX);
 		chase.player = cursorChase.getString(Contract.Chases.READ_PROJECTION_PLAYER_INDEX);
 		chase.started = cursorChase.getLong(Contract.Chases.READ_PROJECTION_STARTED_INDEX);
 		chase.finished = cursorChase.getLong(Contract.Chases.READ_PROJECTION_FINISHED_INDEX);
 		cursorChase.close();
 
 		// load trail details
-		Uri trailUri = Contract.Trails.getUriId(chase.trailId);
+		Uri trailUri = Contract.Trails.getUriId(chase.trail.id);
 		Cursor trailCursor = getContentResolver().query(trailUri, Contract.Trails.READ_PROJECTION, null, null, null);
 		if (trailCursor.moveToNext()) {
-			chase.trailUuid = UUID.fromString(trailCursor.getString(Contract.Trails.READ_PROJECTION_UUID_INDEX));			
-			chase.trailName = trailCursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX);			
-			chase.trailDownloaded = trailCursor.getLong(Contract.Trails.READ_PROJECTION_DOWNLOADED_INDEX) != 0;			
+			chase.trail.uuid = UUID.fromString(trailCursor.getString(Contract.Trails.READ_PROJECTION_UUID_INDEX));			
+			chase.trail.name = trailCursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX);			
+			chase.trail.downloaded = trailCursor.getLong(Contract.Trails.READ_PROJECTION_DOWNLOADED_INDEX);			
+			chase.trail.updated = trailCursor.getLong(Contract.Trails.READ_PROJECTION_UPDATED_INDEX);			
 		}
 		trailCursor.close();	
 			
 		// load checkpoints
-		Uri checkpointsUri = Contract.Checkpoints.getUriDir(chase.trailId);
+		Uri checkpointsUri = Contract.Checkpoints.getUriDir(chase.trail.id);
 		Cursor checkpointsCursor = getContentResolver().query(checkpointsUri, Contract.Checkpoints.READ_PROJECTION, null, null, Contract.Checkpoints.DEFAULT_SORT_ORDER);
 		while (checkpointsCursor.moveToNext()) {			
 			Checkpoint checkpoint = new Checkpoint();

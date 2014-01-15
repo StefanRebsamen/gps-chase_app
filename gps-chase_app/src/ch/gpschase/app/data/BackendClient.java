@@ -232,14 +232,14 @@ public class BackendClient {
 	 * @param trailId
 	 * @throws ClientException
 	 */
-	public UUID uploadTrail(long trailId) throws ClientException {
+	public void uploadTrail(TrailInfo trail) throws ClientException {
 
 		try {
 			HttpResponse response;
 			int statusCode;
-
+					
 			// create data to upload
-			UploadData data = createUploadData(trailId);
+			UploadData data = createUploadData(trail.id);
 
 			// create HTTP client
 			HttpClient http = createHttpClient();
@@ -312,31 +312,60 @@ public class BackendClient {
 					throw new ProtocolException("Server returned status code " + statusCode + " after deleting image");
 				}				
 			}
+								
+			// update uploaded timestamp
+			trail.uploaded = System.currentTimeMillis();
 			
 			// write to DB that it was uploaded
 			ContentValues values = new ContentValues();
-			values.put(Contract.Trails.COLUMN_NAME_UPLOADED, System.currentTimeMillis());
-			context.getContentResolver().update(Contract.Trails.getUriId(trailId), values, null, null);
-			
-			return data.uuid;
-			
+			values.put(Contract.Trails.COLUMN_NAME_UPLOADED, trail.uploaded); 
+			context.getContentResolver().update(Contract.Trails.getUriId(trail.id), values, null, null);
+									
 		} catch (Exception ex) {
 			throw new ClientException("Error while exporting trail to server", ex);
 		}
 	}
-
+		
 	/**
 	 * @param trailUuid
 	 * @throws ClientException
+	 * @return downloaded trail or null if it wasn't modified
 	 */
-	public long downloadTrail(UUID trailUuid) throws ClientException {
+	public Trail downloadTrail(TrailInfo trailInfo) throws ClientException {
 	
 		try {
 			// create HTTP client
 			HttpClient http = createHttpClient();
 			
-			// get response from server as JSON
-			String json = getJson(http, getTrailUri(trailUuid));
+			/////////////////////////// 
+			// query server
+			Uri uri = getTrailUri(trailInfo.uuid);
+			uri = uri.buildUpon().appendQueryParameter("updated", Long.valueOf(trailInfo.updated).toString()).build();
+			HttpGet get = new HttpGet(uri.toString());
+			get.addHeader("Accept", "application/json");
+			
+			HttpResponse response = http.execute(get);
+			int statusCode = response.getStatusLine().getStatusCode();
+			if (statusCode == 304) {
+				// not modified
+				return null;
+			}
+			else if (statusCode != 200) {
+				throw new ProtocolException("Server returned status code " + statusCode);
+			}
+			
+			/////////////////////////// 
+			// get JSON from response
+			InputStream inputStream = response.getEntity().getContent();
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, HTTP.UTF_8), 8);
+			StringBuilder result = new StringBuilder();
+			String line = null;
+			while ((line = bufferedReader.readLine()) != null) {
+				result.append(line);
+			}
+			bufferedReader.close();
+			inputStream.close();
+			String json = result.toString();
 			
 			/////////////////////////// 
 			// parse JSON and create object tree of complete trail
@@ -432,7 +461,7 @@ public class BackendClient {
 			Uri trailDirUri = Contract.Trails.getUriDir();
 			Cursor trailCursor = context.getContentResolver().query(trailDirUri, Contract.Trails.READ_PROJECTION, 
 																	Contract.Trails.COLUMN_NAME_UUID+"=?", 
-																	new String[]{trailUuid.toString()}, 
+																	new String[]{ trail.uuid.toString()}, 
 																	null);
 			if (trailCursor.moveToFirst()) {
 				trail.id = trailCursor.getLong(Contract.Trails.READ_PROJECTION_ID_INDEX);
@@ -574,21 +603,22 @@ public class BackendClient {
 					}
 					
 					// query server
-					HttpGet get = new HttpGet(getImageUri(trail.uuid, image.uuid).toString());
-					HttpResponse response = http.execute(get);
-					int statusCode = response.getStatusLine().getStatusCode();
+					get = new HttpGet(getImageUri(trail.uuid, image.uuid).toString());
+					response = http.execute(get);
+					statusCode = response.getStatusLine().getStatusCode();
 					if (statusCode != 200) {
 						throw new ProtocolException("Server returned status code " + statusCode);
 					}
 					// get image from response and add it the the image manager
-					InputStream inputStream = response.getEntity().getContent();
+					inputStream = response.getEntity().getContent();
 					App.getImageManager().add(image.id, inputStream);
+					inputStream.close();
 				}
 			}						
 						
 			/////////////////////////// 
-			// return the id of the trail as result
-			return trail.id;
+			// return the trail as result
+			return trail;
 			
 		} catch (Exception ex) {						
 			throw new ClientException("Error while downloading trail from server", ex);

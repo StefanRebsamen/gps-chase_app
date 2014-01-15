@@ -41,7 +41,9 @@ import android.widget.LinearLayout;
 import ch.gpschase.app.data.Contract;
 import ch.gpschase.app.data.ImageManager;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.util.Link;
+import ch.gpschase.app.data.TrailInfo;
+import ch.gpschase.app.util.TrailDownloadLink;
+import ch.gpschase.app.util.TrailMapFragment;
 import ch.gpschase.app.util.UploadTask;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -613,9 +615,8 @@ public class EditTrailActivity extends Activity {
 		}
 	}
 
-	// ID and name of the trail we're editing
-	private long trailId;
-	private String name;
+	// the trail we're editing
+	final TrailInfo trail = new TrailInfo();
 
 	// map fragment to be reused
 	private TrailMapFragment map;
@@ -635,9 +636,16 @@ public class EditTrailActivity extends Activity {
 
 		Log.d("EditTrailActivit", "onCreate");
 
-		// keep trail id
-		trailId = ContentUris.parseId(getIntent().getData());
-
+		// get more info about the trail
+		Cursor cursor = getContentResolver().query(getIntent().getData(), Contract.Trails.READ_PROJECTION, null, null, null);
+		if (cursor.moveToNext()) {
+			trail.id = cursor.getLong(Contract.Trails.READ_PROJECTION_ID_INDEX);
+			trail.uuid = UUID.fromString(cursor.getString(Contract.Trails.READ_PROJECTION_UUID_INDEX));
+			trail.name = cursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX);
+			trail.uploaded = cursor.getLong(Contract.Trails.READ_PROJECTION_UPLOADED_INDEX);
+		}
+		cursor.close();
+		
 		// load layout
 		setContentView(R.layout.activity_edit_trail);
 
@@ -655,7 +663,7 @@ public class EditTrailActivity extends Activity {
 		checkpointEdit = (EditCheckpointFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_CPEDIT);
 		if (checkpointEdit == null) {
 			checkpointEdit = new EditCheckpointFragment();
-			checkpointEdit.setTrail(trailId);
+			checkpointEdit.setTrail(trail.id);
 			checkpointEdit.setOnButtonListener(new EditButtonListener());
 			ft.replace(R.id.layout_checkpoint_edit, checkpointEdit, FRAGMENT_TAG_CPEDIT);
 		}
@@ -667,12 +675,7 @@ public class EditTrailActivity extends Activity {
 		actionBar.setTitle(R.string.activity_title_edit_trail);
 
 		// show trails name as subtitle
-		Cursor cursor = getContentResolver().query(getIntent().getData(), Contract.Trails.READ_PROJECTION, null, null, null);
-		if (cursor.moveToNext()) {
-			name = cursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX);
-			actionBar.setSubtitle(name);
-		}
-		cursor.close();
+		actionBar.setSubtitle(trail.name);
 
 		// make sure nothing is selected
 		selectedCheckpointId = -1;
@@ -684,10 +687,13 @@ public class EditTrailActivity extends Activity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// inflate menu
 		getMenuInflater().inflate(R.menu.menu_edit_trail, menu);
-						
+
+		// disable upload if trail wasn't already uploaded
+		MenuItem menuUpdload = menu.findItem(R.id.action_upload_trail);
+		menuUpdload.setVisible(trail.uploaded != 0);
+		
 		return true;
 	}
-
 	
 	
 	@Override
@@ -704,7 +710,7 @@ public class EditTrailActivity extends Activity {
 
 		// load all checkpoints
 		boolean first = true;
-		Uri checkpointDir = Contract.Checkpoints.getUriDir(trailId);
+		Uri checkpointDir = Contract.Checkpoints.getUriDir(trail.id);
 		Cursor cursor = getContentResolver().query(checkpointDir, Contract.Checkpoints.READ_PROJECTION, null, null, null);
 		while (cursor.moveToNext()) {
 
@@ -744,15 +750,11 @@ public class EditTrailActivity extends Activity {
 			finish();
 			return true;
 
-		case R.id.action_upload:
-			// 
-			uploadTrail(false);
+		case R.id.action_upload_trail:
+			// upload the trail 
+			uploadTrail();
 			return true;
-
-		case R.id.action_share:
-			// upload an share
-			uploadTrail(true);
-			return true;
+			
 		}
 		return super.onOptionsItemSelected(item);
 	}
@@ -773,14 +775,14 @@ public class EditTrailActivity extends Activity {
 																	// default
 		values.put(Contract.Checkpoints.COLUMN_NAME_NO, no);
 
-		Uri checkpointsDir = Contract.Checkpoints.getUriDir(trailId);
+		Uri checkpointsDir = Contract.Checkpoints.getUriDir(trail.id);
 		Uri checkpointUri = getContentResolver().insert(checkpointsDir, values);
 		long checkpointId = ContentUris.parseId(checkpointUri);
 
 		// update updated timestamp for trail
 		values.clear();
 		values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-		Uri trailIdUri = Contract.Trails.getUriId(trailId);
+		Uri trailIdUri = Contract.Trails.getUriId(trail.id);
 		getContentResolver().update(trailIdUri, values, null, null);
 
 		// append to our list
@@ -858,7 +860,7 @@ public class EditTrailActivity extends Activity {
 								// update updated timestamp for trail
 								ContentValues values = new ContentValues();
 								values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-								Uri trailIdUri = Contract.Trails.getUriId(trailId);
+								Uri trailIdUri = Contract.Trails.getUriId(trail.id);
 								getContentResolver().update(trailIdUri, values, null, null);
 
 								// remove from our list
@@ -907,7 +909,7 @@ public class EditTrailActivity extends Activity {
 			// update updated timestamp for trail
 			ContentValues values = new ContentValues();
 			values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-			Uri trailIdUri = Contract.Trails.getUriId(trailId);
+			Uri trailIdUri = Contract.Trails.getUriId(trail.id);
 			getContentResolver().update(trailIdUri, values, null, null);
 
 		}
@@ -935,7 +937,7 @@ public class EditTrailActivity extends Activity {
 			// update updated timestamp for trail
 			ContentValues values = new ContentValues();
 			values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-			Uri trailIdUri = Contract.Trails.getUriId(trailId);
+			Uri trailIdUri = Contract.Trails.getUriId(trail.id);
 			getContentResolver().update(trailIdUri, values, null, null);
 
 			// renumber in database
@@ -978,15 +980,14 @@ public class EditTrailActivity extends Activity {
 	
 	/**
 	 * Upload a trail to the server in an asynchronous task
-	 * @param shareLink A link will be sent through any capable app after uploading the link 
 	 */
-	private void uploadTrail(boolean shareLink) {
+	private void uploadTrail() {
 						
 		// deselect checkpoint (saves changes)
 		selectCheckpoint(0);
 		
 		// execute task
-		new UploadTask(this, trailId, shareLink).execute();
+		new UploadTask(this, trail, false).execute();
 	}
 		
 }

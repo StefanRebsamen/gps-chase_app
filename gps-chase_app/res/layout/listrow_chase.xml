@@ -6,14 +6,25 @@
     android:background="?android:attr/activatedBackgroundIndicator"
     >
 
+    <ImageView
+        android:id="@+id/imageView_chase_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="4dp"
+        android:adjustViewBounds="true"
+        android:maxHeight="16dip"
+        android:maxWidth="16dip" />
+    
     <TextView
         android:id="@+id/textView_trail_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_marginLeft="8dip"
         android:layout_marginTop="8dip"
+        android:layout_toRightOf="@id/imageView_chase_state"
         android:text="Trail"
         android:textAppearance="?android:attr/textAppearanceMedium" />
         
@@ -21,34 +32,32 @@
         android:id="@+id/textView_player"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentTop="false"
         android:layout_below="@id/textView_trail_name"
-        android:layout_centerVertical="true"
         android:layout_marginBottom="8dip"
-        android:layout_marginLeft="8dip"
+        android:layout_toRightOf="@id/imageView_chase_state"
         android:text="Player"
         android:textAppearance="?android:attr/textAppearanceSmall" />
     
-    <TextView
-        android:id="@+id/textView_started"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@id/textView_player"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginRight="8dip"
-        android:text="started"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
-
     <TextView
         android:id="@+id/textView_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBaseline="@id/textView_trail_name"
         android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
         android:layout_marginRight="8dip"
         android:text="time"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <TextView
+        android:id="@+id/textView_started"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/textView_player"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="8dip"
+        android:text="started"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
 </RelativeLayout>

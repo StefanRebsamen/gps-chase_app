@@ -260,7 +260,7 @@ public class Provider extends ContentProvider {
 					+ Contract.Chases.COLUMN_NAME_TRAIL_ID + " INTEGER NOT NULL,"						//
 					+ Contract.Chases.COLUMN_NAME_PLAYER + " TEXT NULL,"								//
 					+ Contract.Chases.COLUMN_NAME_STARTED + " INTEGER NOT NULL,"						//
-					+ Contract.Chases.COLUMN_NAME_FINISHED + " INTEGER NULL,"							//
+					+ Contract.Chases.COLUMN_NAME_FINISHED + " INTEGER NOT NULL DEFAULT 0,"							//
 					+ "FOREIGN KEY( " + Contract.Chases.COLUMN_NAME_TRAIL_ID + ") "						//
 					+ "  REFERENCES " + Contract.Trails.TABLE_NAME + "(" + Contract.Trails._ID + ") "	//
 					+ "  ON DELETE CASCADE ON UPDATE CASCADE"

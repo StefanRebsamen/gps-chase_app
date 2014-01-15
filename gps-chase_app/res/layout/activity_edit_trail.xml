@@ -5,11 +5,6 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="@color/actionBar_divider" />
-
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

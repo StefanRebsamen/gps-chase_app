@@ -3,17 +3,11 @@
     <color name="white_overlay">#BBFFFFFF</color>
     <color name="white">#FFFFFFFF</color>
     
-   <color name="actionBar_backgroundStacked">#FFeeeeee</color>
-   <color name="actionBar_background">#FFffffff</color>
-   <color name="activity_background">#FFffffff</color>
-
-   <color name="listitem_activated_background">#FF8ADFF4</color>
-
-   <color name="actionBar_divider">#FFaaaaaa</color>
+   <color name="activity_background">#FFefefef </color>
    
    <color name="purple_dark">#FF9933cc</color>
    <color name="purple_light">#FFaa66cc</color>
    <color name="green_dark">#FF669900</color>
    <color name="green_light">#FF99cc00</color>
-     
+   
 </resources>

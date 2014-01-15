@@ -9,63 +9,92 @@ import android.os.AsyncTask;
 import android.util.Log;
 import ch.gpschase.app.R;
 import ch.gpschase.app.data.BackendClient;
+import ch.gpschase.app.data.Trail;
+import ch.gpschase.app.data.TrailInfo;
 
 /**
  * An asynchronous task to download a trail.
  * While downloading a trail, it displays a progress dialog. 
  */
-public class DownloadTask extends AsyncTask<Void, Void, Long> {
+public class DownloadTask extends AsyncTask<Void, Void, Trail> {
 
 	// context
 	private Context context;
 
-	// trail uuid
-	UUID trailUuid;
+	// trail info
+	TrailInfo trailInfo;
 	
 	// progress dialog
 	private ProgressDialog pd = null;
+	
+	// indicates that thee was an error
+	private boolean error = false;
 
+	// flas that the progres dialg should be shown from the start, not just after a progress event
+	boolean initialProgressDialog = false;
+	
 	/**
 	 * Constructor
 	 * @param context
 	 * @param trailUuid
 	 */
-	public DownloadTask(Context context, UUID trailUuid) {
+	public DownloadTask(Context context, TrailInfo trailInfo, boolean initialProgressDialog) {
 		super();
 
 		this.context = context;
-		this.trailUuid = trailUuid;
+		this.trailInfo = trailInfo;
+		this.initialProgressDialog = initialProgressDialog;			
 	}
 
+	/**
+	 * 
+	 * @param values
+	 */
+	protected void onProgressUpdate() {
+		
+		// show progress dialog if not already done
+		if (pd == null) {
+			pd = new ProgressDialog(context);
+			pd.setCancelable(false);
+			pd.setIndeterminate(true);
+			pd.setMessage(context.getResources().getText(R.string.dialog_downloading));
+			pd.setIcon(R.drawable.ic_download);
+			pd.setTitle(R.string.action_download_trail);
+			pd.show();
+		}
+	}
+	
 	
 	@Override
 	protected void onPreExecute() {
-		pd = new ProgressDialog(context);
-		pd.setCancelable(false);
-		pd.setIndeterminate(true);
-		pd.setMessage(context.getResources().getText(R.string.dialog_downloading));
-		pd.setIcon(R.drawable.ic_download);
-		pd.setTitle(R.string.action_download_trail);
-		pd.show();
+		// force progress dialog right from start if required
+		if (initialProgressDialog) {
+			onProgressUpdate();
+		}
 	}
 
 	@Override
-	protected Long doInBackground(Void... params) {
+	protected Trail doInBackground(Void... params) {
 		try {
-			// create a client and download the dialog
+			// create a client and download the trail
 			BackendClient client = new BackendClient(context);
-			Long trailId = client.downloadTrail(trailUuid);
-			return trailId;
+			return client.downloadTrail(trailInfo);
 		} catch (Exception ex) {
 			Log.e("downloadTrail", "Error while downloading trail", ex);
+			error = true;
 			return null;
 		}
 	}
 
 	@Override
-	protected void onPostExecute(Long result) {
-		pd.dismiss();
-		if (result == null) {
+	protected void onPostExecute(Trail result) {
+		// dismiss progress dialog
+		if (pd != null) {
+			pd.dismiss();
+			pd = null;
+		}
+		
+		if (error) {
 			// show dialog to inform user about failure
 			new AlertDialog.Builder(context) //
 					.setIcon(android.R.drawable.ic_dialog_alert) //
@@ -75,6 +104,7 @@ public class DownloadTask extends AsyncTask<Void, Void, Long> {
 					.show(); //
 			return;
 		}
+		
 		// continue
 		onComplete(result);
 	}
@@ -83,7 +113,7 @@ public class DownloadTask extends AsyncTask<Void, Void, Long> {
 	 * Called at the end of a download. Might be overridden to execute something
 	 * after a successful download
 	 */
-	protected void onComplete(long trailId) {
+	protected void onComplete(Trail updatedTrail) {
 
 	}
 }

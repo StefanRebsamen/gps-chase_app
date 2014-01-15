@@ -3,6 +3,7 @@
  */
 package ch.gpschase.app;
 
+import ch.gpschase.app.util.TrailMapFragment;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
@@ -10,6 +11,7 @@ import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
+import android.widget.Toast;
 
 /**
  * Activity to allow the user to change settings
@@ -28,13 +30,18 @@ public class SettingsActivity extends Activity {
 		public void onCreate(Bundle savedInstanceState) {
 			super.onCreate(savedInstanceState);
 
+			PreferenceCategory category;
+			
 			// Load the preferences from an XML resource
 			addPreferencesFromResource(R.xml.preferences);
 			
 			// add the preference for the map type to category View
-			Context context = getActivity();
-			PreferenceCategory category = (PreferenceCategory)findPreference(getString(R.string.pref_cat_view_key));
-			category.addPreference(TrailMapFragment.getMapTypePreference(context));
+			category = (PreferenceCategory)findPreference(getString(R.string.pref_cat_view_key));
+			category.addPreference(TrailMapFragment.getMapTypePreference(getActivity()));
+
+			// add the preference for the map type to category Chase
+			category = (PreferenceCategory)findPreference(getString(R.string.pref_cat_chase_key));
+			category.addPreference(ChaseTrailActivity.getUpdateFrequencyPreference(getActivity()));
 			
 			// add a handler for the Cleanup button
 			Preference button = findPreference(getString(R.string.pref_cleanup_key));
@@ -43,6 +50,9 @@ public class SettingsActivity extends Activity {
 				public boolean onPreferenceClick(Preference arg0) {
 					// cleanup data
 					App.getImageManager().cleanupFiles();
+					
+					Toast.makeText(getActivity(), R.string.pref_cleanup_done, Toast.LENGTH_SHORT).show();
+					
 					return true;
 				}
 			});

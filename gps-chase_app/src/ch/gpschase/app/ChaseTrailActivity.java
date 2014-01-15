@@ -28,6 +28,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Vibrator;
+import android.preference.ListPreference;
+import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -46,9 +48,13 @@ import android.widget.Toast;
 import ch.gpschase.app.ChaseService.Checkpoint;
 import ch.gpschase.app.data.Contract;
 import ch.gpschase.app.data.ImageManager;
+import ch.gpschase.app.data.Trail;
+import ch.gpschase.app.data.TrailInfo;
 import ch.gpschase.app.util.DownloadTask;
 import ch.gpschase.app.util.Duration;
+import ch.gpschase.app.util.TrailMapFragment;
 
+import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 
 public class ChaseTrailActivity extends Activity {
@@ -56,6 +62,7 @@ public class ChaseTrailActivity extends Activity {
 	private static final String FRAGMENT_TAG_CPVIEW = "cpview";
 	private static final String FRAGMENT_TAG_MAP = "map";
 
+	
 	/**
 	 * 
 	 */
@@ -71,11 +78,11 @@ public class ChaseTrailActivity extends Activity {
 			ChaseService.Chase chase = chaseService.getChase();
 			if (chase != null) {
 				//set title
-				getActionBar().setSubtitle(chase.trailName + " - " + chase.player);
+				getActionBar().setSubtitle(chase.trail.name + " - " + chase.player);
 				
 				// enable download button only if trail was downloaded
 				if (menuDownload != null) {
-					menuDownload.setVisible(chase.trailDownloaded);
+					menuDownload.setVisible(chase.trail.downloaded != 0);
 				}
 			}
 									
@@ -206,11 +213,14 @@ public class ChaseTrailActivity extends Activity {
 		// create a handle for UI thread
 		final Handler handler = new Handler();
 
-		private class UiRunnable implements Runnable {
+		/**
+		 * 
+		 */
+		private class UpdateUiRunnable implements Runnable {
 
 			private String duration;
 
-			UiRunnable(String duration) {
+			UpdateUiRunnable(String duration) {
 				this.duration = duration;
 			}
 
@@ -219,14 +229,33 @@ public class ChaseTrailActivity extends Activity {
 			}
 		}
 
+		/**
+		 * 
+		 */
+		private class DownloadTrailRunnable implements Runnable {
+			
+			public void run() {
+				downloadTrail(false);
+			}
+		}
+		
 		@SuppressLint("DefaultLocale")
 		public void run() {
 			// new randon generator instance
 			final Random rnd = new Random();
 
+			// timestamp of last check for an update
+			long lastUpdateCheck = System.currentTimeMillis();
+			
+			// update frequency in seconds (default is 2 minutes)			
+			int updateInterval = Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(ChaseTrailActivity.this)
+					.getString(getUpdateFrequencyPreference(ChaseTrailActivity.this).getKey(), "2")) * 60;
+			
 			// while thread object still exists
 			while (timerThread != null) {
 
+				//////////////////////////////
+				// update duration
 				long duration = 0;
 				ChaseService.Chase chase = getChase();
 				if (chase != null) {
@@ -236,13 +265,29 @@ public class ChaseTrailActivity extends Activity {
 						} else {
 							duration = System.currentTimeMillis() - chase.started;
 						}
-
 					}
 				}
-
 				// update text view in UI thread
-				handler.post(new UiRunnable(Duration.format(duration)));
+				handler.post(new UpdateUiRunnable(Duration.format(duration)));
 
+				//////////////////////////////
+				// Update of trail 
+				if (getChase() != null && getChase().trail.downloaded != 0) {
+					
+					if (updateInterval > 0 &&  System.currentTimeMillis() - lastUpdateCheck >= (updateInterval * 1000)) {
+			
+						lastUpdateCheck = System.currentTimeMillis();
+						
+						// TODO: check if there is an update available (HTTP method)
+						
+						// do update in handler
+						handler.post(new DownloadTrailRunnable());												
+					}
+				}
+				
+				//////////////////////////////
+				// Mock location 
+								
 				// feed mock location if one is set. To make it more realistic
 				// for the location manager,
 				// we wobble a bit around the set mock location
@@ -253,7 +298,7 @@ public class ChaseTrailActivity extends Activity {
 					loc.setTime(System.currentTimeMillis());
 					// locationManager.setTestProviderLocation(mockLocationProviderName, loc);
 				}
-
+				
 				// wait a second
 				try {
 					Thread.sleep(1000);
@@ -502,6 +547,55 @@ public class ChaseTrailActivity extends Activity {
 
 	// 
 	private ViewCheckpointFragment checkpointView;	
+
+	
+	/**
+	 * Open the activity for the specified chase
+	 * @param chaseId
+	 */
+	public static void show(Context context, long chaseId) {
+		// switch to chase activity
+		Uri chaseIdUri = Contract.Chases.getUriId(chaseId);
+		Intent intent = new Intent(Intent.ACTION_DEFAULT, chaseIdUri, context, ChaseTrailActivity.class);
+		context.startActivity(intent);
+	}
+
+	
+	/**
+	 * 
+	 * @param context
+	 * @return
+	 */
+	public static ListPreference getUpdateFrequencyPreference(Context context) {
+
+		// define preference and return it
+		final ListPreference pref = new ListPreference(context);
+		pref.setTitle(context.getString(R.string.pref_update_frequency_title));
+		pref.setKey(context.getString(R.string.pref_update_frequency_key));
+		pref.setEntries(new String[] {																	// 
+				context.getResources().getString(R.string.pref_update_frequency_2),						//
+				context.getResources().getString(R.string.pref_update_frequency_5),						//
+				context.getResources().getString(R.string.pref_update_frequency_10),					//
+				context.getResources().getString(R.string.pref_update_frequency_never)} );				//
+		pref.setEntryValues(new String[] {	//
+				"2",						//
+				"5", 						//
+				"10",						//
+				"0" });						//
+		pref.setDefaultValue("2");			//
+		pref.setSummary("%s");
+		
+		pref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {			
+			@Override
+			public boolean onPreferenceChange(Preference preference, Object newValue) {
+				// update summary
+				int index = pref.findIndexOfValue((String)newValue);
+				pref.setSummary(pref.getEntries()[index]);
+				return true;
+			}
+		});
+		return pref;
+	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -583,6 +677,11 @@ public class ChaseTrailActivity extends Activity {
 			chaseService.unregisterListener(chaseServiceListener);
 		}
 		unbindService(chaseServiceConnection);
+		
+		// stop service
+		Intent intent = new Intent(this, ChaseService.class);
+		stopService(intent);
+		
 	}
 
 	@Override
@@ -595,7 +694,7 @@ public class ChaseTrailActivity extends Activity {
 		menuDownload = menu.findItem(R.id.action_download_trail);
 		ChaseService.Chase chase = getChase();
 		if (chase != null) {
-			menuDownload.setVisible(chase.trailDownloaded);
+			menuDownload.setVisible(chase.trail.downloaded != 0);
 		}
 		
 		return true;
@@ -609,7 +708,7 @@ public class ChaseTrailActivity extends Activity {
 			return true;
 
 		case R.id.action_download_trail:
-			downloadTrail();
+			downloadTrail(true);
 			return true;
 
 		}
@@ -634,7 +733,8 @@ public class ChaseTrailActivity extends Activity {
 		super.onStop();
 
 		Log.d("ChaseTrailActivity", "onStop");
-
+		
+		
 		// stop timer
 		if (timerThread != null) {
 			Thread thread = timerThread;
@@ -862,25 +962,28 @@ public class ChaseTrailActivity extends Activity {
 	/**
 	 * 
 	 */
-	private void downloadTrail() {
+	private void downloadTrail(boolean initialProgressDialog) {
 				
-		final UUID trailUuid = getChase().trailUuid;
+		final TrailInfo trail = getChase().trail;
+		final boolean initialDialog = initialProgressDialog;
 		
 		class Task extends DownloadTask {
 			
 			public Task() {
-				super(ChaseTrailActivity.this, trailUuid);
+				super(ChaseTrailActivity.this, trail, initialDialog);
 			}
 			
 			@Override
-			protected void onComplete(long trailId) {
-				// tell chase service to reload
-				if (chaseService != null) {
-					chaseService.reload();					
-				}
+			protected void onComplete(Trail updatedTrail) {
 				
-				//update UI
-				update();
+				if (updatedTrail != null) {
+					// tell chase service to reload
+					if (chaseService != null) {
+						chaseService.reload();					
+					}				
+					//update UI
+					update();
+				}	
 			}
 		}
 		

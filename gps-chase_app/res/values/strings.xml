@@ -7,39 +7,45 @@
     <string name="field_description">Description</string>
     <string name="field_show_on_map">Show on map</string>    
  
-    <string name="tab_title_chases">Chases</string>
-    <string name="tab_title_trails">Trails</string>
-    <string name="action_new_trail">New</string>
-    <string name="action_delete_trail">Delete Trail</string>
-    <string name="action_edit_trail">Edit Trail</string>
-    <string name="action_share_trail">Share Trail</string>
-    <string name="dialog_delete_trail_title">Delete Trail</string>
+    <string name="empty_text_chases">There are currently no chases available.\nStart one by selecting a trail.</string>
+    <string name="tab_title_my_trails">My Trails</string>
+    <string name="tab_title_cloud_trails">Trails in Cloud</string>
+    <string name="action_new_trail">New trail</string>
+    <string name="action_show_chases">Show chases</string>
+    <string name="empty_text_trails">There are currently no trails available.\nCreate a new one (\'+\' icon) or download one from a share link.</string>
+    <string name="action_delete_trail">Delete trail</string>
+    <string name="action_edit_trail">Edit trail</string>
+    <string name="action_share_trail">Share trail</string>
+    <string name="dialog_delete_trail_title">Delete trail</string>
     <string name="dialog_delete_trail_message">Delete the selected trail?</string>
-    <string name="dialog_new_trail_title">New Trail</string>
-    <string name="dialog_new_trail_message">Name for the new trail:</string>
-    <string name="dialog_share_trail_title">Share Trail</string>
+    <string name="dialog_new_trail_title">New trail</string>
+    <string name="dialog_new_trail_message">Name of the new trail:</string>
+    <string name="dialog_share_trail_title">Share trail</string>
     <string name="share_trail_message">By following the appended link, you will be able to play a great game!</string>
     <string name="dialog_downloading">Downloading ...</string>
     <string name="dialog_download_trail_error_title">Error</string>
     <string name="dialog_download_trail_error_message">An error occurred while downloading the trail.</string>    
-    <string name="action_new_chase">New Chase</string>
-    <string name="action_continue_chase">Continue Chase</string>
-    <string name="action_delete_chase">Delete Chase</string>
+    <string name="action_new_chase">New chase</string>
+    <string name="toast_chase_already_finished">Chase is already finished and can\'t be continued</string>
+    <string name="action_continue_chase">Continue chase</string>
+    <string name="action_delete_chase">Delete chase</string>
     <string name="dialog_new_chase_player">Name of the player:</string>
     <string name="dialog_new_chase_default_player">Player</string>
     <string name="dialog_delete_chase_message">Delete the selected chase?</string>
+
+    <string name="activity_title_chases">Chases</string>    
     
-    <string name="activity_title_edit_trail">Edit Trail</string>
-    <string name="action_delete_checkpoint">Delete Checkpoint</string>
+    <string name="activity_title_edit_trail">Edit trail</string>
+    <string name="action_delete_checkpoint">Delete checkpoint</string>
     <string name="dialog_delete_checkpoint_message">Delete the selected checkpoint?</string>    
-    <string name="action_new_image">Add Image</string>
+    <string name="action_new_image">Add image</string>
     <string name="action_upload_trail">Upload</string>
-    <string name="new_image_capture">Capture Image from Camera</string>
-    <string name="new_image_import">Import Existing Image</string>
+    <string name="new_image_capture">Capture image from Camera</string>
+    <string name="new_image_import">Import image from Gallery</string>
     <string name="action_reorder_checkpoint_backward">Backward</string>
     <string name="action_reorder_checkpoint_forward">Forward</string>
     <string name="dialog_show_image_title">Image</string>
-    <string name="action_delete_image">Delete Image</string>
+    <string name="action_delete_image">Delete image</string>
     <string name="dialog_delete_image_message">Delete the image?</string>
     <string name="dialog_add_image_error_title">Error</string>
     <string name="dialog_add_image_error_message">An error occurred while adding the image.</string>    
@@ -50,8 +56,8 @@
     <string name="dialog_share_trail_error_title">Error</string>
     <string name="dialog_share_trail_error_message">An error occurred while sharing the trail.</string>    
     
-    <string name="activity_title_chase_trail">Chase Trail</string>
-    <string name="action_download_trail">Download Trail</string>
+    <string name="activity_title_chase_trail">Chase trail</string>
+    <string name="action_download_trail">Download trail</string>
     <string name="text_checkpoint_not_shown">not on map</string>    
     <string name="toast_finished_chase">Chase has been finished</string>
     
@@ -64,23 +70,34 @@
     <string name="activity_title_settings">Settings</string>                    
 
     <string name="pref_cat_view_title">View</string>
-    <string name="pref_cat_view_key">CAT_VIEW</string>
-    
+    <string name="pref_cat_view_key">CAT_VIEW</string>    
     <string name="pref_map_type_key">KEY_MAP_TYPE</string>
-    <string name="pref_map_type_title">Map Type</string>
-    <string name="pref_map_type_normal_display">Normal</string>
-	<string name="pref_map_type_satellite_display">Satellite</string>    
-	<string name="pref_map_type_hybrid_display">Hybrid</string>
-	<string name="pref_map_type_terrain_display">Terrain</string>
+    <string name="pref_map_type_title">Map type</string>
+    <string name="pref_map_type_normal">Normal</string>
+	<string name="pref_map_type_satellite">Satellite</string>    
+	<string name="pref_map_type_hybrid">Hybrid</string>
+	<string name="pref_map_type_terrain">Terrain</string>
 
-    <string name="pref_keep_awake_key">KEY_KEEP_AWAKE</string>
-    <string name="pref_keep_awake_title">Keep awake during chase</string>
+    <string name="pref_cat_chase_title">Chase</string>
+    <string name="pref_cat_chase_key">CAT_CHASE</string>
+    	
+	<string name="pref_keep_awake_key">KEY_KEEP_AWAKE</string>
+    <string name="pref_keep_awake_title">Keep awake</string>
     <string name="pref_keep_awake_summary">Keeps the device awake during a chase</string>
-    		
+
+    <string name="pref_update_frequency_key">UPDATE_FREQUENCY</string>
+    <string name="pref_update_frequency_title">Update frequency</string>
+    <string name="pref_update_frequency_summary">Frequency to check for trail update</string>
+    <string name="pref_update_frequency_never">Never</string>
+    <string name="pref_update_frequency_2">2 minutes</string>
+    <string name="pref_update_frequency_5">5 minutes</string>
+    <string name="pref_update_frequency_10">10 Minutes</string>
+    
     <string name="pref_cat_data_title">Data</string>
     <string name="pref_cat_data_key">CAT_DATA</string>
     <string name="pref_cleanup_key">KEY_CLEANUP</string>    
     <string name="pref_cleanup_title">Cleanup</string>    
-    <string name="pref_cleanup_summary">Cleans up the data files.</string>    
+    <string name="pref_cleanup_summary">Cleans up the data files</string>
+    <string name="pref_cleanup_done">Cleanup done</string>
     
 </resources>

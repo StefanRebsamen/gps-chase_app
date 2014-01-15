@@ -6,7 +6,7 @@
     >
     
     <ImageView
-        android:id="@+id/imageView_trail_downloaded"
+        android:id="@+id/imageView_trail_type"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
@@ -15,9 +15,7 @@
         android:layout_marginRight="4dp"
         android:adjustViewBounds="true"
         android:maxHeight="16dip"
-        android:maxWidth="16dip"
-        android:src="@drawable/ic_download"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
+        android:maxWidth="16dip" />
     
      <TextView
          android:id="@+id/textView_trail_name"
@@ -25,7 +23,7 @@
          android:layout_height="wrap_content"
          android:layout_alignParentTop="true"
          android:layout_marginTop="8dip"
-         android:layout_toRightOf="@id/imageView_trail_downloaded"
+         android:layout_toRightOf="@id/imageView_trail_type"
          android:text="Trail"
          android:textAppearance="?android:attr/textAppearanceMedium" />
         
@@ -37,7 +35,7 @@
         android:layout_below="@id/textView_trail_name"
         android:layout_marginBottom="8dip"
         android:layout_marginRight="8dp"
-        android:layout_toRightOf="@id/imageView_trail_downloaded"
+        android:layout_toRightOf="@id/imageView_trail_type"
         android:text="description description description description description description description description description description description description description description"
         android:textAppearance="?android:attr/textAppearanceSmall" />
     

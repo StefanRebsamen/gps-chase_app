@@ -3,12 +3,18 @@
     <PreferenceCategory
         android:key="@string/pref_cat_view_key"
         android:title="@string/pref_cat_view_title" >
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="@string/pref_cat_chase_key"
+        android:title="@string/pref_cat_chase_title" >
         <CheckBoxPreference
             android:key="@string/pref_keep_awake_key"
             android:summary="@string/pref_keep_awake_summary"
             android:title="@string/pref_keep_awake_title" >
         </CheckBoxPreference>
     </PreferenceCategory>
+    
     <PreferenceCategory
         android:key="@string/pref_cat_data_key"
         android:title="@string/pref_cat_data_title" >
