@@ -141,27 +141,22 @@ public class MainActivity extends Activity {
 				@Override
 				public void bindView(View view, Context context, Cursor cursor) {
 					
-					String name = cursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX);
-					String description = cursor.getString(Contract.Trails.READ_PROJECTION_DESCRIPTION_INDEX);
-					long updated = cursor.getLong(Contract.Trails.READ_PROJECTION_UPDATED_INDEX);
-					boolean downloaded = cursor.getLong(Contract.Trails.READ_PROJECTION_DOWNLOADED_INDEX) != 0; 
+					// create info and set as tag
+					TrailInfo info = TrailInfo.fromCursor(cursor);
+					view.setTag(info);
 					
 					// set texts
-					((TextView) view.findViewById(R.id.textView_trail_name)).setText(name);
-					((TextView) view.findViewById(R.id.textView_trail_description)).setText(description);
-					Date dateTime = new Date(updated);
+					((TextView) view.findViewById(R.id.textView_trail_name)).setText(info.name);
+					((TextView) view.findViewById(R.id.textView_trail_description)).setText(info.description);
+					Date dateTime = new Date(info.updated);
 					((TextView) view.findViewById(R.id.textView_trail_updated))
 								.setText(dateFormat.format(dateTime) + " " + timeFormat.format(dateTime));
 					
-					if (downloaded) {
+					if (info.downloaded != 0) {
 						((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_download);
 					} else {
 						((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_edit);
-					}
-					
-					// set tags
-					view.setTag(R.id.tag_trail_name, name);
-					view.setTag(R.id.tag_downloaded, downloaded);
+					}					
 				}
 			}
 			
@@ -170,27 +165,31 @@ public class MainActivity extends Activity {
 
 		@Override
 		protected boolean onActionItemClicked(MenuItem item, int position, long id) {
-			
-			switch (item.getItemId()) {
-			case R.id.action_new_chase:
-				// chase trail
-				chaseTrail(id);
-				return true;
-				
-			case R.id.action_edit_trail:
-				// edit trail
-				editTrail(id);				
-				return true;
-			
-			case R.id.action_share_trail:
-				// upload and share trail
-				shareTrail(id);
-				return true;
 
-			case R.id.action_delete_trail:
-				// delete trail after asking user
-				deleteTrail(id);
-				return true;
+			View view = getListView().getChildAt(position);
+			if (view != null) {					
+				TrailInfo trail = (TrailInfo)view.getTag();
+				switch (item.getItemId()) {
+				case R.id.action_new_chase:
+					// chase trail
+					chaseTrail(trail);
+					return true;
+					
+				case R.id.action_edit_trail:
+					// edit trail
+					editTrail(trail);				
+					return true;
+				
+				case R.id.action_share_trail:
+					// upload and share trail
+					shareTrail(trail);
+					return true;
+	
+				case R.id.action_delete_trail:
+					// delete trail after asking user
+					deleteTrail(trail);
+					return true;
+				}
 			}
 			return false;
 		}
@@ -210,11 +209,12 @@ public class MainActivity extends Activity {
 		public void onListItemClick(int position, long id) {
 			View view = getListView().getChildAt(position);
 			if (view != null) {					
-				if (((Boolean)view.getTag(R.id.tag_downloaded)).booleanValue()) {
-					chaseTrail(id);
+				TrailInfo trail = (TrailInfo)view.getTag();
+				if (((TrailInfo)view.getTag()).downloaded != 0) {
+					chaseTrail(trail);
 				}
 				else {
-					editTrail(id);
+					editTrail(trail);
 				}
 			}			
 		}
@@ -224,16 +224,17 @@ public class MainActivity extends Activity {
 			if (actionMode != null) {				
 				View view = getListView().getChildAt(position);
 				if (view != null) {
+					TrailInfo trail = (TrailInfo)view.getTag();
 					// update title				
-					actionMode.setTitle((String)view.getTag(R.id.tag_trail_name));					
+					actionMode.setTitle(trail.name);					
 					// modify menu
 					MenuItem menuEdit =  actionMode.getMenu().findItem(R.id.action_edit_trail);
 					if (menuEdit != null) {
-						menuEdit.setVisible(!(Boolean)view.getTag(R.id.tag_downloaded));
+						menuEdit.setVisible(trail.downloaded == 0);
 					}
 					MenuItem menuShare =  actionMode.getMenu().findItem(R.id.action_share_trail);
 					if (menuShare != null) {
-						menuShare.setVisible(!(Boolean)view.getTag(R.id.tag_downloaded));
+						menuShare.setVisible(trail.downloaded == 0);
 					}
 				}
 			}			
@@ -314,9 +315,9 @@ public class MainActivity extends Activity {
 		 * 
 		 * @param trailId
 		 */
-		private void deleteTrail(long trailId) {
+		private void deleteTrail(TrailInfo trail) {
 
-			final Uri trailUri = Contract.Trails.getUriId(trailId);
+			final Uri trailUri = Contract.Trails.getUriId(trail.id);
 
 			/**
 			 * Dialog to ask before a trail is deleted
@@ -351,9 +352,9 @@ public class MainActivity extends Activity {
 		 * 
 		 * @param trailId
 		 */
-		private void editTrail(long trailId) {
+		private void editTrail(TrailInfo trail) {
 			// switch to edit activity
-			Uri trailUri = Contract.Trails.getUriId(trailId);
+			Uri trailUri = Contract.Trails.getUriId(trail.id);
 			Intent intent = new Intent(Intent.ACTION_DEFAULT, trailUri, getActivity(), EditTrailActivity.class);
 			startActivity(intent);
 		}
@@ -362,15 +363,15 @@ public class MainActivity extends Activity {
 		 * 
 		 * @param trailId
 		 */
-		private void chaseTrail(long trailId) {
+		private void chaseTrail(TrailInfo trail) {
 			// check if there's an open chase for this trail
 			long openChaseId = 0;
-			String selection = Contract.Chases.COLUMN_NAME_TRAIL_ID + "=" + trailId		// 
+			String selection = Contract.Chases.COLUMN_NAME_TRAIL_ID + "=" + trail.id	// 
 								+ " AND " 												//
 								+ Contract.Chases.COLUMN_NAME_FINISHED + "=0"; 			//
-			Cursor chasesCursor =  getActivity().getContentResolver().query(									//
-														Contract.Chases.getUriDir(), 					//
-														Contract.Chases.READ_PROJECTION, 				//
+			Cursor chasesCursor =  getActivity().getContentResolver().query(							//
+														Contract.Chases.getUriDirEx(), 					//
+														Contract.Chases.READ_PROJECTION_EX,				//
 														selection, 										//
 														null, 											//
 														null);											//
@@ -386,7 +387,7 @@ public class MainActivity extends Activity {
 			}
 			else {
 				// create a new one
-				new ChaseCreator(getActivity()).show(trailId);
+				new ChaseCreator(getActivity()).show(trail);
 			}		
 		}
 
@@ -394,9 +395,7 @@ public class MainActivity extends Activity {
 		/**
 		 * Upload a trail to the server and share it afterwards in an asynchronous task
 		 */
-		private void shareTrail(long trailId) {
-
-			TrailInfo trail = new TrailInfo();
+		private void shareTrail(TrailInfo trail) {
 			
 			// execute task
 			new UploadTask(getActivity(), trail, true).execute();

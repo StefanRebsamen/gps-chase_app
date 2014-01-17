@@ -16,7 +16,7 @@ import ch.gpschase.app.data.TrailInfo;
  * An asynchronous task to download a trail.
  * While downloading a trail, it displays a progress dialog. 
  */
-public class DownloadTask extends AsyncTask<Void, Void, Trail> {
+public class DownloadTask extends AsyncTask<Void, Void, Boolean> {
 
 	// context
 	private Context context;
@@ -26,11 +26,11 @@ public class DownloadTask extends AsyncTask<Void, Void, Trail> {
 	
 	// progress dialog
 	private ProgressDialog pd = null;
-	
-	// indicates that thee was an error
-	private boolean error = false;
 
-	// flas that the progres dialg should be shown from the start, not just after a progress event
+	// indicates if the trail was downloaded
+	private boolean downloaded = false;
+	
+	// flag that the progres dialg should be shown from the start, not just after a progress event
 	boolean initialProgressDialog = false;
 	
 	/**
@@ -74,27 +74,27 @@ public class DownloadTask extends AsyncTask<Void, Void, Trail> {
 	}
 
 	@Override
-	protected Trail doInBackground(Void... params) {
+	protected Boolean doInBackground(Void... params) {
 		try {
 			// create a client and download the trail
 			BackendClient client = new BackendClient(context);
-			return client.downloadTrail(trailInfo);
+			downloaded = client.downloadTrail(trailInfo);
+			return true;
 		} catch (Exception ex) {
 			Log.e("downloadTrail", "Error while downloading trail", ex);
-			error = true;
-			return null;
+			return false;
 		}
 	}
 
 	@Override
-	protected void onPostExecute(Trail result) {
+	protected void onPostExecute(Boolean result) {
 		// dismiss progress dialog
 		if (pd != null) {
 			pd.dismiss();
 			pd = null;
 		}
 		
-		if (error) {
+		if (!result) {
 			// show dialog to inform user about failure
 			new AlertDialog.Builder(context) //
 					.setIcon(android.R.drawable.ic_dialog_alert) //
@@ -106,14 +106,14 @@ public class DownloadTask extends AsyncTask<Void, Void, Trail> {
 		}
 		
 		// continue
-		onComplete(result);
+		onComplete(downloaded);
 	}
 
 	/**
 	 * Called at the end of a download. Might be overridden to execute something
 	 * after a successful download
 	 */
-	protected void onComplete(Trail updatedTrail) {
+	protected void onComplete(boolean downloaded) {
 
 	}
 }

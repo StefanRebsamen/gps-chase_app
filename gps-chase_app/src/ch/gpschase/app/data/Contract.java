@@ -561,25 +561,7 @@ public final class Contract {
 		 */
 		public static final String DEFAULT_SORT_ORDER = TABLE_NAME+"."+_ID + " DESC";
 		
-		
-		/**
-		 * Standard projection
-		 */
-		public static final String[] READ_PROJECTION = new String[] { 
-			_ID,					// 
-			COLUMN_NAME_TRAIL_ID,	//
-			COLUMN_NAME_PLAYER,		//	
-			COLUMN_NAME_STARTED,	// 
-			COLUMN_NAME_FINISHED,	// 
-		};
-
-		public static final int READ_PROJECTION_ID_INDEX = 0;
-		public static final int READ_PROJECTION_TRAIL_ID_INDEX = 1;
-		public static final int READ_PROJECTION_PLAYER_INDEX = 2;
-		public static final int READ_PROJECTION_STARTED_INDEX = 3;
-		public static final int READ_PROJECTION_FINISHED_INDEX = 4;
-
-		
+				
 		/**
 		 * Standard projection for extended query
 		 */

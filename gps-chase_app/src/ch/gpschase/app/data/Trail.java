@@ -7,30 +7,50 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 
-public class Trail extends TrailInfo {
+public class Trail {
+	
+	//
+	public TrailInfo info; 
 	
 	// list of checkpoints
 	public final List<Checkpoint> checkpoints = new ArrayList<Checkpoint>();
+
 	
 	/**
-	 * Returns a trails name 
-	 * @param trailId
-	 * @return Name of the trails
-	 * @throws IllegalArgumentException
+	 * @param context
+	 * @param id
+	 * @return
 	 */
-	public static String getNameA(Context context, long trailId) throws IllegalArgumentException {
-		String result;
-		Uri uri = Contract.Trails.getUriId(trailId);
-		Cursor cursor = context.getContentResolver().query(uri, Contract.Trails.READ_PROJECTION, null, null, null);
-		if (cursor.moveToNext()) {
-			result = cursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX);
-			cursor.close();
-			return result;
-		}
-		else {
-			cursor.close();
-			throw new IllegalArgumentException("Trail with Id " + trailId + " not found");
-		}
+	public static Trail fromId(Context context, long id) {
+		
+		TrailInfo info = TrailInfo.fromId(context, id);
+		return fromInfo(context, info);
 	}
-
+	
+	/**
+	 * @param context
+	 * @param id
+	 * @return
+	 */
+	public static Trail fromInfo(Context context, TrailInfo info) {
+		
+		Trail trail = new Trail();
+		
+		// assign the info directly
+		trail.info = info;
+		
+		// load checkpoints
+		Uri checkpointsUri = Contract.Checkpoints.getUriDir(info.id);
+		Cursor checkpointsCursor = context.getContentResolver().query(checkpointsUri, Contract.Checkpoints.READ_PROJECTION, null, null, Contract.Checkpoints.DEFAULT_SORT_ORDER);
+		while (checkpointsCursor.moveToNext()) {
+			Checkpoint checkpoint = Checkpoint.fromCursor(context, checkpointsCursor);
+			trail.checkpoints.add(checkpoint);
+			checkpoint.index = trail.checkpoints.size()-1;
+		}	
+		checkpointsCursor.close();		
+		
+		return trail;		
+	}	
+	
+	
 }

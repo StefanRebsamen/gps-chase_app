@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.location.Location;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -24,6 +25,7 @@ import ch.gpschase.app.R.drawable;
 import ch.gpschase.app.R.id;
 import ch.gpschase.app.R.menu;
 import ch.gpschase.app.R.string;
+import ch.gpschase.app.data.Checkpoint;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -63,13 +65,13 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	// Container Activity must implement this interface
 	public interface MapListener {
 
-		public void onClickedPoint(long pointId);
+		public void onClickedCheckpoint(Checkpoint checkpoint);
 
 		public void onClickedMap(LatLng position);
 
-		public void onPositionedPoint(long pointId, LatLng newPosition);
+		public void onPositionedCheckpoint(Checkpoint checkpoint);
 
-		public void onStartPositioningPoint(long pointId);
+		public void onStartPositioningCheckpoint(Checkpoint checkpoint);
 
 	}
 
@@ -78,10 +80,10 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	private BitmapDescriptor iconNeutralFirstSelected;
 	private BitmapDescriptor iconNeutralOtherNormal;
 	private BitmapDescriptor iconNeutralOtherSelected;
-	private BitmapDescriptor iconDoneFirstNormal;
-	private BitmapDescriptor iconDoneFirstSelected;
-	private BitmapDescriptor iconDoneOtherNormal;
-	private BitmapDescriptor iconDoneOtherSelected;
+	private BitmapDescriptor iconHitFirstNormal;
+	private BitmapDescriptor iconHitFirstSelected;
+	private BitmapDescriptor iconHitOtherNormal;
+	private BitmapDescriptor iconHitOtherSelected;
 
 	// event listener
 	private MapListener listener;
@@ -91,14 +93,15 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	 * An entry in the markers list
 	 */
 	private class Point {
+		public Checkpoint checkpoint;
+		
 		public Marker marker;
 		public BitmapDescriptor icon;
-		public long id;
-		public boolean done;
+		public boolean hit;
 	}
 
 	// list of points marked on map
-	private final LinkedList<Point> pointList = new LinkedList<Point>();
+	private final LinkedList<Point> points = new LinkedList<Point>();
 
 	// currently selected point
 	private Point selectedPoint;
@@ -133,10 +136,10 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		iconNeutralFirstSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_first_selected);
 		iconNeutralOtherNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_other_normal);
 	    iconNeutralOtherSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_other_selected);
-		iconDoneFirstNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_first_normal);
-		iconDoneFirstSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_first_selected);
-		iconDoneOtherNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_other_normal);
-		iconDoneOtherSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_other_selected);
+		iconHitFirstNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_first_normal);
+		iconHitFirstSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_first_selected);
+		iconHitOtherNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_other_normal);
+		iconHitOtherSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_other_selected);
 	}
 
 	@Override
@@ -181,7 +184,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 			public boolean onMarkerClick(Marker marker) {
 				Point p = getPoint(marker);
 				if (p != null && listener != null) {
-					listener.onClickedPoint(p.id);
+					listener.onClickedCheckpoint(p.checkpoint);
 				}
 				return true;
 			}
@@ -193,8 +196,13 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 			public void onMarkerDragEnd(Marker marker) {
 				Point p = getPoint(marker);
 				if (p != null && listener != null) {
-					listener.onPositionedPoint(p.id, marker.getPosition());
+					
+					p.checkpoint.location.setLongitude(marker.getPosition().longitude);
+					p.checkpoint.location.setLatitude(marker.getPosition().latitude);
+
 					refreshTrailLine(false);
+					
+					listener.onPositionedCheckpoint(p.checkpoint);
 				}
 			}
 
@@ -207,7 +215,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 			public void onMarkerDragStart(Marker marker) {
 				Point p = getPoint(marker);
 				if (p != null && listener != null) {
-					listener.onStartPositioningPoint(p.id);
+					listener.onStartPositioningCheckpoint(p.checkpoint);
 				}
 			}
 		});
@@ -456,13 +464,13 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	 * 
 	 * @param checkpoint
 	 */
-	public void removePoint(long pointId) {
-		Point p = getPoint(pointId);
+	public void removeCheckpoint(Checkpoint checkpoint) {
+		Point p = getPoint(checkpoint);
 		if (p != null) {
 			// remove marker
 			p.marker.remove();
 			// remove from list
-			pointList.remove(p);
+			points.remove(p);
 			// reset selectedPoint if it was it
 			if (selectedPoint == p) {
 				selectedPoint = null;
@@ -475,11 +483,13 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	/**
 	 * Sets the index of the given point
 	 */
-	public void setPointIndex(long pointId, int newIndex) {
+	public void setCheckpointIndex(Checkpoint checkpoint, int newIndex) {
 
-		Point p = getPoint(pointId);
-		pointList.remove(p);
-		pointList.add(newIndex, p);
+		//TODO ugly, kann besser gelöst werden!
+		
+		Point p = getPoint(checkpoint);
+		points.remove(p);
+		points.add(newIndex, p);
 
 		refreshIcons();
 		refreshTrailLine(false);
@@ -488,24 +498,25 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	/**
 	 * Appends a marker for the given point
 	 */
-	public void addPoint(long pointId, LatLng position, boolean done, boolean refresh) {
-		addPoint(pointId, position, pointList.size(), done, refresh);
+	public void addCheckpoint(Checkpoint checkpoint, boolean hit, boolean refresh) {
+		addCheckpoint(checkpoint, points.size(), hit, refresh);
 	}
 
 	/**
 	 * Adds a marker for the given point at the given index
 	 */
-	public void addPoint(long pointId, LatLng position, int index, boolean done, boolean refresh) {
+	public void addCheckpoint(Checkpoint checkpoint, int index, boolean hit, boolean refresh) {
 		// add
 		Point p = new Point();
-		p.id = pointId;
+		p.checkpoint = checkpoint;
 
 		//
 		p.icon = iconNeutralOtherNormal;
-		p.marker = map.addMarker(new MarkerOptions().position(position).icon(p.icon));
+		LatLng pos = new LatLng(checkpoint.location.getLatitude(), checkpoint.location.getLongitude());
+		p.marker = map.addMarker(new MarkerOptions().position(pos).icon(p.icon));
 		p.marker.setDraggable(draggable);
-		p.done = done;
-		pointList.add(index, p);
+		p.hit= hit;
+		points.add(index, p);
 
 		if (refresh) {
 			refreshIcons();
@@ -516,13 +527,13 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	/**
 	 * Removes all points
 	 */
-	public void clearPoints() {
-		for (Point p : pointList) {
+	public void clearCheckpoints() {
+		for (Point p : points) {
 			if (p.marker != null) {
 				p.marker.remove();
 			}
 		}
-		pointList.clear();
+		points.clear();
 
 		// remove polyline
 		if (trailLine != null) {
@@ -542,9 +553,9 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	 * 
 	 * @param pointId
 	 */
-	public void selectPoint(long pointId) {
+	public void selectCheckpoint(Checkpoint checkpoint) {
 		// get point to select
-		Point p = getPoint(pointId);
+		Point p = getPoint(checkpoint);
 		if (p != null) {
 			selectedPoint = p;
 		} else {
@@ -558,8 +569,11 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	 * Returns the selected point
 	 * @return Id of the selected point or 0
 	 */
-	public long getSelectedPoint() {
-		return selectedPoint != null ? selectedPoint.id : 0;
+	public Checkpoint getSelectedCheckPoint() {
+		if (selectedPoint != null)
+			return selectedPoint.checkpoint;
+		else
+			return null;
 	}
 	
 	/**
@@ -569,7 +583,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	 * @return found checkpoint or <code>null</code>
 	 */
 	private Point getPoint(Marker marker) {
-		for (Point p : pointList) {
+		for (Point p : points) {
 			if (p.marker != null && p.marker.equals(marker)) {
 				return p;
 			}
@@ -583,9 +597,9 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	 * @param checkpoint
 	 * @return found marker or <code>null</code>
 	 */
-	private Point getPoint(Long checkpointId) {
-		for (Point p : pointList) {
-			if (p.id == checkpointId) {
+	private Point getPoint(Checkpoint checkpoint) {
+		for (Point p : points) {
+			if (p.checkpoint == checkpoint) {
 				return p;
 			}
 		}
@@ -598,8 +612,8 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	private void refreshIcons() {
 		int index = 0;
 		BitmapDescriptor icon = null;
-		for (Point p : pointList) {			
-			if (!p.done) {
+		for (Point p : points) {			
+			if (!p.hit) {
 				if ( index == 0 ) {
 					icon = selectedPoint == p ? iconNeutralFirstSelected : iconNeutralFirstNormal;
 				}
@@ -608,10 +622,10 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 				}				
 			} else {
 				if ( index == 0 ) {
-					icon = selectedPoint == p ? iconDoneFirstSelected : iconDoneFirstNormal;
+					icon = selectedPoint == p ? iconHitFirstSelected : iconHitFirstNormal;
 				}
 				else {
-					icon = selectedPoint == p ? iconDoneOtherSelected : iconDoneOtherNormal;
+					icon = selectedPoint == p ? iconHitOtherSelected : iconHitOtherNormal;
 				}								
 			}
 			// set icon only if it really changed
@@ -637,11 +651,11 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 			trailLine = map.addPolyline(new PolylineOptions().width(5).color(traiLineColor));
 		}
 
-		List<LatLng> points = new ArrayList<LatLng>(pointList.size());
-		for (Point p : pointList) {			
-			points.add(p.marker.getPosition());			
+		List<LatLng> linePoints = new ArrayList<LatLng>(points.size());
+		for (Point p : points) {			
+			linePoints.add(p.marker.getPosition());			
 		}
-		trailLine.setPoints(points);
+		trailLine.setPoints(linePoints);
 	}
 
 

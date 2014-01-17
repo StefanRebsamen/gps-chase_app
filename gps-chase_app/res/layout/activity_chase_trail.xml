@@ -17,7 +17,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
-            android:text="3 / 5"
+            android:text="0 / 0"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
         <TextView
@@ -26,7 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_alignParentTop="true"
-            android:text="00:00"
+            android:text=""
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
         <ProgressBar
@@ -41,8 +41,8 @@
             android:layout_toRightOf="@+id/textView_checkpoint_progress"
             android:indeterminate="false"
             android:indeterminateOnly="false"
-            android:max="10"
-            android:progress="6"
+            android:max="0"
+            android:progress="0"
             android:progressDrawable="@drawable/progressbar_chase" />
 
     </RelativeLayout>

@@ -11,14 +11,16 @@ import android.widget.EditText;
 import ch.gpschase.app.ChaseTrailActivity;
 import ch.gpschase.app.R;
 import ch.gpschase.app.data.Contract;
+import ch.gpschase.app.data.TrailInfo;
 
 /**
  * 	
  */
 public class ChaseCreator {
 
+	private TrailInfo trail;
+
 	// used to keep information gathered in dialogs
-	private long trailId;
 	private String playerName;
 
 	Context context;
@@ -95,7 +97,7 @@ public class ChaseCreator {
 		// create a new chase with information gathered
 		long now = System.currentTimeMillis();
 		ContentValues values = new ContentValues();
-		values.put(Contract.Chases.COLUMN_NAME_TRAIL_ID, trailId);
+		values.put(Contract.Chases.COLUMN_NAME_TRAIL_ID, trail.id);
 		values.put(Contract.Chases.COLUMN_NAME_PLAYER, playerName);
 		values.put(Contract.Chases.COLUMN_NAME_STARTED, now);
 		values.put(Contract.Chases.COLUMN_NAME_FINISHED, 0);
@@ -109,9 +111,9 @@ public class ChaseCreator {
 	/**
 	 * 
 	 */
-	public void show(long trailId) {
-		// keep trail id
-		this.trailId = trailId;
+	public void show(TrailInfo trail) {
+		// keep trail
+		this.trail = trail;
 		// start directly with player name
 		askForPlayerName();
 	}

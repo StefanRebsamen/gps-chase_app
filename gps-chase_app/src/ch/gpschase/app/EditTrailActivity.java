@@ -38,6 +38,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import ch.gpschase.app.data.Checkpoint;
 import ch.gpschase.app.data.Contract;
 import ch.gpschase.app.data.ImageManager;
 import ch.gpschase.app.data.Trail;
@@ -557,18 +558,18 @@ public class EditTrailActivity extends Activity {
 	}
 
 	/**
-	 * 
+	 * Listens for events from the map
 	 */
 	private class MapListener implements TrailMapFragment.MapListener {
 		@Override
-		public void onClickedPoint(long pointId) {
-			if (pointId == selectedCheckpointId) {
+		public void onClickedCheckpoint(Checkpoint checkpoint) {
+			if (checkpoint == selectedCheckpoint) {
 				// deselect checkpoint
-				selectCheckpoint(0);				
+				selectCheckpoint(null);				
 			}
 			else {	
 				// select checkpoint
-				selectCheckpoint(pointId);
+				selectCheckpoint(checkpoint);
 			}
 		}
 
@@ -578,45 +579,45 @@ public class EditTrailActivity extends Activity {
 		}
 
 		@Override
-		public void onStartPositioningPoint(long pointId) {
+		public void onStartPositioningCheckpoint(Checkpoint checkpoint) {
 			// nothing to do
 		}
 
 		@Override
-		public void onPositionedPoint(long pointId, LatLng position) {
+		public void onPositionedCheckpoint(Checkpoint checkpoint) {
 			// persist to database
 			ContentValues values = new ContentValues();
-			values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, position.latitude);
-			values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, position.longitude);
-			Uri checkpointUri = Contract.Checkpoints.getUriId(pointId);
+			values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, checkpoint.location.getLatitude());
+			values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, checkpoint.location.getLongitude());
+			Uri checkpointUri = Contract.Checkpoints.getUriId(checkpoint.id);
 			getContentResolver().update(checkpointUri, values, null, null);
 		}
 	}
 
 	/**
-	 * 
+	 * Listener for events from the EditCheckpointFragment
 	 */
 	private class EditButtonListener implements EditCheckpointFragment.OnButtonListener {
 
 		@Override
 		public void onReorderBackwardClicked() {
-			reorderCheckpointBackward(selectedCheckpointId);
+			reorderSelectedCheckpointBackward();
 		}
 
 		@Override
 		public void onReorderForwardClicked() {
-			reorderCheckpointForward(selectedCheckpointId);
+			reorderSelectedCheckpointForward();
 		}
 
 		@Override
 		public void onDeleteCheckpointClicked() {
 			// show dialog to ask if checkpoint should be really deleted
-			deleteCheckpoint(selectedCheckpointId);
+			reorderSelectedCheckpointForward();
 		}
 	}
 
 	// the trail we're editing
-	final TrailInfo trail = new TrailInfo();
+	private Trail trail = null;
 
 	// map fragment to be reused
 	private TrailMapFragment map;
@@ -624,11 +625,8 @@ public class EditTrailActivity extends Activity {
 	// fragment to edit a single checkpoint
 	private EditCheckpointFragment checkpointEdit;
 
-	// list of checkpoints
-	private final List<Long> checkpointList = new ArrayList<Long>();
-
 	// currently selected checkpoint
-	long selectedCheckpointId;
+	Checkpoint selectedCheckpoint;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -636,16 +634,9 @@ public class EditTrailActivity extends Activity {
 
 		Log.d("EditTrailActivit", "onCreate");
 
-		// get more info about the trail
-		Cursor cursor = getContentResolver().query(getIntent().getData(), Contract.Trails.READ_PROJECTION, null, null, null);
-		if (cursor.moveToNext()) {
-			trail.id = cursor.getLong(Contract.Trails.READ_PROJECTION_ID_INDEX);
-			trail.uuid = UUID.fromString(cursor.getString(Contract.Trails.READ_PROJECTION_UUID_INDEX));
-			trail.name = cursor.getString(Contract.Trails.READ_PROJECTION_NAME_INDEX);
-			trail.uploaded = cursor.getLong(Contract.Trails.READ_PROJECTION_UPLOADED_INDEX);
-		}
-		cursor.close();
-		
+		long trailId = ContentUris.parseId(getIntent().getData());		
+		trail = Trail.fromId(this, trailId);
+				
 		// load layout
 		setContentView(R.layout.activity_edit_trail);
 
@@ -663,7 +654,7 @@ public class EditTrailActivity extends Activity {
 		checkpointEdit = (EditCheckpointFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_CPEDIT);
 		if (checkpointEdit == null) {
 			checkpointEdit = new EditCheckpointFragment();
-			checkpointEdit.setTrail(trail.id);
+			checkpointEdit.setTrail(trail.info.id);
 			checkpointEdit.setOnButtonListener(new EditButtonListener());
 			ft.replace(R.id.layout_checkpoint_edit, checkpointEdit, FRAGMENT_TAG_CPEDIT);
 		}
@@ -675,11 +666,10 @@ public class EditTrailActivity extends Activity {
 		actionBar.setTitle(R.string.activity_title_edit_trail);
 
 		// show trails name as subtitle
-		actionBar.setSubtitle(trail.name);
+		actionBar.setSubtitle(trail.info.name);
 
 		// make sure nothing is selected
-		selectedCheckpointId = -1;
-		selectCheckpoint(0);
+		selectCheckpoint(null);
 						
 	}
 
@@ -690,7 +680,7 @@ public class EditTrailActivity extends Activity {
 
 		// disable upload if trail wasn't already uploaded
 		MenuItem menuUpdload = menu.findItem(R.id.action_upload_trail);
-		menuUpdload.setVisible(trail.uploaded != 0);
+		menuUpdload.setVisible(trail.info.uploaded != 0);
 		
 		return true;
 	}
@@ -705,28 +695,18 @@ public class EditTrailActivity extends Activity {
 		// TODO check if trail is not downloaded
 		
 		// clear old checkpoints
-		map.clearPoints();
-		checkpointList.clear();
+		map.clearCheckpoints();
 
 		// load all checkpoints
 		boolean first = true;
-		Uri checkpointDir = Contract.Checkpoints.getUriDir(trail.id);
-		Cursor cursor = getContentResolver().query(checkpointDir, Contract.Checkpoints.READ_PROJECTION, null, null, null);
-		while (cursor.moveToNext()) {
-
-			Long id = cursor.getLong(Contract.Checkpoints.READ_PROJECTION_ID_INDEX);
-			LatLng location = new LatLng(cursor.getDouble(Contract.Checkpoints.READ_PROJECTION_LOC_LAT_INDEX),
-					cursor.getDouble(Contract.Checkpoints.READ_PROJECTION_LOC_LNG_INDEX));
-
-			// append to our list
-			checkpointList.add(id);
-
+		for (Checkpoint checkpoint : trail.checkpoints) {
+			LatLng location = new LatLng(checkpoint.location.getLatitude(), checkpoint.location.getLongitude());
 			// add marker
-			map.addPoint(id, location, false, false);
+			map.addCheckpoint(checkpoint, false, false);
 
 			// mark point as selected if necessary
-			if (id == selectedCheckpointId) {
-				map.selectPoint(id);
+			if (checkpoint == selectedCheckpoint) {
+				map.selectCheckpoint(checkpoint); 
 			}
 
 			// set camera to start
@@ -735,9 +715,9 @@ public class EditTrailActivity extends Activity {
 				map.setCameraZoom(TrailMapFragment.DEFAULT_ZOOM);
 				first = false;
 			}
+			
 		}
-		cursor.close();
-
+		
 		// refresh map
 		map.refresh();
 
@@ -764,61 +744,70 @@ public class EditTrailActivity extends Activity {
 	 */
 	private void addCheckpoint(LatLng position) {
 
-		// determine number it gets
-		int no = checkpointList.size() + 1;
+		Checkpoint checkpoint = new Checkpoint();
+		
+		// init its data
+		checkpoint.index = trail.checkpoints.size();
+		checkpoint.uuid = UUID.randomUUID();
+		checkpoint.location.setLatitude(position.latitude);
+		checkpoint.location.setLongitude(position.longitude);
+		checkpoint.showLocation = true;
+		checkpoint.hint = "";		
 
-		// create new checkpoint
+		// create new checkpoint in database
 		ContentValues values = new ContentValues();
-		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, position.latitude);
-		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, position.longitude);
-		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_SHOW, 1); // shown by
-																	// default
-		values.put(Contract.Checkpoints.COLUMN_NAME_NO, no);
-
-		Uri checkpointsDir = Contract.Checkpoints.getUriDir(trail.id);
+		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, checkpoint.location.getLatitude());
+		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, checkpoint.location.getLongitude());
+		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_SHOW, checkpoint.showLocation ? 1 : 0);
+		values.put(Contract.Checkpoints.COLUMN_NAME_NO, checkpoint.index + 1);
+		Uri checkpointsDir = Contract.Checkpoints.getUriDir(trail.info.id);
 		Uri checkpointUri = getContentResolver().insert(checkpointsDir, values);
-		long checkpointId = ContentUris.parseId(checkpointUri);
+		checkpoint.id = ContentUris.parseId(checkpointUri);
 
 		// update updated timestamp for trail
 		values.clear();
 		values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-		Uri trailIdUri = Contract.Trails.getUriId(trail.id);
+		Uri trailIdUri = Contract.Trails.getUriId(trail.info.id);
 		getContentResolver().update(trailIdUri, values, null, null);
 
 		// append to our list
-		checkpointList.add(checkpointId);
+		trail.checkpoints.add(checkpoint);
 
 		// add marker
-		map.addPoint(checkpointId, position, false, true);
+		map.addCheckpoint(checkpoint, false, true);
 
 		// select added point
-		selectCheckpoint(checkpointId);
+		selectCheckpoint(checkpoint);
 	}
 
 	/**
 	 * 
 	 * @param pointId
 	 */
-	private void selectCheckpoint(long pointId) {
+	private void selectCheckpoint(Checkpoint checkpoint) {
 		// do nothing if the same point was checked before
-		if (selectedCheckpointId == pointId) {
+		if (selectedCheckpoint == checkpoint) {
 			return;
 		}
 
 		// make it the new selected point
-		selectedCheckpointId = pointId;
+		selectedCheckpoint = checkpoint;
 
 		// select point
-		map.selectPoint(pointId);
+		map.selectCheckpoint(checkpoint);
 
 		// load in checkpoint edit fragment
-		checkpointEdit.setCheckpoint(pointId);
+		if (checkpoint != null)
+			checkpointEdit.setCheckpoint(checkpoint.id);
+		else
+			checkpointEdit.setCheckpoint(0);
+			
 
-		if (pointId != 0 && checkpointEdit.isHidden()) {
+		if (checkpoint != null && checkpointEdit.isHidden()) {
 			FragmentTransaction ft = getFragmentManager().beginTransaction();
 			ft.show(checkpointEdit);
 			ft.commit();
-		} else if (pointId == 0 && !checkpointEdit.isHidden()) {
+		} else if (checkpoint == null && !checkpointEdit.isHidden()) {
 			FragmentTransaction ft = getFragmentManager().beginTransaction();
 			ft.hide(checkpointEdit);
 			ft.commit();
@@ -831,11 +820,8 @@ public class EditTrailActivity extends Activity {
 	/**
 	 * 
 	 */
-	private void deleteCheckpoint(long checkpointId) {
-		// keep pointId and index of point
-		final long checkpointIdFinal = checkpointId;
-		final int index = checkpointList.indexOf(Long.valueOf(checkpointIdFinal));
-
+	private void deleteSelectedCheckpoint() {
+		
 		/**
 		 * Dialog to ask user about deletion of the checkpoint
 		 */
@@ -847,69 +833,68 @@ public class EditTrailActivity extends Activity {
 						.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int whichButton) {
 
+								Checkpoint checkpoint = selectedCheckpoint; 
+								
 								// unselect checkpoint
-								selectCheckpoint(0);
+								selectCheckpoint(null);
 
 								// remove from map
-								map.removePoint(checkpointIdFinal);
+								map.removeCheckpoint(checkpoint);
 
 								// delete checkpoint from database
-								Uri checkpointUri = Contract.Checkpoints.getUriId(checkpointIdFinal);
+								Uri checkpointUri = Contract.Checkpoints.getUriId(checkpoint.id);
 								getContentResolver().delete(checkpointUri, null, null);
 
 								// update updated timestamp for trail
 								ContentValues values = new ContentValues();
 								values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-								Uri trailIdUri = Contract.Trails.getUriId(trail.id);
+								Uri trailIdUri = Contract.Trails.getUriId(trail.info.id);
 								getContentResolver().update(trailIdUri, values, null, null);
 
 								// remove from our list
-								checkpointList.remove(Long.valueOf(checkpointIdFinal));
+								trail.checkpoints.remove(checkpoint);
 
 								// update button on checkpoint edit fragment
 								updateEditButtons();
 
 								// renumber in database
-								renumberCheckpoints(index);
+								reindexCheckpoints();
 							}
 						}).setNegativeButton(R.string.dialog_no, null).create();
 			}
 
 		}
 
-		// show dialog
-		if (index >= 0) {
-			// show dialog to delete checkpoint
-			new DeleteDialogFragment().show(getFragmentManager(), null);
-		}
+		// show dialog to delete checkpoint
+		new DeleteDialogFragment().show(getFragmentManager(), null);
 	}
 
 	/**
 	 * 
 	 * @param checkpointId
 	 */
-	private void reorderCheckpointBackward(long checkpointId) {
+	private void reorderSelectedCheckpointBackward() {
 		// get index of checkpoint
-		int index = checkpointList.indexOf(Long.valueOf(checkpointId));
+		int index = trail.checkpoints.indexOf(selectedCheckpoint);
 		if (index > 0) {
 			// move it in list
 			int newIndex = index - 1;
-			checkpointList.remove(index);
-			checkpointList.add(newIndex, checkpointId);
+			trail.checkpoints.remove(selectedCheckpoint);
+			trail.checkpoints.add(newIndex, selectedCheckpoint);
 
 			// do it on the map
-			map.setPointIndex(checkpointId, newIndex);
+			map.setCheckpointIndex(selectedCheckpoint, newIndex);
 
 			// update button on checkpoint edit fragment
 			updateEditButtons();
 
 			// renumber in database
-			renumberCheckpoints(newIndex);
+			reindexCheckpoints();
 
 			// update updated timestamp for trail
 			ContentValues values = new ContentValues();
 			values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-			Uri trailIdUri = Contract.Trails.getUriId(trail.id);
+			Uri trailIdUri = Contract.Trails.getUriId(trail.info.id);
 			getContentResolver().update(trailIdUri, values, null, null);
 
 		}
@@ -919,17 +904,17 @@ public class EditTrailActivity extends Activity {
 	 * 
 	 * @param checkpointId
 	 */
-	private void reorderCheckpointForward(long checkpointId) {
+	private void reorderSelectedCheckpointForward() {
 		// get index of checkpoint
-		int index = checkpointList.indexOf(Long.valueOf(checkpointId));
-		if (index < checkpointList.size() - 1) {
+		int index = trail.checkpoints.indexOf(selectedCheckpoint);
+		if (index < trail.checkpoints.size() - 1) {
 			// move it in list
 			int newIndex = index + 1;
-			checkpointList.remove(index);
-			checkpointList.add(newIndex, checkpointId);
+			trail.checkpoints.remove(index);
+			trail.checkpoints.add(newIndex, selectedCheckpoint);
 
 			// do it on the map
-			map.setPointIndex(checkpointId, newIndex);
+			map.setCheckpointIndex(selectedCheckpoint, newIndex);
 
 			// update button on checkpoint edit fragment
 			updateEditButtons();
@@ -937,33 +922,31 @@ public class EditTrailActivity extends Activity {
 			// update updated timestamp for trail
 			ContentValues values = new ContentValues();
 			values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-			Uri trailIdUri = Contract.Trails.getUriId(trail.id);
+			Uri trailIdUri = Contract.Trails.getUriId(trail.info.id);
 			getContentResolver().update(trailIdUri, values, null, null);
 
-			// renumber in database
-			renumberCheckpoints(index);
-
+			// reindex in database
+			reindexCheckpoints();
 		}
 	}
 
 	/**
-	 * 
+	 * Makes sure the index of the checkpoints in the database match
 	 * @param index
 	 */
-	private void renumberCheckpoints(int index) {
-		// anything to do?
-		if (index <= checkpointList.size() - 1) {
-			int no = index + 1;
-			// modify number of affected checkpoints in database
-			for (long id : checkpointList.subList(index, checkpointList.size() - 1)) {
+	private void reindexCheckpoints() {
+		
+		for (Checkpoint checkpoint : trail.checkpoints) {
+			if (checkpoint.index != trail.checkpoints.indexOf(checkpoint)) {
+				checkpoint.index = trail.checkpoints.indexOf(checkpoint);
 				ContentValues values = new ContentValues();
-				values.put(Contract.Checkpoints.COLUMN_NAME_NO, no);
-				Uri checkpointUri = Contract.Checkpoints.getUriId(id);
-				getContentResolver().update(checkpointUri, values, null, null);
-				// continue with next number
-				no++;
+				values.put(Contract.Checkpoints.COLUMN_NAME_NO, checkpoint.index+1);
+				Uri checkpointUri = Contract.Checkpoints.getUriId(checkpoint.id);
+				getContentResolver().update(checkpointUri, values, null, null);				
 			}
 		}
+		
+		updateEditButtons();
 	}
 
 	/**
@@ -971,9 +954,8 @@ public class EditTrailActivity extends Activity {
 	 */
 	private void updateEditButtons() {
 
-		int index = checkpointList.indexOf(Long.valueOf(selectedCheckpointId));
-		boolean backward = (index > 0);
-		boolean forward = (index >= 0) && (index < checkpointList.size() - 1);
+		boolean backward = selectedCheckpoint != null &&  (selectedCheckpoint.index > 0);
+		boolean forward = selectedCheckpoint != null && (selectedCheckpoint.index <  trail.checkpoints.size() -1 );
 		checkpointEdit.enableReorderButtons(backward, forward);
 	}
 
@@ -984,10 +966,10 @@ public class EditTrailActivity extends Activity {
 	private void uploadTrail() {
 						
 		// deselect checkpoint (saves changes)
-		selectCheckpoint(0);
+		selectCheckpoint(null);
 		
 		// execute task
-		new UploadTask(this, trail, false).execute();
+		new UploadTask(this, trail.info, false).execute();
 	}
 		
 }

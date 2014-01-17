@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-     <item type="id" name="tag_trail_name" />
-     <item type="id" name="tag_trail_id" />
-     <item type="id" name="tag_downloaded" />
-     <item type="id" name="tag_running" />
-     <item type="id" name="tag_player" />
-</resources>

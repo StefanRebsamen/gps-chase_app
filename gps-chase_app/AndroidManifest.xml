@@ -72,7 +72,7 @@
         </activity>
 
         <service
-            android:name="ch.gpschase.app.ChaseService"
+            android:name="ch.gpschase.app.ChaseTrailService"
             android:enabled="true"
             android:exported="false"
             android:isolatedProcess="false" />

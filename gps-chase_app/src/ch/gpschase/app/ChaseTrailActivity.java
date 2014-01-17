@@ -27,6 +27,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.os.Vibrator;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -45,8 +46,10 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import ch.gpschase.app.ChaseService.Checkpoint;
+import ch.gpschase.app.data.ChaseInfo;
+import ch.gpschase.app.data.Checkpoint;
 import ch.gpschase.app.data.Contract;
+import ch.gpschase.app.data.Image;
 import ch.gpschase.app.data.ImageManager;
 import ch.gpschase.app.data.Trail;
 import ch.gpschase.app.data.TrailInfo;
@@ -59,48 +62,51 @@ import com.google.android.gms.maps.model.LatLng;
 
 public class ChaseTrailActivity extends Activity {
 
+	// tags fro the fragments
 	private static final String FRAGMENT_TAG_CPVIEW = "cpview";
 	private static final String FRAGMENT_TAG_MAP = "map";
-
 	
 	/**
 	 * 
 	 */
 	private class ChaseServiceConnection implements ServiceConnection {
 		
-		public void onServiceConnected(ComponentName className, IBinder service) {
+		public void onServiceConnected(ComponentName className, IBinder binder) {
 			Log.d("ChaseTrailActivity", "ChaseService connected");
 
-			chaseService = ((ChaseService.LocalBinder) service).getService();
-			chaseService.registerListener(chaseServiceListener);
+			service = ((ChaseTrailService.LocalBinder) binder).getService();
+			service.registerListener(serviceListener);
 
+			// checkpoint view also needs the service
+			checkpointView.setService(service);
+			
 			// set action bar title
-			ChaseService.Chase chase = chaseService.getChase();
-			if (chase != null) {
+			ChaseInfo chaseInfo = service.getChaseInfo();
+			if (chaseInfo != null) {
 				//set title
-				getActionBar().setSubtitle(chase.trail.name + " - " + chase.player);
+				getActionBar().setSubtitle(chaseInfo.trail.name + " - " + chaseInfo.player);
 				
 				// enable download button only if trail was downloaded
 				if (menuDownload != null) {
-					menuDownload.setVisible(chase.trail.downloaded != 0);
+					menuDownload.setVisible(chaseInfo.trail.downloaded != 0);
 				}
 			}
 									
-			// update UI
+			// update complete UI
 			update();	
 			
 		}
 
 		public void onServiceDisconnected(ComponentName className) {
 			Log.d("ChaseTrailActivity", "ChaseService disconnected");
-			chaseService = null;
+			service = null;
 		}
 	};
 
 	/**
 	 * 
 	 */
-	private class ChaseServiceListener implements ChaseService.Listener {
+	private class ChaseServiceListener implements ChaseTrailService.Listener {
 
 		@Override
 		public void onStarted() {
@@ -109,6 +115,7 @@ public class ChaseTrailActivity extends Activity {
 
 		@Override
 		public void onHitCheckpoint(Checkpoint checkpoint) {
+			
 			// vibrate for 600 milliseconds
 			Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 			v.vibrate(600);
@@ -167,7 +174,7 @@ public class ChaseTrailActivity extends Activity {
 	private class MapListener implements TrailMapFragment.MapListener {
 
 		@Override
-		public void onClickedPoint(long pointId) {
+		public void onClickedCheckpoint(Checkpoint checkpoint) {
 			// do nothing
 		}
 
@@ -193,12 +200,12 @@ public class ChaseTrailActivity extends Activity {
 		}
 
 		@Override
-		public void onPositionedPoint(long pointId, LatLng newPosition) {
+		public void onPositionedCheckpoint(Checkpoint checkpoint) {
 			// do nothing
 		}
 
 		@Override
-		public void onStartPositioningPoint(long pointId) {
+		public void onStartPositioningCheckpoint(Checkpoint checkpoint) {
 			// do nothing
 		}
 	};
@@ -206,7 +213,7 @@ public class ChaseTrailActivity extends Activity {
 
 
 	/**
-	 * 
+	 * Timer to execute things periodically
 	 */
 	private class TimerRunnable implements Runnable {
 
@@ -239,7 +246,7 @@ public class ChaseTrailActivity extends Activity {
 			}
 		}
 		
-		@SuppressLint("DefaultLocale")
+		@SuppressLint({ "DefaultLocale", "NewApi" })
 		public void run() {
 			// new randon generator instance
 			final Random rnd = new Random();
@@ -254,49 +261,56 @@ public class ChaseTrailActivity extends Activity {
 			// while thread object still exists
 			while (timerThread != null) {
 
-				//////////////////////////////
-				// update duration
-				long duration = 0;
-				ChaseService.Chase chase = getChase();
-				if (chase != null) {
-					if (chase.started > 0) {
-						if (chase.finished > 0) {
-							duration = chase.finished - chase.started;
-						} else {
-							duration = System.currentTimeMillis() - chase.started;
+				if (service != null) {
+					
+					ChaseInfo chaseInfo = service.getChaseInfo();
+					if (chaseInfo != null) {
+					
+						//////////////////////////////
+						// update duration
+						long duration = 0;
+						if (chaseInfo.started > 0) {
+							if (chaseInfo.finished > 0) {
+								duration = chaseInfo.finished - chaseInfo.started;
+							} else {
+								duration = System.currentTimeMillis() - chaseInfo.started;
+							}
+						}
+						
+						// update text view in UI thread
+						handler.post(new UpdateUiRunnable(Duration.format(duration)));
+		
+						//////////////////////////////
+						// Update of trail 
+						if (chaseInfo.trail.downloaded != 0) {
+							
+							if (updateInterval > 0 &&  System.currentTimeMillis() - lastUpdateCheck >= (updateInterval * 1000)) {
+								
+								lastUpdateCheck = System.currentTimeMillis();						
+								
+								// do update in handler
+								handler.post(new DownloadTrailRunnable());												
+							}
+						}
+						
+						//////////////////////////////
+						// Mock location 
+										
+						// feed mock location if one is set. To make it more realistic
+						// for the location manager,
+						// we wobble a bit around the set mock location
+						if (mockLocation != null) {
+							double offset = rnd.nextDouble() * 1 / 11111; // approx 1 m
+							Location loc = new Location(mockLocation);
+							loc.setLatitude(loc.getLatitude() + offset);
+							loc.setLongitude(loc.getLongitude() + offset);
+							loc.setTime(System.currentTimeMillis());
+							loc.setAccuracy(2);
+							loc.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+							locationManager.setTestProviderLocation(mockLocationProviderName, loc);
+	
 						}
 					}
-				}
-				// update text view in UI thread
-				handler.post(new UpdateUiRunnable(Duration.format(duration)));
-
-				//////////////////////////////
-				// Update of trail 
-				if (getChase() != null && getChase().trail.downloaded != 0) {
-					
-					if (updateInterval > 0 &&  System.currentTimeMillis() - lastUpdateCheck >= (updateInterval * 1000)) {
-			
-						lastUpdateCheck = System.currentTimeMillis();
-						
-						// TODO: check if there is an update available (HTTP method)
-						
-						// do update in handler
-						handler.post(new DownloadTrailRunnable());												
-					}
-				}
-				
-				//////////////////////////////
-				// Mock location 
-								
-				// feed mock location if one is set. To make it more realistic
-				// for the location manager,
-				// we wobble a bit around the set mock location
-				if (mockLocation != null) {
-					double offset = rnd.nextDouble() * 1 / 11111; // approx 1 m
-					Location loc = new Location(mockLocation);
-					loc.setLatitude(loc.getLatitude() + offset);
-					loc.setTime(System.currentTimeMillis());
-					// locationManager.setTestProviderLocation(mockLocationProviderName, loc);
 				}
 				
 				// wait a second
@@ -315,6 +329,22 @@ public class ChaseTrailActivity extends Activity {
 	 */
 	public static class ViewCheckpointFragment extends Fragment {
 		
+		// reference to the service
+		ChaseTrailService service;
+		
+		
+		/**
+		 * 	
+		 * @param service
+		 */
+		public void setService(ChaseTrailService service) {
+			if (service == null)
+				throw new  IllegalArgumentException();
+			
+			this.service = service;
+		}
+
+
 		/**
 		 * 
 		 */
@@ -322,7 +352,7 @@ public class ChaseTrailActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 	
-				Long imageId = (Long)v.getTag();
+				Image image = (Image)v.getTag();
 				
 		        // create an image view
 				ImageView imageView = new ImageView(getActivity());			
@@ -330,7 +360,7 @@ public class ChaseTrailActivity extends Activity {
 	            imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 	            imageView.setPadding(8, 8, 8, 8);
 	            imageView.setAdjustViewBounds(true);
-		        imageView.setImageBitmap(App.getImageManager().getFull(imageId));
+		        imageView.setImageBitmap(App.getImageManager().getFull(image.id));
 				
 		        // show it in an dialog
 				AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -347,28 +377,13 @@ public class ChaseTrailActivity extends Activity {
 		}
 		
 		private final ImageClickListener imageClickListener = new ImageClickListener(); 
-		
-		// checkpoint we've got to show stuff for
-		private long checkpointId;
-	
-		//number of the checkpoint
-		private int checkpointNo;
-		
-		// distance to next checkpoint
-		private float distance; 
-		
+			
 		// references to UI elements
 		private TextView textViewHint;
-		private TextView textViewCheckpoint;
+		private TextView textViewNo;
 		private TextView textViewNotShown;
 		private TextView textViewDistance;
-		private LinearLayout layoutImages;	
-			
-		@Override
-		public void onCreate(Bundle savedInstanceState) {
-			super.onCreate(savedInstanceState);
-	
-		}
+		private LinearLayout layoutImages;				
 	
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -377,129 +392,76 @@ public class ChaseTrailActivity extends Activity {
 			View view = inflater.inflate(R.layout.fragment_view_checkpoint, null);
 			
 			// get references to UI elements
-			textViewHint = (TextView)view.findViewById(R.id.textView_hint);
-			textViewCheckpoint = (TextView)view.findViewById(R.id.textView_checkpoint);
+			textViewHint = (TextView)view.findViewById(R.id.textView_checkpoint_hint);
+			textViewNo = (TextView)view.findViewById(R.id.textView_checkpoint_no);
 			textViewNotShown = (TextView)view.findViewById(R.id.textView_not_shown);
 			textViewDistance = (TextView)view.findViewById(R.id.textView_distance);
 			layoutImages = (LinearLayout)view.findViewById(R.id.layout_images);		
 						
 			updateHintAndImages();
-			updateDistance();		
+			updateDistance(Float.NaN);		
 			
 			return view;			
 		}
-		
-		@Override
-		public void onStart() {
-			super.onStart();
-		}	
-		
-		/**
-		 * 
-		 * @return
-		 */
-		public long getCheckpointId() {
-			return checkpointId;
-		}
-	
-		
-		/**
-		 * 
-		 * @return
-		 */
-		public long getCheckpointNo() {
-			return checkpointNo;
-		}
-		
-		/**
-		 * 
-		 * @param checkpointId
-		 */
-		public void setCheckpoint(long checkpointId, int checkpointNo) {
-			if (this.checkpointId != checkpointId || this.checkpointNo != checkpointNo) {
-				this.checkpointId = checkpointId;
-				this.checkpointNo = checkpointNo;
-				updateHintAndImages();
-			}
-		}
-	
-		/**
-		 * 
-		 * @param distance
-		 * @return
-		 */
-		public void setDistance(float distance) {
-			this.distance = distance;
-			updateDistance();		
-		}	
-		
 		
 		/**
 		 * 
 		 */
 		private void updateHintAndImages() {
 			
-			if (getActivity() != null) {
-	
-				Cursor cursor;
+			
+			Checkpoint checkpoint = null; 
+		    if (service != null) {
+		    	checkpoint = service.getNextCheckpoint();
+		    }			
+			
+			if (checkpoint != null) {
+			  // load data into UI elements
+				textViewHint.setText(checkpoint.hint);
+				if (!TextUtils.isEmpty(checkpoint.hint)) {
+					textViewHint.setVisibility(View.VISIBLE);
+				} else {
+					textViewHint.setVisibility(View.GONE);					
+				}
 				
-				// load data into UI elements
-				Uri checkpointIdUri = Contract.Checkpoints.getUriId(checkpointId);
-				cursor = getActivity().getContentResolver().query(checkpointIdUri, Contract.Checkpoints.READ_PROJECTION, null, null, null);
-				if (cursor.moveToNext()) {
-					String txt;
-					txt = cursor.getString(Contract.Checkpoints.READ_PROJECTION_HINT_INDEX);
-					textViewHint.setText(txt);
-					if (!TextUtils.isEmpty(txt)) {
-						textViewHint.setVisibility(View.VISIBLE);
-					} else {
-						textViewHint.setVisibility(View.GONE);					
-					}
-					txt = "#" + checkpointNo;
-					// tell if itn's not shown on the map
-					if (cursor.getInt(Contract.Checkpoints.READ_PROJECTION_LOC_SHOW_INDEX) == 0) {
-						textViewNotShown.setVisibility(View.VISIBLE);
-					}
-					else {
-						textViewNotShown.setVisibility(View.INVISIBLE);					
-					}
-					textViewCheckpoint.setText(txt);
+				// tell if itn's not shown on the map
+				if (!checkpoint.showLocation) {
+					textViewNotShown.setVisibility(View.VISIBLE);
 				}
 				else {
-					textViewHint.setText("");
-					textViewCheckpoint.setText("");
 					textViewNotShown.setVisibility(View.INVISIBLE);					
 				}
-				cursor.close();
-					
+				textViewNo.setText("# " + checkpoint.index + 1);
+
 				// load images
+				ImageManager imageManager = App.getImageManager();
+				
 				layoutImages.removeAllViews();			
-				
-				ImageManager imageManager = App.getImageManager();					
-				
-				Uri imageDirUri = Contract.Images.getUriDir(checkpointId);		
-				cursor = getActivity().getContentResolver().query(imageDirUri, Contract.Images.READ_PROJECTION, null, null, Contract.Images.DEFAULT_SORT_ORDER);
-				while (cursor.moveToNext()) {
-			        long imageId = cursor.getLong(Contract.Images.READ_PROJECTION_ID_INDEX);
-	
+				for (Image image : checkpoint.images) {
 			        // create an image view
 					ImageView imageView = new ImageView(getActivity());
 					imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 					imageView.setPadding(8, 8, 8, 8);
-					imageView.setImageBitmap(imageManager.getThumb(imageId));
-					imageView.setTag(Long.valueOf(imageId));
+					imageView.setImageBitmap(imageManager.getThumb(image.id));
+					imageView.setTag(image);
 			        		        
 		            // listen to click event
 		            imageView.setOnClickListener(imageClickListener);
 					
 		            // add to layout
-		            layoutImages.addView(imageView);
-				}						
+		            layoutImages.addView(imageView);					
+				}
+			
 			}
+			else {
+				textViewHint.setText("");
+				textViewNo.setText("");
+				textViewNotShown.setVisibility(View.INVISIBLE);					
+				layoutImages.removeAllViews();			
+			}				
 		}
-	
-		
-		private void updateDistance() {
+			
+		private void updateDistance(float distance) {
 			if (textViewDistance != null) {
 				// format distance
 				if (!Float.valueOf(distance).equals(Float.NaN)) {
@@ -525,7 +487,7 @@ public class ChaseTrailActivity extends Activity {
 	private MenuItem menuDownload;
 		
 	// reference to case service
-	private ChaseService chaseService;
+	private ChaseTrailService service;
 
 	private LocationManager locationManager;
 
@@ -537,7 +499,7 @@ public class ChaseTrailActivity extends Activity {
 	private final ChaseServiceConnection chaseServiceConnection = new ChaseServiceConnection();
 
 	// chase service listener instance
-	private final ChaseServiceListener chaseServiceListener = new ChaseServiceListener();
+	private final ChaseServiceListener serviceListener = new ChaseServiceListener();
 
 	// map listener instance
 	private final MapListener mapListener = new MapListener();
@@ -548,7 +510,7 @@ public class ChaseTrailActivity extends Activity {
 	// 
 	private ViewCheckpointFragment checkpointView;	
 
-	
+
 	/**
 	 * Open the activity for the specified chase
 	 * @param chaseId
@@ -558,8 +520,7 @@ public class ChaseTrailActivity extends Activity {
 		Uri chaseIdUri = Contract.Chases.getUriId(chaseId);
 		Intent intent = new Intent(Intent.ACTION_DEFAULT, chaseIdUri, context, ChaseTrailActivity.class);
 		context.startActivity(intent);
-	}
-
+	}	
 	
 	/**
 	 * 
@@ -603,15 +564,7 @@ public class ChaseTrailActivity extends Activity {
 
 		Log.d("ChaseTrailActivity", "onCreate");
 
-		// start service
-		Intent intent = new Intent(Intent.ACTION_DEFAULT,
-									getIntent().getData(), 
-									this, ChaseService.class);
-		startService(intent);
 
-		// register and bind service
-		bindService(new Intent(this, ChaseService.class),
-				chaseServiceConnection, Context.BIND_AUTO_CREATE);
 
 		// add mock location provider if in debug mode
 		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
@@ -657,6 +610,13 @@ public class ChaseTrailActivity extends Activity {
 		if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.pref_keep_awake_key), false)) {		
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		}
+
+		// register and bind service
+		bindService(new Intent(this, ChaseTrailService.class),
+				chaseServiceConnection, Context.BIND_AUTO_CREATE);		
+		// start service
+		Intent intent = new Intent(Intent.ACTION_DEFAULT, getIntent().getData(), this,  ChaseTrailService.class);
+		startService(intent);		
 	}
 
 	@Override
@@ -673,13 +633,13 @@ public class ChaseTrailActivity extends Activity {
 		}
 
 		// unregister and unbind chase servive
-		if (chaseService != null) {
-			chaseService.unregisterListener(chaseServiceListener);
+		if (service != null) {
+			service.unregisterListener(serviceListener);
 		}
 		unbindService(chaseServiceConnection);
 		
 		// stop service
-		Intent intent = new Intent(this, ChaseService.class);
+		Intent intent = new Intent(this, ChaseTrailService.class);
 		stopService(intent);
 		
 	}
@@ -692,11 +652,12 @@ public class ChaseTrailActivity extends Activity {
 
 		// find an enable download menu
 		menuDownload = menu.findItem(R.id.action_download_trail);
-		ChaseService.Chase chase = getChase();
-		if (chase != null) {
-			menuDownload.setVisible(chase.trail.downloaded != 0);
+		if (service != null) {
+			ChaseInfo chaseInfo = service.getChaseInfo();
+			if (chaseInfo != null) {
+				menuDownload.setVisible(chaseInfo.trail.downloaded != 0);
+			}
 		}
-		
 		return true;
 	}
 
@@ -733,8 +694,7 @@ public class ChaseTrailActivity extends Activity {
 		super.onStop();
 
 		Log.d("ChaseTrailActivity", "onStop");
-		
-		
+				
 		// stop timer
 		if (timerThread != null) {
 			Thread thread = timerThread;
@@ -750,8 +710,9 @@ public class ChaseTrailActivity extends Activity {
 		}
 	}
 
+	
 	/**
-	 * 
+	 * Updates the map
 	 */
 	private void updateMap() {
 
@@ -761,34 +722,40 @@ public class ChaseTrailActivity extends Activity {
 			@Override
 			public void run() {
 				// start from scratch
-				map.clearPoints();
+				map.clearCheckpoints();
 
-				ChaseService.Chase chase = chaseService.getChase();
-				if (chase != null) {
+				Iterable<Checkpoint> checkpoints = null;
+				if (service != null )
+				{
+					checkpoints = service.getCheckpoints();
+				}
+
+				if (checkpoints != null) {
+						
 					LatLng lastHitLoc = null;
 					LatLng nextCpLoc = null;
-					for (ChaseService.Checkpoint cp : chase.checkpoints) {
+					for (Checkpoint cp : checkpoints) {
 						// get location
 						LatLng location = new LatLng(cp.location
 								.getLatitude(), cp.location.getLongitude());						
-
-						if (cp.isHit()) {
+	
+						if (service.isHit(cp)) {
 							// show on map
-							map.addPoint(cp.id, location, true, false);
+							map.addCheckpoint(cp, true, false);
 							
 							lastHitLoc = location;
 						} else {
 							if (cp.showLocation) {
 								// show on map
-								map.addPoint(cp.id, location, false, false);
-
+								map.addCheckpoint(cp, false, false);
+	
 								nextCpLoc = location;
 							}
 							break;
 						}
 					}
 					map.refresh();
-
+	
 					// set zoom depending on what makes most sense to include
 					ArrayList<LatLng> boundLocs = new ArrayList<LatLng>(2);
 					if (lastHitLoc != null) {
@@ -804,8 +771,8 @@ public class ChaseTrailActivity extends Activity {
 					else if (boundLocs.size() > 0) {
 						map.setCameraTarget(boundLocs.get(0));
 						map.setCameraZoom(TrailMapFragment.DEFAULT_ZOOM);
-					} else if (chaseService != null) {						
-						Location here = chaseService.getLastKnwonLocation();
+					} else if (service != null) {						
+						Location here = service.getLastKnownLocation();
 						if (here != null) {
 							map.setCameraTarget(new LatLng(here.getLatitude(),
 									here.getLongitude()));
@@ -822,9 +789,8 @@ public class ChaseTrailActivity extends Activity {
 	 */
 	private void updateDistance() {
 		float distance = Float.NaN;
-		ChaseService.Chase chase = chaseService.getChase();
-		if (chase != null) {
-			distance = chase.getDistanceToNextCheckpoint();
+		if (service != null) {			
+			distance = service.getDistanceToNextCheckpoint();
 		}
 		updateDistance(distance);
 	}
@@ -845,7 +811,7 @@ public class ChaseTrailActivity extends Activity {
 
 			@Override
 			public void run() {
-				checkpointView.setDistance(distance);
+				checkpointView.updateDistance(distance);
 			}
 		}
 		runOnUiThread(new UiRunnable(distance));
@@ -858,24 +824,25 @@ public class ChaseTrailActivity extends Activity {
 		// count checkpoints
 		int totalCheckpoints = 0;
 		int hitCheckpoints = 0;
-		ChaseService.Chase chase = chaseService.getChase();
-		if (chase != null) {
-			for (Checkpoint cp : chase.checkpoints) {
+		Iterable<Checkpoint> checkpoints = null;
+		if (service != null )
+		{
+			checkpoints = service.getCheckpoints();
+		}
+		
+		if (checkpoints != null) {
+			for (Checkpoint cp : service.getCheckpoints()) {
 				totalCheckpoints++;
-				if (cp.isHit()) {
+				if (service.isHit(cp)) {
 					hitCheckpoints++;
 				}
 			}
 		}
+		
+		final int total = totalCheckpoints; 
+		final int hit = hitCheckpoints; 
 		// update UI in main thread
 		class UiRunnable implements Runnable {
-			int total, hit;
-
-			public UiRunnable(int total, int hit) {
-				this.total = total;
-				this.hit = hit;
-			}
-
 			@Override
 			public void run() {
 				textViewProgress.setText(hit + "/" + total);
@@ -883,39 +850,27 @@ public class ChaseTrailActivity extends Activity {
 				progressBar.setProgress(hit);
 			}
 		}
-		runOnUiThread(new UiRunnable(totalCheckpoints, hitCheckpoints));
+		runOnUiThread(new UiRunnable());
 	}
 	
 	/**
 	 * 
 	 */
 	private void updateCheckpointView() {
-		
-		ChaseService.Chase chase = chaseService.getChase();
-		long checkpointId = 0;
-		int checkpointNo = 0;
-		if (chase != null) {
-			ChaseService.Checkpoint nextCp = chase.getNextCheckpoint();
-			if (nextCp != null) {
-				checkpointId = nextCp.id;
-				checkpointNo = nextCp.getNo();
-			}
-		}
-		
+				
 		// update UI in main thread
 		class UiRunnable implements Runnable {
-			long checkpointId;
-			int checkpointNo;
-
-			public UiRunnable(long checkpointId, int checkpointNo) {
-				this.checkpointId = checkpointId;
-				this.checkpointNo = checkpointNo;
-			}
 
 			@Override
 			public void run() {
+				// get next checkpoint
+				Checkpoint checkpoint = null;;
+				if (service != null) {
+					checkpoint = service.getNextCheckpoint();
+				}
+
 				// next checkpoint available?
-				if (this.checkpointId != 0) {
+				if (checkpoint != null) {
 					// show if necessary
 					if (checkpointView.isHidden()) {
 						FragmentTransaction ft = getFragmentManager().beginTransaction();
@@ -932,10 +887,10 @@ public class ChaseTrailActivity extends Activity {
 					}
 				}
 				// update
-				checkpointView.setCheckpoint(checkpointId, checkpointNo);
+				checkpointView.updateHintAndImages();
 			}
 		}		
-		runOnUiThread(new UiRunnable(checkpointId, checkpointNo));
+		runOnUiThread(new UiRunnable());
 	}
 	
 	/**
@@ -948,23 +903,13 @@ public class ChaseTrailActivity extends Activity {
 		updateDistance();
 	}
 
-	/**
-	 * 
-	 * @return
-	 */
-	private ChaseService.Chase getChase() {
-		if (chaseService != null) {
-			return chaseService.getChase();
-		}
-		return null;
-	}
 
 	/**
 	 * 
 	 */
 	private void downloadTrail(boolean initialProgressDialog) {
 				
-		final TrailInfo trail = getChase().trail;
+		final TrailInfo trail = service.getChaseInfo().trail;
 		final boolean initialDialog = initialProgressDialog;
 		
 		class Task extends DownloadTask {
@@ -974,12 +919,12 @@ public class ChaseTrailActivity extends Activity {
 			}
 			
 			@Override
-			protected void onComplete(Trail updatedTrail) {
+			protected void onComplete(boolean downloaded) {
 				
-				if (updatedTrail != null) {
+				if (downloaded) {
 					// tell chase service to reload
-					if (chaseService != null) {
-						chaseService.reload();					
+					if (service != null) {
+						service.reload();					
 					}				
 					//update UI
 					update();

@@ -21,7 +21,9 @@ import android.widget.ImageView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
+import ch.gpschase.app.data.ChaseInfo;
 import ch.gpschase.app.data.Contract;
+import ch.gpschase.app.data.TrailInfo;
 import ch.gpschase.app.util.ChaseCreator;
 import ch.gpschase.app.util.Duration;
 import ch.gpschase.app.util.SelectableListFragment;
@@ -67,35 +69,27 @@ public class ChasesActivity  extends Activity {
 					@Override
 					public void bindView(View view, Context context, Cursor cursor) {
 						
-						String trailName = cursor.getString(Contract.Chases.READ_PROJECTION_EX_TRAIL_NAME_INDEX);
-						Long trailId = cursor.getLong(Contract.Chases.READ_PROJECTION_EX_TRAIL_ID_INDEX);
-						String player = cursor.getString(Contract.Chases.READ_PROJECTION_EX_PLAYER_INDEX);
-						long started = cursor.getLong(Contract.Chases.READ_PROJECTION_EX_STARTED_INDEX);
-						long finished = cursor.getLong(Contract.Chases.READ_PROJECTION_EX_FINISHED_INDEX);
-						
+						// create info and set as tag
+						ChaseInfo chase = ChaseInfo.fromCursor(context, cursor);
+						view.setTag(chase);
+												
 						// set texts
-						((TextView) view.findViewById(R.id.textView_trail_name)).setText(trailName);
-						((TextView) view.findViewById(R.id.textView_player)).setText(player);
-						Date dateTime = new Date(started);
+						((TextView) view.findViewById(R.id.textView_trail_name)).setText(chase.trail.name);
+						((TextView) view.findViewById(R.id.textView_player)).setText(chase.player);
+						Date dateTime = new Date(chase.started);
 						((TextView) view.findViewById(R.id.textView_started)).setText(dateFormat.format(dateTime) + " "
 								+ timeFormat.format(dateTime));
-						if (finished != 0) {
-							((TextView) view.findViewById(R.id.textView_time)).setText(Duration.format(finished - started));
+						if (chase.finished != 0) {
+							((TextView) view.findViewById(R.id.textView_time)).setText(Duration.format(chase.finished - chase.started));
 						} else {
 							((TextView) view.findViewById(R.id.textView_time)).setText("");
 						}
 	
-						if (finished != 0) {
+						if (chase.finished != 0) {
 							((ImageView) view.findViewById(R.id.imageView_chase_state)).setImageResource(R.drawable.ic_stop);
 						} else {
 							((ImageView) view.findViewById(R.id.imageView_chase_state)).setImageResource(R.drawable.ic_play);
-						}
-						
-						// set tags
-						view.setTag(R.id.tag_trail_name, trailName);
-						view.setTag(R.id.tag_trail_id, trailId);
-						view.setTag(R.id.tag_player, player);
-						view.setTag(R.id.tag_running, finished == 0);
+						}						
 					}
 				}
 				
@@ -104,19 +98,25 @@ public class ChasesActivity  extends Activity {
 	
 			@Override
 			protected boolean onActionItemClicked(MenuItem item, int position, long id) {
+
+				View view = getListView().getChildAt(position);
+				if (view != null) {					
+					ChaseInfo chase = (ChaseInfo)view.getTag();
 				
-				switch (item.getItemId()) {
-				
-				case R.id.action_continue_chase:
-					// continue chase
-					ChaseTrailActivity.show(getActivity(), id);
-					return true;
+					switch (item.getItemId()) {
 					
-				case R.id.action_delete_chase:
-					// delete trail after asking user
-					deleteChase(id);
-					return true;
+					case R.id.action_continue_chase:
+						// continue chase
+						ChaseTrailActivity.show(getActivity(), chase.id);
+						return true;
+						
+					case R.id.action_delete_chase:
+						// delete trail after asking user
+						deleteChase(chase);
+						return true;
+					}
 				}
+				
 				return false;
 			}
 	
@@ -124,9 +124,10 @@ public class ChasesActivity  extends Activity {
 			public void onListItemClick(int position, long id) {
 				View view = getListView().getChildAt(position);
 				if (view != null) {					
-					if (((Boolean)view.getTag(R.id.tag_running)).booleanValue()) {
+					ChaseInfo chase = (ChaseInfo)view.getTag();
+					if (chase.finished == 0) {
 						// continue chase
-						ChaseTrailActivity.show(getActivity(), id);
+						ChaseTrailActivity.show(getActivity(), chase.id);
 					}
 					else {
 						// inform user that trail is finished already
@@ -140,13 +141,14 @@ public class ChasesActivity  extends Activity {
 				if (actionMode != null) {				
 					View view = getListView().getChildAt(position);
 					if (view != null) {					
+						ChaseInfo chase = (ChaseInfo)view.getTag();
 						// update title				
-						actionMode.setTitle((String)view.getTag(R.id.tag_trail_name));					
-						actionMode.setSubtitle((String)view.getTag(R.id.tag_player));					
+						actionMode.setTitle(chase.trail.name);					
+						actionMode.setSubtitle(chase.player);					
 						// modify menu
 						MenuItem menuContinue =  actionMode.getMenu().findItem(R.id.action_continue_chase);
 						if (menuContinue != null) {
-							menuContinue.setVisible((Boolean)view.getTag(R.id.tag_running));
+							menuContinue.setVisible(chase.finished == 0);
 						}
 					}
 				}			
@@ -157,9 +159,9 @@ public class ChasesActivity  extends Activity {
 			 * 
 			 * @param chaseId
 			 */
-			private void deleteChase(long chaseId) {
+			private void deleteChase(ChaseInfo chase) {
 	
-				final Uri chaseUri = Contract.Chases.getUriId(chaseId);
+				final Uri chaseUri = Contract.Chases.getUriId(chase.id);
 	
 				/**
 				 * Dialog to ask before a trail is deleted
