@@ -11,12 +11,11 @@ import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.location.LocationRequest;
 
-import ch.gpschase.app.data.ChaseInfo;
+import ch.gpschase.app.data.Chase;
 import ch.gpschase.app.data.Checkpoint;
-import ch.gpschase.app.data.Contract;
-import ch.gpschase.app.data.Contract.Checkpoints;
+import ch.gpschase.app.data.Hit;
+import ch.gpschase.app.data.Image;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.data.TrailInfo;
 import android.app.Service;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -38,13 +37,6 @@ import android.util.Log;
  * active.
  */
 public class ChaseTrailService extends Service {
-
-	/** represents an hit of checkpoint */
-	public class Hit {
-		public long id;
-		public long checkpointId;
-		public long time;
-	}
 
 	/**
 	 * Interface used for callbacks
@@ -72,10 +64,10 @@ public class ChaseTrailService extends Service {
 		public void onLocationChanged(Location location) {
 
 			// next checkpoint set?
-			if (nextCheckpoint != null && location != null) {
+			if (currentCheckpoint != null && location != null) {
 
 				// update clients with distance still remaining
-				float distance = location.distanceTo(nextCheckpoint.location);
+				float distance = location.distanceTo(currentCheckpoint.location);
 				for (Listener l : listeners) {
 					l.onDistanceToCheckpointChanged(distance);
 				}
@@ -83,44 +75,24 @@ public class ChaseTrailService extends Service {
 				// did we hit a checkpoint?
 				if (distance < (App.isDebuggable() ? HIT_DISTANCE_DEBUG : HIT_DISTANCE)) {
 
-					// create a new hit
-					Hit hit = new Hit();
-					hit.time = System.currentTimeMillis();
-
-					// save hit in DB
-					ContentValues values = new ContentValues();
-					values.put(Contract.Hits.COLUMN_NAME_CHECKPOINT_ID, nextCheckpoint.id);
-					values.put(Contract.Hits.COLUMN_NAME_TIME, hit.time);
-					Uri hitsUri = Contract.Hits.getUriDir(chaseInfo.id);
-					Uri hitUri = getContentResolver().insert(hitsUri, values);
-					hit.id = ContentUris.parseId(hitUri);
-
-					// put it in map
-					hits.put(nextCheckpoint, hit);
-
+					// create a new hit and save it
+					Hit hit = new Hit(chase, currentCheckpoint);
+					hit.save(ChaseTrailService.this);
+			
 					// keep checkpoint we've hit
-					Checkpoint hitCheckpoint = nextCheckpoint;
+					Checkpoint hitCheckpoint = currentCheckpoint;
 
 					// change to next checkpoint
-					int index = trail.checkpoints.indexOf(nextCheckpoint);
-					if (index < trail.checkpoints.size() - 1) {
-						index++;
-						nextCheckpoint = trail.checkpoints.get(index);
-					} else {
-						nextCheckpoint = null;
-					}
+					currentCheckpoint = currentCheckpoint.getNext();
 
 					// finished if no more checkpoints left
-					if (nextCheckpoint == null) {
+					if (currentCheckpoint == null) {
 
 						// take time from last hit
-						chaseInfo.finished = hit.time;
+						chase.finished = hit.time;
 
-						// save in DB
-						values = new ContentValues();
-						values.put(Contract.Chases.COLUMN_NAME_FINISHED, chaseInfo.finished);
-						Uri chaseUri = Contract.Chases.getUriId(chaseInfo.id);
-						getContentResolver().update(chaseUri, values, null, null);
+						// save in DB						
+						chase.save(ChaseTrailService.this);
 
 						// inform clients
 						for (Listener l : listeners) {
@@ -176,16 +148,13 @@ public class ChaseTrailService extends Service {
 	private final List<Listener> listeners = new ArrayList<Listener>();
 
 	// current chase
-	private ChaseInfo chaseInfo;
+	private Chase chase;
 
 	// the trail we're chasing
 	private Trail trail;
 
 	// the next checkpoint we need to hit
-	private Checkpoint nextCheckpoint;
-
-	//
-	private final Map<Checkpoint, Hit> hits = new HashMap<Checkpoint, Hit>();
+	private Checkpoint currentCheckpoint;
 
 	// callback handler instance cor location client
 	private final LocationCallback locationCallback = new LocationCallback();
@@ -214,12 +183,20 @@ public class ChaseTrailService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d("ChaseService", "onStartCommand");
 
-		// load some information about the chase into an object tree
-		long chaseId = ContentUris.parseId(intent.getData());
+		// get chase id from intent extra
+		long chaseId = intent.getLongExtra(ChaseTrailActivity.INTENT_EXTRA_CHASEID, 0);
 
 		// load data
 		try {
+			// load chase
 			load(chaseId);
+			
+			// mark it as started (if not already done)
+			if (chase.started == 0) {
+				chase.started = System.currentTimeMillis();
+				chase.save(this);
+			}
+			
 			return START_STICKY;
 		} catch (Exception ex) {
 			Log.e("ChaseService", "error while laoding data", ex);
@@ -235,37 +212,20 @@ public class ChaseTrailService extends Service {
 	 */
 	private void load(long chaseId) throws IllegalArgumentException {
 
-		// get info about chase
-		chaseInfo = ChaseInfo.fromId(this, chaseId);
+		// load chase
+		chase = Chase.load(this, chaseId);
 
-		// load trail
-		trail = Trail.fromId(this, chaseInfo.trail.id);
-
-		// load hits
-		hits.clear();
-		Uri hitsUri = Contract.Hits.getUriDir(chaseId);
-		Cursor hitCursor = getContentResolver().query(hitsUri, Contract.Hits.READ_PROJECTION, null, null, null);
-		while (hitCursor.moveToNext()) {
-			Hit hit = new Hit();
-
-			hit.id = hitCursor.getLong(Contract.Hits.READ_PROJECTION_ID_INDEX);
-			hit.checkpointId = hitCursor.getLong(Contract.Hits.READ_PROJECTION_CHECKPOINT_ID_INDEX);
-			hit.time = hitCursor.getLong(Contract.Hits.READ_PROJECTION_TIME_INDEX);
-
-			// look for checkpoint and add it to the map
-			for (Checkpoint checkpoint : trail.checkpoints) {
-				if (checkpoint.id == hit.checkpointId) {
-					hits.put(checkpoint, hit);
-					break;
-				}
-			}
-		}
-		hitCursor.close();
+		// load trail including its checkpoints
+		// the images will be loaded by the activity when necessary
+		trail = Trail.load(this, chase.getTrail().getId());
+		trail.loadCheckpoints(this);
 
 		// first checkpoint without a hit is our next one
-		for (Checkpoint checkpoint : trail.checkpoints) {
-			if (!hits.containsKey(checkpoint)) {
-				nextCheckpoint = checkpoint;
+		chase.loadHits(this);
+		
+		for (Checkpoint checkpoint : trail.getCheckpoints()) {
+			if (!chase.isHit(checkpoint)) {
+				currentCheckpoint = checkpoint;
 				break;
 			}
 		}
@@ -277,10 +237,10 @@ public class ChaseTrailService extends Service {
 	public boolean reload() {
 
 		// does a chase exist?
-		if (chaseInfo != null) {
+		if (chase != null) {
 			// load data
 			try {
-				load(chaseInfo.id);
+				load(chase.getId());
 				return true;
 			} catch (Exception ex) {
 				return false;
@@ -319,8 +279,8 @@ public class ChaseTrailService extends Service {
 	 * 
 	 * @return
 	 */
-	public ChaseInfo getChaseInfo() {
-		return chaseInfo;
+	public Chase getChase() {
+		return chase;
 	}
 
 	/**
@@ -335,12 +295,11 @@ public class ChaseTrailService extends Service {
 	}
 
 	/**
-	 * Returns the next checkpoint
-	 * 
+	 * Returns the next checkpoint we need to reach
 	 * @return
 	 */
-	public Checkpoint getNextCheckpoint() {
-		return nextCheckpoint;
+	public Checkpoint getCurrentCheckpoint() {
+		return currentCheckpoint;
 	}
 
 	/**
@@ -349,10 +308,10 @@ public class ChaseTrailService extends Service {
 	 * @return distance in meters or Float.NaN if not available
 	 */
 	public float getDistanceToNextCheckpoint() {
-		if (nextCheckpoint != null && locationClient.isConnected()) {
+		if (currentCheckpoint != null && locationClient.isConnected()) {
 			Location lastLocation = locationClient.getLastLocation();
 			if (lastLocation != null) {
-				return lastLocation.distanceTo(nextCheckpoint.location);
+				return lastLocation.distanceTo(currentCheckpoint.location);
 			} else {
 				return Float.NaN;
 			}
@@ -368,19 +327,10 @@ public class ChaseTrailService extends Service {
 	 */
 	public Iterable<Checkpoint> getCheckpoints() {
 		if (trail != null) {
-			return trail.checkpoints;
+			return trail.getCheckpoints();
 		} else {
 			return null;
 		}
-	}
-
-	/**
-	 * Returns if the specified checkpoint is hit
-	 * 
-	 * @param checkpoint
-	 */
-	public boolean isHit(Checkpoint checkpoint) {
-		return hits.containsKey(checkpoint);
 	}
 
 }

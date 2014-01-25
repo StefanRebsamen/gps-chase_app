@@ -11,12 +11,11 @@ import android.os.AsyncTask;
 import android.util.Log;
 import ch.gpschase.app.data.BackendClient;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.data.TrailInfo;
 import ch.gpschase.app.EditTrailActivity;
 import ch.gpschase.app.R;
 
 	/**
-	 *
+	 * An asynchronous task to upload to specified trail
 	 */
 	public class UploadTask extends AsyncTask<Void, Void, Boolean> {
 		
@@ -27,7 +26,7 @@ import ch.gpschase.app.R;
 		private ProgressDialog pd = null;
 
 		// trail
-		TrailInfo trail;
+		Trail trail;
 				
 		// indicates if the link to the trail should be shared afterwards
 		boolean shareLink;
@@ -35,10 +34,10 @@ import ch.gpschase.app.R;
 		/**
 		 * Constructor
 		 * @param context
-		 * @param trailId
+		 * @param trail
 		 * @param shareLink
 		 */
-		public UploadTask(Context context, TrailInfo trail, boolean shareLink) {
+		public UploadTask(Context context, Trail trail, boolean shareLink) {
 			super();
 
 			this.context = context;

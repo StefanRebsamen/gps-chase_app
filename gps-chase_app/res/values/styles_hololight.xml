@@ -19,6 +19,8 @@
 
 <resources>
 
+	<color name="WindowBackground">#FFFFFF</color>
+    
     <style name="Theme.Hololight" parent="@android:style/Theme.Holo.Light">
         <item name="android:actionBarItemBackground">@drawable/selectable_background_hololight</item>
         <item name="android:popupMenuStyle">@style/PopupMenu.Hololight</item>
@@ -29,7 +31,7 @@
         <item name="android:actionModeBackground">@drawable/cab_background_top_hololight</item>
         <item name="android:actionModeSplitBackground">@drawable/cab_background_bottom_hololight</item>
         <item name="android:actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Hololight</item>
-		<item name="android:windowBackground">@color/activity_background</item>                
+        <item name="android:windowBackground">@color/WindowBackground</item>       
     </style>
 
     <style name="ActionBar.Solid.Hololight" parent="@android:style/Widget.Holo.Light.ActionBar.Solid">

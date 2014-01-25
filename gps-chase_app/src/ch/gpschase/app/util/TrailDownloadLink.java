@@ -3,7 +3,7 @@ package ch.gpschase.app.util;
 import java.util.List;
 import java.util.UUID;
 
-import ch.gpschase.app.data.TrailInfo;
+import ch.gpschase.app.data.Trail;
 import android.net.Uri;
 
 
@@ -24,7 +24,7 @@ public class TrailDownloadLink {
 	 * @param data
 	 * @return link
 	 */
-	public static Uri createDownloadLink(TrailInfo trail) {
+	public static Uri createDownloadLink(Trail trail) {
 		return new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath("trail").appendPath(trail.uuid.toString()).build();		
 	}
 	

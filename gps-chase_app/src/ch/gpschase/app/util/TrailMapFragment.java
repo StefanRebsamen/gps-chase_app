@@ -1,6 +1,8 @@
 package ch.gpschase.app.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -54,7 +56,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 
 	/**
 	 * Color used to draw the trail line
-	 */	
+	 */
 	public int traiLineColor = 0;
 
 	/**
@@ -88,13 +90,12 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	// event listener
 	private MapListener listener;
 
-		
 	/**
 	 * An entry in the markers list
 	 */
 	private class Point {
 		public Checkpoint checkpoint;
-		
+
 		public Marker marker;
 		public BitmapDescriptor icon;
 		public boolean hit;
@@ -114,20 +115,19 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 
 	// signals that the map is initialized (size != 0)
 	private boolean mapInitialized = false;
-	
-	// 
+
+	//
 	private LatLngBounds.Builder pendingLatLngBounds = null;
-	
+
 	//
 	private boolean draggable = false;
 
-	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		;
-		
+
 		// we provide an option menu
 		this.setHasOptionsMenu(true);
 
@@ -135,7 +135,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		iconNeutralFirstNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_first_normal);
 		iconNeutralFirstSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_first_selected);
 		iconNeutralOtherNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_other_normal);
-	    iconNeutralOtherSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_other_selected);
+		iconNeutralOtherSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_other_selected);
 		iconHitFirstNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_first_normal);
 		iconHitFirstSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_first_selected);
 		iconHitOtherNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_other_normal);
@@ -156,24 +156,24 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 
 		// we need to knwo when the layout is done
 		map.setOnCameraChangeListener(new OnCameraChangeListener() {
-			
+
 			@Override
 			public void onCameraChange(CameraPosition arg0) {
-				// we' not interested in the event any more		
+				// we' not interested in the event any more
 				map.setOnCameraChangeListener(null);
-				
+
 				// set flag
 				mapInitialized = true;
-				
+
 				// do update if there is one pending
-				if (pendingLatLngBounds != null) {					
-					map.moveCamera(CameraUpdateFactory.newLatLngBounds(pendingLatLngBounds.build(), BOUNDS_PADDING));					
+				if (pendingLatLngBounds != null) {
+					map.moveCamera(CameraUpdateFactory.newLatLngBounds(pendingLatLngBounds.build(), BOUNDS_PADDING));
 					pendingLatLngBounds = null;
 				}
-						
+
 			}
 		});
-		
+
 		UiSettings settings = map.getUiSettings();
 		settings.setMyLocationButtonEnabled(true);
 		settings.setZoomControlsEnabled(false);
@@ -196,12 +196,12 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 			public void onMarkerDragEnd(Marker marker) {
 				Point p = getPoint(marker);
 				if (p != null && listener != null) {
-					
+
 					p.checkpoint.location.setLongitude(marker.getPosition().longitude);
 					p.checkpoint.location.setLatitude(marker.getPosition().latitude);
 
 					refreshTrailLine(false);
-					
+
 					listener.onPositionedCheckpoint(p.checkpoint);
 				}
 			}
@@ -241,38 +241,37 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	}
 
 	@Override
-	public void onAttach (Activity activity) {
+	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		// read color from resource
 		traiLineColor = getResources().getColor(R.color.purple_dark);
 	}
-	
+
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		// inflate menu
 		inflater.inflate(R.menu.menu_trail_map, menu);
 
 		// check the choice currently set
-		switch (getMapType()) {	
+		switch (getMapType()) {
 		case GoogleMap.MAP_TYPE_NORMAL:
 			menu.findItem(R.id.action_map_type_normal).setChecked(true);
 			break;
-			
+
 		case GoogleMap.MAP_TYPE_SATELLITE:
 			menu.findItem(R.id.action_map_type_satellite).setChecked(true);
 			break;
-	
+
 		case GoogleMap.MAP_TYPE_HYBRID:
 			menu.findItem(R.id.action_map_type_hybrid).setChecked(true);
 			break;
-	
+
 		case GoogleMap.MAP_TYPE_TERRAIN:
 			menu.findItem(R.id.action_map_type_terrain).setChecked(true);
 			break;
-		}		
+		}
 	}
 
-	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
@@ -281,7 +280,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 			setMapType(GoogleMap.MAP_TYPE_NORMAL);
 			item.setChecked(true);
 			return true;
-			
+
 		case R.id.action_map_type_satellite:
 			setMapType(GoogleMap.MAP_TYPE_SATELLITE);
 			item.setChecked(true);
@@ -309,8 +308,8 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		// try to save as preference
 		Context context = getActivity();
 		if (context != null) {
-			return Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context)
-													.getString(getMapTypePreference(context).getKey(), Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString()));
+			return Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context).getString(getMapTypePreference(context).getKey(),
+					Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString()));
 		} else {
 			return GoogleMap.MAP_TYPE_NORMAL;
 		}
@@ -358,24 +357,24 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		final ListPreference pref = new ListPreference(context);
 		pref.setTitle(context.getString(R.string.pref_map_type_title));
 		pref.setKey(context.getString(R.string.pref_map_type_key));
-		pref.setEntries(new String[] {																	// 
-				context.getResources().getString(R.string.pref_map_type_normal),						//
-				context.getResources().getString(R.string.pref_map_type_satellite),						//
-				context.getResources().getString(R.string.pref_map_type_hybrid),						//
-				context.getResources().getString(R.string.pref_map_type_terrain) });					//
-		pref.setEntryValues(new String[] { 																//
-				Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString(),									//
-				Integer.valueOf(GoogleMap.MAP_TYPE_SATELLITE).toString(), 								//
-				Integer.valueOf(GoogleMap.MAP_TYPE_HYBRID).toString(),									//
-				Integer.valueOf(GoogleMap.MAP_TYPE_TERRAIN).toString() });								//
-		pref.setDefaultValue(Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString());					//
+		pref.setEntries(new String[] { //
+		context.getResources().getString(R.string.pref_map_type_normal), //
+				context.getResources().getString(R.string.pref_map_type_satellite), //
+				context.getResources().getString(R.string.pref_map_type_hybrid), //
+				context.getResources().getString(R.string.pref_map_type_terrain) }); //
+		pref.setEntryValues(new String[] { //
+		Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString(), //
+				Integer.valueOf(GoogleMap.MAP_TYPE_SATELLITE).toString(), //
+				Integer.valueOf(GoogleMap.MAP_TYPE_HYBRID).toString(), //
+				Integer.valueOf(GoogleMap.MAP_TYPE_TERRAIN).toString() }); //
+		pref.setDefaultValue(Integer.valueOf(GoogleMap.MAP_TYPE_HYBRID).toString()); //
 		pref.setSummary("%s");
-		
-		pref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {			
+
+		pref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
 			@Override
 			public boolean onPreferenceChange(Preference preference, Object newValue) {
 				// update summary
-				int index = pref.findIndexOfValue((String)newValue);
+				int index = pref.findIndexOfValue((String) newValue);
 				pref.setSummary(pref.getEntries()[index]);
 				return true;
 			}
@@ -422,7 +421,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	 */
 	public void setCameraTarget(LatLng target) {
 		// do it immediately
-		map.moveCamera(CameraUpdateFactory.newLatLng(target));		
+		map.moveCamera(CameraUpdateFactory.newLatLng(target));
 		pendingLatLngBounds = null;
 	}
 
@@ -452,8 +451,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 			// do update immediately if possible
 			CameraUpdate update = CameraUpdateFactory.newLatLngBounds(builder.build(), BOUNDS_PADDING);
 			map.moveCamera(update);
-		}
-		else {			
+		} else {
 			// keep it as pending. it will be done as soon as the map is ready
 			pendingLatLngBounds = builder;
 		}
@@ -461,7 +459,6 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 
 	/**
 	 * Removes the marker for the given point
-	 * 
 	 * @param checkpoint
 	 */
 	public void removeCheckpoint(Checkpoint checkpoint) {
@@ -481,16 +478,19 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	}
 
 	/**
-	 * Sets the index of the given point
+	 * Tells the map to reorder it's points accodrign to the checkpoint indices
 	 */
-	public void setCheckpointIndex(Checkpoint checkpoint, int newIndex) {
+	public void reorderCheckpoints() {
 
-		//TODO ugly, kann besser gelöst werden!
-		
-		Point p = getPoint(checkpoint);
-		points.remove(p);
-		points.add(newIndex, p);
+		// reorders points according to the indices of their checkpoints
+		Collections.sort(points, new Comparator<Point>() {
+			@Override
+			public int compare(Point o1, Point o2) {
+				return (o1.checkpoint.getIndex() > o2.checkpoint.getIndex() ? -1 : (o1.checkpoint.getIndex() == o2.checkpoint.getIndex() ? 0 : 1));
+			}
+		});
 
+		// refresh
 		refreshIcons();
 		refreshTrailLine(false);
 	}
@@ -515,7 +515,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		LatLng pos = new LatLng(checkpoint.location.getLatitude(), checkpoint.location.getLongitude());
 		p.marker = map.addMarker(new MarkerOptions().position(pos).icon(p.icon));
 		p.marker.setDraggable(draggable);
-		p.hit= hit;
+		p.hit = hit;
 		points.add(index, p);
 
 		if (refresh) {
@@ -567,6 +567,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 
 	/**
 	 * Returns the selected point
+	 * 
 	 * @return Id of the selected point or 0
 	 */
 	public Checkpoint getSelectedCheckPoint() {
@@ -575,7 +576,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		else
 			return null;
 	}
-	
+
 	/**
 	 * Gets the point for a marker
 	 * 
@@ -612,21 +613,19 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	private void refreshIcons() {
 		int index = 0;
 		BitmapDescriptor icon = null;
-		for (Point p : points) {			
+		for (Point p : points) {
 			if (!p.hit) {
-				if ( index == 0 ) {
+				if (index == 0) {
 					icon = selectedPoint == p ? iconNeutralFirstSelected : iconNeutralFirstNormal;
-				}
-				else {
+				} else {
 					icon = selectedPoint == p ? iconNeutralOtherSelected : iconNeutralOtherNormal;
-				}				
-			} else {
-				if ( index == 0 ) {
-					icon = selectedPoint == p ? iconHitFirstSelected : iconHitFirstNormal;
 				}
-				else {
+			} else {
+				if (index == 0) {
+					icon = selectedPoint == p ? iconHitFirstSelected : iconHitFirstNormal;
+				} else {
 					icon = selectedPoint == p ? iconHitOtherSelected : iconHitOtherNormal;
-				}								
+				}
 			}
 			// set icon only if it really changed
 			if (p.icon != icon) {
@@ -652,12 +651,11 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		}
 
 		List<LatLng> linePoints = new ArrayList<LatLng>(points.size());
-		for (Point p : points) {			
-			linePoints.add(p.marker.getPosition());			
+		for (Point p : points) {
+			linePoints.add(p.marker.getPosition());
 		}
 		trailLine.setPoints(linePoints);
 	}
-
 
 	/**
 	 * 

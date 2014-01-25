@@ -1,8 +1,6 @@
 package ch.gpschase.app;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import android.app.ActionBar;
@@ -12,14 +10,11 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
-import android.app.ProgressDialog;
-import android.content.ContentUris;
-import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -33,29 +28,38 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 import ch.gpschase.app.data.Checkpoint;
-import ch.gpschase.app.data.Contract;
-import ch.gpschase.app.data.ImageManager;
+import ch.gpschase.app.data.Image;
+import ch.gpschase.app.data.ImageFileManager;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.data.TrailInfo;
-import ch.gpschase.app.util.TrailDownloadLink;
 import ch.gpschase.app.util.TrailMapFragment;
 import ch.gpschase.app.util.UploadTask;
+import ch.gpschase.app.util.ViewImageDialog;
 
 import com.google.android.gms.maps.model.LatLng;
 
+/**
+ * Activity to edit a trail
+ */
 public class EditTrailActivity extends Activity {
 
+	// fragment tags
 	private static final String FRAGMENT_TAG_CPEDIT = "cpedit";
 	private static final String FRAGMENT_TAG_MAP = "map";
 
+	// name to identify trail id passed as extra in intent 
+	public static final String INTENT_EXTRA_TRAILID = "trailId";
+	
 	/**
-	 * 
+	 * Fragment to edit a single checkpoint
 	 */
 	public static class EditCheckpointFragment extends Fragment {
 
@@ -64,116 +68,37 @@ public class EditTrailActivity extends Activity {
 		private static final int REQUEST_CODE_IMPORT_IMAGE = 2;
 
 		/**
-		 * 
+		 * Used for callbacks from fragment
 		 */
-		public interface OnButtonListener {
-			public void onReorderBackwardClicked();
+		public interface Listener {
+			
+			/** Backward button was clicked */
+			public void onMoveBackwardClick();
 
-			public void onReorderForwardClicked();
+			/** Forward button was clicked */
+			public void onMoveForwardClick();
 
-			public void onDeleteCheckpointClicked();
+			/** Delete checkpoint button was clicked */
+			public void onDeleteCheckpointClick();
 		}
-
-		/**
-		 * 
-		 */
-		private class ImageClickListener implements OnClickListener {
-			@Override
-			public void onClick(View v) {
-
-				Long imageId = (Long) v.getTag();
-
-				// create an image view
-				ImageView imageView = new ImageView(getActivity());
-				imageView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-						ViewGroup.LayoutParams.WRAP_CONTENT));
-				imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-				imageView.setPadding(8, 8, 8, 8);
-				imageView.setAdjustViewBounds(true);
-				imageView.setImageBitmap(App.getImageManager().getFull(imageId));
-
-				// show it in an dialog
-				AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-				builder.setTitle(R.string.dialog_show_image_title);
-				builder.setView(imageView);
-				builder.setPositiveButton(R.string.dialog_close, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						dialog.dismiss();
-					}
-				});
-				builder.create().show();
-			}
-		}
-
-		/**
-		 * 
-		 */
-		private class ButtonListener implements OnClickListener {
-
-			@Override
-			public void onClick(View v) {
-
-				switch (v.getId()) {
-				case R.id.button_add_image:
-					addImage();
-					break;
-
-				case R.id.button_reorder_checkpoint_backward:
-					// forward to listener
-					if (onButtonListener != null) {
-						onButtonListener.onReorderBackwardClicked();
-					}
-					break;
-
-				case R.id.button_reorder_checkpoint_forward:
-					// forward to listener
-					if (onButtonListener != null) {
-						onButtonListener.onReorderForwardClicked();
-					}
-					break;
-
-				case R.id.button_delete_checkpoint:
-					// forward to listener
-					if (onButtonListener != null) {
-						onButtonListener.onDeleteCheckpointClicked();
-					}
-					break;
-				}
-			}
-		}
-
-		private final ImageClickListener imageClickListener = new ImageClickListener();
-		private final ButtonListener buttonListener = new ButtonListener();
 
 		// listener for callbacks
-		private OnButtonListener onButtonListener;
+		private Listener listener;
 
-		// trail and checkpoint we've got to show stuff for
-		private long trailId;
-		private long checkpointId;
+		private Checkpoint checkpoint;
 
 		// references to UI elements
+		private TextView textViewNo;
 		private CheckBox checkBoxShowOnMap;
 		private EditText editTextHint;
 		private LinearLayout layoutImages;
 		private ImageButton buttonNewImage;
-		private ImageButton buttonReorderBackward;
-		private ImageButton buttonReorderForward;
+		private ImageButton buttonMoveBackward;
+		private ImageButton buttonMoveForward;
 		private ImageButton buttonDeleteCheckpoint;
 
 		// Temp fir used to capture images
 		private File captureTmpFile;
-
-		private long imageIdtoDelete;
-
-		@Override
-		public void onCreate(Bundle savedInstanceState) {
-			super.onCreate(savedInstanceState);
-
-			// we want our own menu
-			setHasOptionsMenu(true);
-		}
 
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -182,28 +107,51 @@ public class EditTrailActivity extends Activity {
 			View view = inflater.inflate(R.layout.fragment_edit_checkpoint, null);
 
 			// get references to UI elements
+			textViewNo = (TextView) view.findViewById(R.id.textView_checkpoint_no);
 			checkBoxShowOnMap = (CheckBox) view.findViewById(R.id.checkBox_show_on_map);
 			editTextHint = (EditText) view.findViewById(R.id.editText_hint);
 			layoutImages = (LinearLayout) view.findViewById(R.id.layout_images);
 			buttonNewImage = (ImageButton) view.findViewById(R.id.button_add_image);
-			buttonReorderBackward = (ImageButton) view.findViewById(R.id.button_reorder_checkpoint_backward);
-			buttonReorderForward = (ImageButton) view.findViewById(R.id.button_reorder_checkpoint_forward);
+			buttonMoveBackward = (ImageButton) view.findViewById(R.id.button_reorder_checkpoint_backward);
+			buttonMoveForward = (ImageButton) view.findViewById(R.id.button_reorder_checkpoint_forward);
 			buttonDeleteCheckpoint = (ImageButton) view.findViewById(R.id.button_delete_checkpoint);
 
-			// register handler
-			buttonNewImage.setOnClickListener(buttonListener);
-			buttonReorderBackward.setOnClickListener(buttonListener);
-			buttonReorderForward.setOnClickListener(buttonListener);
-			buttonDeleteCheckpoint.setOnClickListener(buttonListener);
+			// register handler for buttons
+			buttonNewImage.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					addImage();
+				}
+			});
+
+			buttonMoveBackward.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (listener != null) {
+						listener.onMoveBackwardClick();
+					}
+				}
+			});
+
+			buttonMoveForward.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (listener != null) {
+						listener.onMoveForwardClick();
+					}
+				}
+			});
+
+			buttonDeleteCheckpoint.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if (listener != null) {
+						listener.onDeleteCheckpointClick();
+					}
+				}
+			});
 
 			return view;
-		}
-
-		@Override
-		public void onStart() {
-			super.onStart();
-			
-			
 		}
 
 		@Override
@@ -211,7 +159,7 @@ public class EditTrailActivity extends Activity {
 			super.onStart();
 
 			// persist to database
-			saveData();
+			save();
 		}
 
 		@Override
@@ -220,13 +168,11 @@ public class EditTrailActivity extends Activity {
 
 			// was it really from an image view?
 			if (v instanceof ImageView) {
-				Long imageId = (Long) v.getTag();
-				imageIdtoDelete = imageId;
 
 				// inflate menu
 				MenuInflater inflater = getActivity().getMenuInflater();
 				inflater.inflate(R.menu.context_menu_image, menu);
-
+				
 				// set a title
 				menu.setHeaderTitle(R.string.context_menu_image_title);
 			}
@@ -234,68 +180,74 @@ public class EditTrailActivity extends Activity {
 
 		@Override
 		public boolean onContextItemSelected(MenuItem item) {
-			switch (item.getItemId()) {
-			case R.id.action_delete_image:
-				// delete image (id was set when context menu was created)
-				deleteImage(imageIdtoDelete);
-				return true;
 
-			default:
-				return super.onContextItemSelected(item);
+			if (item.getMenuInfo() instanceof AdapterView.AdapterContextMenuInfo) {
+				AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
+				Image image = (Image)info.targetView.getTag();
+				
+				switch (item.getItemId()) {
+				case R.id.action_delete_image:
+					// delete image
+					deleteImage(image);					
+					return true;
+				}
 			}
+			return super.onContextItemSelected(item);
 		}
 
 		/**
 		 * 
 		 */
-		public long getTrailId() {
-			return trailId;
-		}
-
-		/**
-		 * 
-		 * @param trailId
-		 */
-		public void setTrail(long trailId) {
-			this.trailId = trailId;
+		public Checkpoint getCheckpoint() {
+			return checkpoint;
 		}
 
 		/**
 		 * 
 		 */
-		public long getCheckpointId() {
-			return checkpointId;
-		}
-
-		/**
-		 * 
-		 */
-		public void setCheckpoint(long checkpointId) {
+		public void setCheckpoint(Checkpoint checkpoint) {
+			
 			// did it really change?
-			if (this.checkpointId != checkpointId) {
-				// save current checkpoint data
-				saveData();
-				// change checkpoint
-				this.checkpointId = checkpointId;
-				// load new data
-				loadData();
+			if (this.checkpoint == checkpoint) {
+				return;
 			}
+
+			// save current checkpoint data
+			save();
+
+			// change checkpoint
+			this.checkpoint = checkpoint;
+			
+			// load data into UI elements
+			if (checkpoint != null) {
+				textViewNo.setText("#" + (checkpoint.getIndex() + 1));
+				checkBoxShowOnMap.setChecked(checkpoint.showLocation);
+				editTextHint.setText(checkpoint.hint);				
+			} else {
+				textViewNo.setText("#");
+				checkBoxShowOnMap.setChecked(false);
+				editTextHint.setText("");
+			}
+			updateIndex();
+
+			// refresh images
+			updateImages();
 		}
 
 		/**
 		 * 
 		 * @return
 		 */
-		public OnButtonListener getOnButtonListener() {
-			return onButtonListener;
+		public Listener getListener() {
+			return listener;
 		}
 
 		/**
 		 * 
 		 * @param onButtonListener
 		 */
-		public void setOnButtonListener(OnButtonListener onButtonListener) {
-			this.onButtonListener = onButtonListener;
+		public void setListener(Listener onButtonListener) {
+			this.listener = onButtonListener;
 		}
 
 		/**
@@ -303,83 +255,116 @@ public class EditTrailActivity extends Activity {
 		 * @param forward
 		 * @param backward
 		 */
-		public void enableReorderButtons(boolean backward, boolean forward) {
-			if (buttonReorderBackward != null) {
-				buttonReorderBackward.setEnabled(backward);
+		public void enableButtons() {
+			boolean backward = checkpoint != null && (!checkpoint.isFirst());
+			boolean forward = checkpoint != null && (!checkpoint.isLast());
+			boolean delete = checkpoint != null;
+			
+			if (buttonMoveBackward != null) {
+				buttonMoveBackward.setVisibility(backward ? View.VISIBLE : View.INVISIBLE);
 			}
-			if (buttonReorderForward != null) {
-				buttonReorderForward.setEnabled(forward);
+			if (buttonMoveForward != null) {
+				buttonMoveForward.setVisibility(forward ? View.VISIBLE : View.INVISIBLE);
 			}
+			if (buttonDeleteCheckpoint != null) {
+				buttonDeleteCheckpoint.setVisibility(delete ? View.VISIBLE : View.INVISIBLE);
+			}			
 		}
 
 		/**
 		 * 
 		 */
-		private void loadData() {
-			Cursor cursor;
-
-			// load data into UI elements
-			Uri checkpointIdUri = Contract.Checkpoints.getUriId(checkpointId);
-			cursor = getActivity().getContentResolver().query(checkpointIdUri, Contract.Checkpoints.READ_PROJECTION, null, null, null);
-			if (cursor.moveToNext()) {
-				checkBoxShowOnMap.setChecked(cursor.getInt(Contract.Checkpoints.READ_PROJECTION_LOC_SHOW_INDEX) != 0);
-				editTextHint.setText(cursor.getString(Contract.Checkpoints.READ_PROJECTION_HINT_INDEX));
+		public void updateIndex() {
+			if (checkpoint != null) {
+				textViewNo.setText("#" + (checkpoint.getIndex() + 1));
 			} else {
-				checkBoxShowOnMap.setChecked(false);
-				editTextHint.setText("");
+				textViewNo.setText("#");
+			}			
+		}
+		
+		
+		//
+		private void updateImages() {
+			
+			// nothing to do if view isn't yet created
+			if (layoutImages == null) {
+				return;
 			}
-			cursor.close();
-
+			
 			// load images
 			layoutImages.removeAllViews();
+			if (checkpoint != null) {
+				
+				ImageFileManager imageManager = App.getImageManager();
+				
+				// make sure images are loaded
+				checkpoint.loadImages(getActivity());			
+				
+				// ass them to their container
+				for (Image image : checkpoint.getImages()) {
+					// create an image view
+					ImageView imageView = new ImageView(getActivity());
+					imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+					imageView.setPadding(8, 8, 8, 8);
+					imageView.setImageBitmap(imageManager.getThumb(image));
+					imageView.setTag(image);
 
-			ImageManager imageManager = App.getImageManager();
+					// listen to click event (show image in dialog)
+					imageView.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							Image image = (Image) v.getTag();
+							ViewImageDialog.show(getActivity(), image);
+						}
+					});
 
-			Uri imageDirUri = Contract.Images.getUriDir(checkpointId);
-			cursor = getActivity().getContentResolver().query(imageDirUri, Contract.Images.READ_PROJECTION, null, null,
-					Contract.Images.DEFAULT_SORT_ORDER);
-			while (cursor.moveToNext()) {
-				long imageId = cursor.getLong(Contract.Images.READ_PROJECTION_ID_INDEX);
+					// we use the context menu
+					registerForContextMenu(imageView);
 
-				// create an image view
-				ImageView imageView = new ImageView(getActivity());
-				imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-				imageView.setPadding(8, 8, 8, 8);
-				imageView.setImageBitmap(imageManager.getThumb(imageId));
-				imageView.setTag(Long.valueOf(imageId));
-
-				// listen to click event
-				imageView.setOnClickListener(imageClickListener);
-				registerForContextMenu(imageView);
-
-				// add to layout
-				layoutImages.addView(imageView);
+					// add to layout
+					layoutImages.addView(imageView);
+				}
 			}
-			cursor.close();
 		}
 
+		
+		
 		/**
 		 * 
 		 */
-		private void saveData() {
+		private void save() {
 
-			if (checkpointId == 0) {
+			if (checkpoint == null) {
 				return;
 			}
 
-			// save values in database
-			ContentValues values = new ContentValues();
-			values.put(Contract.Checkpoints.COLUMN_NAME_LOC_SHOW, checkBoxShowOnMap.isChecked() ? 1 : 0);
-			values.put(Contract.Checkpoints.COLUMN_NAME_HINT, editTextHint.getText().toString());
-			Uri checkpointIdUri = Contract.Checkpoints.getUriId(checkpointId);
-			getActivity().getContentResolver().update(checkpointIdUri, values, null, null);
-			// update updated timestamp for trail
-			values.clear();
-			values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-			Uri trailIdUri = Contract.Trails.getUriId(trailId);
-			getActivity().getContentResolver().update(trailIdUri, values, null, null);
-		}
+			// read back from UI
+			boolean showLocation = checkBoxShowOnMap.isChecked();
+			String hint = editTextHint.getText().toString();
 
+			// apply new values (if really changed)
+			boolean changed = false;
+			if (showLocation != checkpoint.showLocation) {
+				checkpoint.showLocation = checkBoxShowOnMap.isChecked();
+				changed = true;
+			}
+			if (!hint.equals(checkpoint.hint)) {
+				checkpoint.hint = editTextHint.getText().toString();
+				changed = true;
+			}
+			
+			// save if somethin changed
+			if (changed) {
+				// save values in database
+				checkpoint.save(getActivity());
+				// mark trail as updated
+				checkpoint.getTrail().updated = System.currentTimeMillis();
+				checkpoint.getTrail().save(getActivity());
+			}
+		}
+		
+
+		
 		/**
 		 * 
 		 */
@@ -387,10 +372,12 @@ public class EditTrailActivity extends Activity {
 
 			final int CAPTURE = 0;
 			final int IMPORT = 1;
+
 			// show a dialog to choose and image source
 			String[] sources = { getString(R.string.new_image_capture), getString(R.string.new_image_import) };
-			new AlertDialog.Builder(getActivity()).setTitle(R.string.action_new_image)
-					.setItems(sources, new DialogInterface.OnClickListener() {
+			new AlertDialog.Builder(getActivity()) //
+					.setTitle(R.string.action_new_image) //
+					.setIcon(R.drawable.ic_new_image).setItems(sources, new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface dialog, int which) {
 							dialog.dismiss();
 							// call the appropriate function
@@ -408,7 +395,7 @@ public class EditTrailActivity extends Activity {
 		}
 
 		/**
-		 * 
+		 * Captures an image from the camera
 		 */
 		private void captureImage() {
 
@@ -433,7 +420,7 @@ public class EditTrailActivity extends Activity {
 		}
 
 		/**
-		 * 
+		 * Imports an image from the gallery
 		 */
 		private void importImage() {
 
@@ -446,22 +433,25 @@ public class EditTrailActivity extends Activity {
 			// callback will be made to onActivityResult()
 		}
 
+		/**
+		 * Notification about an activity
+		 */
 		@Override
 		public void onActivityResult(int requestCode, int resultCode, Intent data) {
 			// was it successful and something we were expecting?
 			if (resultCode == Activity.RESULT_OK && (requestCode == REQUEST_CODE_CAPTURE_IMAGE || requestCode == REQUEST_CODE_IMPORT_IMAGE)) {
 
-				// insert image record to database
-				Uri imagesUri = Contract.Images.getUriDir(checkpointId);
-				ContentValues values = new ContentValues();
-				Uri imageUri = getActivity().getContentResolver().insert(imagesUri, values);
-				long imageId = Long.parseLong(imageUri.getLastPathSegment());
-
+				// create image in database
+				Image image = checkpoint.addImage();
+				image.save(getActivity());
+				
 				// add image to ImageManager
 				boolean added = false;
 				if (requestCode == REQUEST_CODE_CAPTURE_IMAGE) {
-					added = App.getImageManager().add(imageId, captureTmpFile);
+					// import from tmp file
+					added = App.getImageManager().add(image, captureTmpFile);
 				} else if (requestCode == REQUEST_CODE_IMPORT_IMAGE) {
+					// determine file path
 					Uri uri = data.getData();
 					String[] projection = { MediaStore.Images.Media.DATA };
 					Cursor cursor = getActivity().getContentResolver().query(uri, projection, null, null, null);
@@ -469,7 +459,8 @@ public class EditTrailActivity extends Activity {
 					cursor.moveToFirst();
 					String path = cursor.getString(column_index);
 					cursor.close();
-					added = App.getImageManager().add(imageId, new File(path));
+					// import from file
+					added = App.getImageManager().add(image, new File(path));
 				}
 
 				// succeeded in adding image files?
@@ -477,22 +468,24 @@ public class EditTrailActivity extends Activity {
 					// delete it from database as it makes no sense to keep a
 					// record
 					// without associated files
-					getActivity().getContentResolver().delete(imageUri, null, null);
+					image.delete(getActivity());
 
 					// show alert dialog
-					new AlertDialog.Builder(getActivity()).setTitle(R.string.dialog_add_image_error_title)
-							.setMessage(R.string.dialog_add_image_error_message).setPositiveButton(R.string.dialog_ok, null).create()
-							.show();
+					new AlertDialog.Builder(getActivity()) //
+							.setTitle(R.string.dialog_add_image_error_title) //
+							.setIcon(android.R.drawable.ic_dialog_alert) //
+							.setMessage(R.string.dialog_add_image_error_message) //
+							.setPositiveButton(R.string.dialog_ok, null) //
+							.create().show();
 				}
-
-				// update updated timestamp for trail
-				values.clear();
-				values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-				Uri trailIdUri = Contract.Trails.getUriId(trailId);
-				getActivity().getContentResolver().update(trailIdUri, values, null, null);
-
-				// update data to see pictures
-				loadData();
+				else {		
+					// refresh images
+					updateImages();
+					
+					// mark trail as updated
+					checkpoint.getTrail().updated = System.currentTimeMillis();
+					checkpoint.getTrail().save(getActivity());					
+				}
 			}
 
 			// delete temp file
@@ -505,13 +498,11 @@ public class EditTrailActivity extends Activity {
 		/**
 		 * 
 		 */
-		private void deleteImage(long imageId) {
+		private void deleteImage(Image image) {
 
-			final long imageIdFinal = imageId;
+			final Image passedImage = image;
 
-			/**
-			 * Dialog to ask user about deletion of the checkpoint
-			 */
+			// TODO do it with an aler dialog
 			class DeleteDialogFragment extends DialogFragment {
 				@Override
 				public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -523,28 +514,22 @@ public class EditTrailActivity extends Activity {
 					imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 					imageView.setPadding(8, 8, 8, 8);
 					imageView.setAdjustViewBounds(true);
-					imageView.setImageBitmap(App.getImageManager().getFull(imageIdFinal));
+					imageView.setImageBitmap(App.getImageManager().getFull(passedImage));
 
 					return new AlertDialog.Builder(getActivity()).setTitle(R.string.action_delete_image)
 							.setMessage(R.string.dialog_delete_image_message).setView(imageView).setIcon(R.drawable.ic_delete)
 							.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
 								public void onClick(DialogInterface dialog, int whichButton) {
 
-									// delete checkpoint from database
-									Uri imageUri = Contract.Images.getUriId(imageIdFinal);
-									getActivity().getContentResolver().delete(imageUri, null, null);
+									// delete image from database
+									passedImage.delete(getActivity());									
 
-									// remove files
-									App.getImageManager().delete(imageIdFinal);
-
-									// update updated timestamp for trail
-									ContentValues values = new ContentValues();
-									values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-									Uri trailIdUri = Contract.Trails.getUriId(trailId);
-									getActivity().getContentResolver().update(trailIdUri, values, null, null);
-
-									// load listView
-									loadData();
+									// refresh images
+									updateImages();
+									
+									// mark trail as updated
+									checkpoint.getTrail().updated = System.currentTimeMillis();
+									checkpoint.getTrail().save(getActivity());									
 								}
 							}).setNegativeButton(R.string.dialog_no, null).create();
 				}
@@ -563,56 +548,62 @@ public class EditTrailActivity extends Activity {
 	private class MapListener implements TrailMapFragment.MapListener {
 		@Override
 		public void onClickedCheckpoint(Checkpoint checkpoint) {
+			// cancel adding checkpoint
+			addingCheckpoint = false;
+			
 			if (checkpoint == selectedCheckpoint) {
 				// deselect checkpoint
-				selectCheckpoint(null);				
-			}
-			else {	
+				selectCheckpoint(null);
+			} else {
 				// select checkpoint
 				selectCheckpoint(checkpoint);
 			}
 		}
 
 		@Override
-		public void onClickedMap(LatLng position) {			
-			addCheckpoint(position);				
+		public void onClickedMap(LatLng position) {
+			if (addingCheckpoint) {
+				addCheckpoint(position);
+				// cancel the flag
+				addingCheckpoint = false;
+			} 
+			else {
+				selectCheckpoint(null);
+			}			
 		}
 
 		@Override
 		public void onStartPositioningCheckpoint(Checkpoint checkpoint) {
-			// nothing to do
+			// cancel adding checkpoint
+			addingCheckpoint = false;
 		}
 
 		@Override
 		public void onPositionedCheckpoint(Checkpoint checkpoint) {
 			// persist to database
-			ContentValues values = new ContentValues();
-			values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, checkpoint.location.getLatitude());
-			values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, checkpoint.location.getLongitude());
-			Uri checkpointUri = Contract.Checkpoints.getUriId(checkpoint.id);
-			getContentResolver().update(checkpointUri, values, null, null);
+			checkpoint.save(EditTrailActivity.this);
 		}
 	}
 
 	/**
 	 * Listener for events from the EditCheckpointFragment
 	 */
-	private class EditButtonListener implements EditCheckpointFragment.OnButtonListener {
+	private class EditListener implements EditCheckpointFragment.Listener {
 
 		@Override
-		public void onReorderBackwardClicked() {
-			reorderSelectedCheckpointBackward();
+		public void onMoveBackwardClick() {
+			moveSelectedCheckpointBackward();
 		}
 
 		@Override
-		public void onReorderForwardClicked() {
-			reorderSelectedCheckpointForward();
+		public void onMoveForwardClick() {
+			moveSelectedCheckpointForward();
 		}
 
 		@Override
-		public void onDeleteCheckpointClicked() {
+		public void onDeleteCheckpointClick() {
 			// show dialog to ask if checkpoint should be really deleted
-			reorderSelectedCheckpointForward();
+			deleteSelectedCheckpoint();
 		}
 	}
 
@@ -626,17 +617,33 @@ public class EditTrailActivity extends Activity {
 	private EditCheckpointFragment checkpointEdit;
 
 	// currently selected checkpoint
-	Checkpoint selectedCheckpoint;
-
+	private Checkpoint selectedCheckpoint;
+	
+	// indicates that we're busy adding a checkpoint
+	private boolean addingCheckpoint = false;
+	
+	/**
+	 * Opens the edit activity for the specified trail
+	 */
+	public static void show(Context context, Trail trail) {
+		// switch to activity		
+		Intent intent = new Intent(context, EditTrailActivity.class);
+		intent.putExtra(INTENT_EXTRA_TRAILID, trail.getId());
+		context.startActivity(intent);
+	}
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		Log.d("EditTrailActivit", "onCreate");
 
-		long trailId = ContentUris.parseId(getIntent().getData());		
-		trail = Trail.fromId(this, trailId);
-				
+		long trailId = getIntent().getLongExtra(INTENT_EXTRA_TRAILID, 0);
+		
+		// load trail including its checkpoints
+		trail = Trail.load(this, trailId);
+		trail.loadCheckpoints(this);
+		
 		// load layout
 		setContentView(R.layout.activity_edit_trail);
 
@@ -654,8 +661,7 @@ public class EditTrailActivity extends Activity {
 		checkpointEdit = (EditCheckpointFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_CPEDIT);
 		if (checkpointEdit == null) {
 			checkpointEdit = new EditCheckpointFragment();
-			checkpointEdit.setTrail(trail.info.id);
-			checkpointEdit.setOnButtonListener(new EditButtonListener());
+			checkpointEdit.setListener(new EditListener());
 			ft.replace(R.id.layout_checkpoint_edit, checkpointEdit, FRAGMENT_TAG_CPEDIT);
 		}
 		ft.commit();
@@ -664,13 +670,10 @@ public class EditTrailActivity extends Activity {
 		ActionBar actionBar = getActionBar();
 		actionBar.setDisplayHomeAsUpEnabled(true);
 		actionBar.setTitle(R.string.activity_title_edit_trail);
-
-		// show trails name as subtitle
-		actionBar.setSubtitle(trail.info.name);
+		actionBar.setSubtitle(trail.name);
 
 		// make sure nothing is selected
 		selectCheckpoint(null);
-						
 	}
 
 	@Override
@@ -680,33 +683,29 @@ public class EditTrailActivity extends Activity {
 
 		// disable upload if trail wasn't already uploaded
 		MenuItem menuUpdload = menu.findItem(R.id.action_upload_trail);
-		menuUpdload.setVisible(trail.info.uploaded != 0);
-		
+		menuUpdload.setVisible(trail.uploaded != 0);
+
 		return true;
 	}
-	
-	
+
 	@Override
 	public void onStart() {
 		super.onStart();
 
-		Log.d("EditTrailActivit", "onStart");
-
 		// TODO check if trail is not downloaded
-		
-		// clear old checkpoints
-		map.clearCheckpoints();
 
-		// load all checkpoints
+		// init map
+		map.clearCheckpoints();
 		boolean first = true;
-		for (Checkpoint checkpoint : trail.checkpoints) {
+		for (Checkpoint checkpoint : trail.getCheckpoints()) {
 			LatLng location = new LatLng(checkpoint.location.getLatitude(), checkpoint.location.getLongitude());
+			
 			// add marker
 			map.addCheckpoint(checkpoint, false, false);
 
 			// mark point as selected if necessary
 			if (checkpoint == selectedCheckpoint) {
-				map.selectCheckpoint(checkpoint); 
+				map.selectCheckpoint(checkpoint);
 			}
 
 			// set camera to start
@@ -715,9 +714,8 @@ public class EditTrailActivity extends Activity {
 				map.setCameraZoom(TrailMapFragment.DEFAULT_ZOOM);
 				first = false;
 			}
-			
 		}
-		
+
 		// refresh map
 		map.refresh();
 
@@ -726,13 +724,28 @@ public class EditTrailActivity extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-		case android.R.id.home:
-			finish();
+
+		case R.id.action_new_checkpoint:
+			// unselect current checkpoint
+			selectCheckpoint(null);
+			// set a flag that next click to map adds the new checkpoint
+			addingCheckpoint = true;
+			// show toast to inform user on what to do
+			Toast.makeText(this, R.string.toast_new_checkpoint , Toast.LENGTH_SHORT).show();
 			return true;
 
 		case R.id.action_upload_trail:
-			// upload the trail 
+			// cancel adding checkpoint
+			addingCheckpoint = false;
+			// upload the trail
 			uploadTrail();
+			return true;
+
+		case R.id.action_trail_info:
+			// cancel adding checkpoint
+			addingCheckpoint = false;
+			// show the trail info activity
+			TrailInfoActivity.show(this, trail);
 			return true;
 			
 		}
@@ -744,40 +757,25 @@ public class EditTrailActivity extends Activity {
 	 */
 	private void addCheckpoint(LatLng position) {
 
-		Checkpoint checkpoint = new Checkpoint();
-		
-		// init its data
-		checkpoint.index = trail.checkpoints.size();
+		Checkpoint checkpoint = trail.addCheckpoint();
+
+		// init its data and save in database
 		checkpoint.uuid = UUID.randomUUID();
 		checkpoint.location.setLatitude(position.latitude);
 		checkpoint.location.setLongitude(position.longitude);
 		checkpoint.showLocation = true;
-		checkpoint.hint = "";		
-
-		// create new checkpoint in database
-		ContentValues values = new ContentValues();
-		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, checkpoint.location.getLatitude());
-		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, checkpoint.location.getLongitude());
-		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_SHOW, checkpoint.showLocation ? 1 : 0);
-		values.put(Contract.Checkpoints.COLUMN_NAME_NO, checkpoint.index + 1);
-		Uri checkpointsDir = Contract.Checkpoints.getUriDir(trail.info.id);
-		Uri checkpointUri = getContentResolver().insert(checkpointsDir, values);
-		checkpoint.id = ContentUris.parseId(checkpointUri);
-
-		// update updated timestamp for trail
-		values.clear();
-		values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-		Uri trailIdUri = Contract.Trails.getUriId(trail.info.id);
-		getContentResolver().update(trailIdUri, values, null, null);
-
-		// append to our list
-		trail.checkpoints.add(checkpoint);
+		checkpoint.hint = "";
+		checkpoint.save(this);
 
 		// add marker
 		map.addCheckpoint(checkpoint, false, true);
 
 		// select added point
 		selectCheckpoint(checkpoint);
+		
+		// mark trail as updated
+		trail.updated = System.currentTimeMillis();
+		trail.save(this);		
 	}
 
 	/**
@@ -785,10 +783,6 @@ public class EditTrailActivity extends Activity {
 	 * @param pointId
 	 */
 	private void selectCheckpoint(Checkpoint checkpoint) {
-		// do nothing if the same point was checked before
-		if (selectedCheckpoint == checkpoint) {
-			return;
-		}
 
 		// make it the new selected point
 		selectedCheckpoint = checkpoint;
@@ -797,12 +791,9 @@ public class EditTrailActivity extends Activity {
 		map.selectCheckpoint(checkpoint);
 
 		// load in checkpoint edit fragment
-		if (checkpoint != null)
-			checkpointEdit.setCheckpoint(checkpoint.id);
-		else
-			checkpointEdit.setCheckpoint(0);
-			
+		checkpointEdit.setCheckpoint(checkpoint);
 
+		// show or hide edit fragment
 		if (checkpoint != null && checkpointEdit.isHidden()) {
 			FragmentTransaction ft = getFragmentManager().beginTransaction();
 			ft.show(checkpointEdit);
@@ -814,53 +805,45 @@ public class EditTrailActivity extends Activity {
 		}
 
 		// update button on checkpoint edit fragment
-		updateEditButtons();
+		checkpointEdit.enableButtons();
 	}
 
 	/**
 	 * 
 	 */
 	private void deleteSelectedCheckpoint() {
-		
+
 		/**
 		 * Dialog to ask user about deletion of the checkpoint
 		 */
 		class DeleteDialogFragment extends DialogFragment {
 			@Override
 			public Dialog onCreateDialog(Bundle savedInstanceState) {
-				return new AlertDialog.Builder(getActivity()).setTitle(R.string.action_delete_checkpoint)
-						.setMessage(R.string.dialog_delete_checkpoint_message).setIcon(R.drawable.ic_delete)
+				return new AlertDialog.Builder(getActivity()) //
+						.setTitle(R.string.action_delete_checkpoint) //
+						.setIcon(R.drawable.ic_delete) //
+						.setMessage(R.string.dialog_delete_checkpoint_message) //
 						.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int whichButton) {
 
-								Checkpoint checkpoint = selectedCheckpoint; 
-								
+								Checkpoint checkpoint = selectedCheckpoint;
+
 								// unselect checkpoint
 								selectCheckpoint(null);
 
 								// remove from map
 								map.removeCheckpoint(checkpoint);
 
-								// delete checkpoint from database
-								Uri checkpointUri = Contract.Checkpoints.getUriId(checkpoint.id);
-								getContentResolver().delete(checkpointUri, null, null);
+								// delete checkpoint
+								checkpoint.delete(getActivity());
 
-								// update updated timestamp for trail
-								ContentValues values = new ContentValues();
-								values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-								Uri trailIdUri = Contract.Trails.getUriId(trail.info.id);
-								getContentResolver().update(trailIdUri, values, null, null);
-
-								// remove from our list
-								trail.checkpoints.remove(checkpoint);
-
-								// update button on checkpoint edit fragment
-								updateEditButtons();
-
-								// renumber in database
-								reindexCheckpoints();
+								// mark trail as updated
+								trail.updated = System.currentTimeMillis();
+								trail.save(EditTrailActivity.this);		
 							}
-						}).setNegativeButton(R.string.dialog_no, null).create();
+						})
+						.setNegativeButton(R.string.dialog_no, null)
+						.create();
 			}
 
 		}
@@ -873,103 +856,53 @@ public class EditTrailActivity extends Activity {
 	 * 
 	 * @param checkpointId
 	 */
-	private void reorderSelectedCheckpointBackward() {
-		// get index of checkpoint
-		int index = trail.checkpoints.indexOf(selectedCheckpoint);
-		if (index > 0) {
-			// move it in list
-			int newIndex = index - 1;
-			trail.checkpoints.remove(selectedCheckpoint);
-			trail.checkpoints.add(newIndex, selectedCheckpoint);
-
-			// do it on the map
-			map.setCheckpointIndex(selectedCheckpoint, newIndex);
-
-			// update button on checkpoint edit fragment
-			updateEditButtons();
-
-			// renumber in database
-			reindexCheckpoints();
-
-			// update updated timestamp for trail
-			ContentValues values = new ContentValues();
-			values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-			Uri trailIdUri = Contract.Trails.getUriId(trail.info.id);
-			getContentResolver().update(trailIdUri, values, null, null);
-
-		}
+	private void moveSelectedCheckpointBackward() {
+		// move checkpoint
+		selectedCheckpoint.moveBackward(this);
+			
+		// tell the map to refresh itself
+		map.reorderCheckpoints();
+		
+		// update checkpoint edit fragment
+		checkpointEdit.enableButtons();
+		checkpointEdit.updateIndex();
+		
+		// mark trail as updated
+		trail.updated = System.currentTimeMillis();
+		trail.save(this);		
 	}
 
 	/**
 	 * 
 	 * @param checkpointId
 	 */
-	private void reorderSelectedCheckpointForward() {
-		// get index of checkpoint
-		int index = trail.checkpoints.indexOf(selectedCheckpoint);
-		if (index < trail.checkpoints.size() - 1) {
-			// move it in list
-			int newIndex = index + 1;
-			trail.checkpoints.remove(index);
-			trail.checkpoints.add(newIndex, selectedCheckpoint);
+	private void moveSelectedCheckpointForward() {
 
-			// do it on the map
-			map.setCheckpointIndex(selectedCheckpoint, newIndex);
-
-			// update button on checkpoint edit fragment
-			updateEditButtons();
-
-			// update updated timestamp for trail
-			ContentValues values = new ContentValues();
-			values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-			Uri trailIdUri = Contract.Trails.getUriId(trail.info.id);
-			getContentResolver().update(trailIdUri, values, null, null);
-
-			// reindex in database
-			reindexCheckpoints();
-		}
-	}
-
-	/**
-	 * Makes sure the index of the checkpoints in the database match
-	 * @param index
-	 */
-	private void reindexCheckpoints() {
-		
-		for (Checkpoint checkpoint : trail.checkpoints) {
-			if (checkpoint.index != trail.checkpoints.indexOf(checkpoint)) {
-				checkpoint.index = trail.checkpoints.indexOf(checkpoint);
-				ContentValues values = new ContentValues();
-				values.put(Contract.Checkpoints.COLUMN_NAME_NO, checkpoint.index+1);
-				Uri checkpointUri = Contract.Checkpoints.getUriId(checkpoint.id);
-				getContentResolver().update(checkpointUri, values, null, null);				
-			}
-		}
-		
-		updateEditButtons();
-	}
-
-	/**
-	 * 
-	 */
-	private void updateEditButtons() {
-
-		boolean backward = selectedCheckpoint != null &&  (selectedCheckpoint.index > 0);
-		boolean forward = selectedCheckpoint != null && (selectedCheckpoint.index <  trail.checkpoints.size() -1 );
-		checkpointEdit.enableReorderButtons(backward, forward);
-	}
-
+		// move checkpoint
+		selectedCheckpoint.moveForward(this);
 	
+		// tell the map to refresh itself
+		map.reorderCheckpoints();
+		
+		// update checkpoint edit fragment
+		checkpointEdit.enableButtons();
+		checkpointEdit.updateIndex();
+
+		// mark trail as updated
+		trail.updated = System.currentTimeMillis();
+		trail.save(this);		
+	}
+
 	/**
 	 * Upload a trail to the server in an asynchronous task
 	 */
 	private void uploadTrail() {
-						
+
 		// deselect checkpoint (saves changes)
 		selectCheckpoint(null);
-		
+
 		// execute task
-		new UploadTask(this, trail.info, false).execute();
+		new UploadTask(this, trail, false).execute();
 	}
-		
+
 }

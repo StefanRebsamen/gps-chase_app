@@ -46,7 +46,7 @@ public class Provider extends ContentProvider {
 	/**
 	 * The database version
 	 */
-	private static final int DATABASE_VERSION = 6;
+	private static final int DATABASE_VERSION = 1;
 
 	/**
 	 * A projection map used to select columns from trails table
@@ -106,12 +106,6 @@ public class Provider extends ContentProvider {
 
 	// the incoming URI matches the chase ID URI pattern
 	private static final int URI_CHASE_ID = 101;
-
-	// the incoming URI matches the chases URI pattern
-	private static final int URI_CHASE_EX_DIR = 102;
-
-	// the incoming URI matches the chase ID URI pattern
-	private static final int URI_CHASE_EX_ID = 103;	
 	
 	// the incoming URI matches the hits URI pattern
 	private static final int URI_HIT_DIR = 110;
@@ -140,8 +134,6 @@ public class Provider extends ContentProvider {
 		uriMatcher.addURI(Contract.AUTHORITY, Contract.Images.getUriPatternId(), URI_IMAGE_ID);
 		uriMatcher.addURI(Contract.AUTHORITY, Contract.Chases.getUriPatternDir(), URI_CHASE_DIR);
 		uriMatcher.addURI(Contract.AUTHORITY, Contract.Chases.getUriPatternId(), URI_CHASE_ID);
-		uriMatcher.addURI(Contract.AUTHORITY, Contract.Chases.getUriPatternDirEx(), URI_CHASE_EX_DIR);
-		uriMatcher.addURI(Contract.AUTHORITY, Contract.Chases.getUriPatternIdEx(), URI_CHASE_EX_ID);
 		uriMatcher.addURI(Contract.AUTHORITY, Contract.Hits.getUriPatternDir(), URI_HIT_DIR);
 		uriMatcher.addURI(Contract.AUTHORITY, Contract.Hits.getUriPatternId(), URI_HIT_ID);
 		
@@ -155,12 +147,13 @@ public class Provider extends ContentProvider {
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_NAME, Contract.Trails.COLUMN_NAME_NAME);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_DESCRIPTION, Contract.Trails.COLUMN_NAME_DESCRIPTION);
 		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_PASSWORD, Contract.Trails.COLUMN_NAME_PASSWORD);
+		trailsProjectionMap.put(Contract.Trails.COLUMN_NAME_TOKEN, Contract.Trails.COLUMN_NAME_TOKEN);
 
 		// create and initialize projection map for table checkpoints
 		checkpointsProjectionMap = new HashMap<String, String>();
 		checkpointsProjectionMap.put(Contract.Checkpoints._ID, Contract.Checkpoints._ID);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_UUID, Contract.Checkpoints.COLUMN_NAME_UUID);
-		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_NO, Contract.Checkpoints.COLUMN_NAME_NO);
+		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_INDEX, Contract.Checkpoints.COLUMN_NAME_INDEX);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, Contract.Checkpoints.COLUMN_NAME_LOC_LAT);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, Contract.Checkpoints.COLUMN_NAME_LOC_LNG);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_LOC_SHOW, Contract.Checkpoints.COLUMN_NAME_LOC_SHOW);
@@ -171,7 +164,7 @@ public class Provider extends ContentProvider {
 		imagesProjectionMap.put(Contract.Images._ID, Contract.Images._ID);
 		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_UUID, Contract.Images.COLUMN_NAME_UUID);
 		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_CHECKPOINT_ID, Contract.Images.COLUMN_NAME_CHECKPOINT_ID);
-		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_NO, Contract.Images.COLUMN_NAME_NO);
+		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_INDEX, Contract.Images.COLUMN_NAME_INDEX);
 		imagesProjectionMap.put(Contract.Images.COLUMN_NAME_DESCRIPTION, Contract.Images.COLUMN_NAME_DESCRIPTION);
 
 		// create and initialize projection map for table chases
@@ -189,11 +182,6 @@ public class Provider extends ContentProvider {
 		chasesExProjectionMap.put(Contract.Chases.COLUMN_NAME_PLAYER, Contract.Chases.COLUMN_NAME_PLAYER);
 		chasesExProjectionMap.put(Contract.Chases.COLUMN_NAME_STARTED, Contract.Chases.COLUMN_NAME_STARTED);
 		chasesExProjectionMap.put(Contract.Chases.COLUMN_NAME_FINISHED, Contract.Chases.COLUMN_NAME_FINISHED);
-		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_UUID, Contract.Trails.COLUMN_NAME_UUID);
-		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_NAME, Contract.Trails.COLUMN_NAME_NAME);
-		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_DESCRIPTION, Contract.Trails.COLUMN_NAME_DESCRIPTION);
-		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_UPDATED, Contract.Trails.COLUMN_NAME_UPDATED);
-		chasesExProjectionMap.put(Contract.Trails.COLUMN_NAME_DOWNLOADED, Contract.Trails.COLUMN_NAME_DOWNLOADED);
 		
 		// create an initialize projection map for table hits
 		hitsProjectionMap = new HashMap<String, String>();
@@ -224,15 +212,16 @@ public class Provider extends ContentProvider {
 					+ Contract.Trails.COLUMN_NAME_DOWNLOADED + " INTEGER NOT NULL DEFAULT 0,"			//
 					+ Contract.Trails.COLUMN_NAME_NAME + " TEXT	NOT NULL,"								//
 					+ Contract.Trails.COLUMN_NAME_DESCRIPTION + " TEXT NULL,"							//
-					+ Contract.Trails.COLUMN_NAME_PASSWORD + " TEXT	NULL"								//
+					+ Contract.Trails.COLUMN_NAME_PASSWORD + " TEXT	NULL,"								//
+					+ Contract.Trails.COLUMN_NAME_TOKEN + " TEXT NULL"									//
 					+ ");");
-
+		
 			db.execSQL("CREATE TABLE " + Contract.Checkpoints.TABLE_NAME								// 
 					+ " (" 																				//
 					+ Contract.Checkpoints._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"					//
 					+ Contract.Checkpoints.COLUMN_NAME_UUID + " TEXT NULL,"								//
 					+ Contract.Checkpoints.COLUMN_NAME_TRAIL_ID + " INTEGER NOT NULL," 					//
-					+ Contract.Checkpoints.COLUMN_NAME_NO + " INTEGER NOT NULL,"						//
+					+ Contract.Checkpoints.COLUMN_NAME_INDEX + " INTEGER NOT NULL,"						//
 					+ Contract.Checkpoints.COLUMN_NAME_HINT + " TEXT NULL,"								//
 					+ Contract.Checkpoints.COLUMN_NAME_LOC_LNG + " REAL	NOT NULL,"						//
 					+ Contract.Checkpoints.COLUMN_NAME_LOC_LAT + " REAL	NOT NULL," 						//
@@ -247,7 +236,7 @@ public class Provider extends ContentProvider {
 					+ Contract.Images._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"						//
 					+ Contract.Images.COLUMN_NAME_UUID + " TEXT NULL,"									//
 					+ Contract.Images.COLUMN_NAME_CHECKPOINT_ID + " INTEGER	NOT NULL,"					//
-					+ Contract.Images.COLUMN_NAME_NO + " INTEGER NOT NULL  DEFAULT 0,"					//
+					+ Contract.Images.COLUMN_NAME_INDEX + " INTEGER NOT NULL DEFAULT 0,"					//
 					+ Contract.Images.COLUMN_NAME_DESCRIPTION + " TEXT NULL,"							//
 					+ "FOREIGN KEY( " + Contract.Images.COLUMN_NAME_CHECKPOINT_ID + ") "						//
 					+ "  REFERENCES " + Contract.Checkpoints.TABLE_NAME + "(" + Contract.Checkpoints._ID + ") "	//
@@ -368,20 +357,7 @@ public class Provider extends ContentProvider {
 			qb.appendWhere(Contract.Chases._ID + "=" + uri.getPathSegments().get(1));
 			orderBy = null;
 			break;
-
-		case URI_CHASE_EX_DIR:
-			qb.setTables(Contract.Chases.TABLE_NAME + " JOIN " + Contract.Trails.TABLE_NAME + " ON (" +Contract.Chases.TABLE_NAME +"." + Contract.Chases.COLUMN_NAME_TRAIL_ID + "=" + Contract.Trails.TABLE_NAME + "." + Contract.Trails._ID + ")");
-			qb.setProjectionMap(chasesExProjectionMap);
-			orderBy = !TextUtils.isEmpty(sortOrder) ? sortOrder : Contract.Chases.DEFAULT_SORT_ORDER;
-			break;
-
-		case URI_CHASE_EX_ID:
-			qb.setTables(Contract.Chases.TABLE_NAME + " JOIN " + Contract.Trails.TABLE_NAME + " ON (" +Contract.Chases.TABLE_NAME +"." + Contract.Chases.COLUMN_NAME_TRAIL_ID + "=" + Contract.Trails.TABLE_NAME + "." + Contract.Trails._ID + ")");
-			qb.setProjectionMap(chasesExProjectionMap);
-			qb.appendWhere(Contract.Chases.TABLE_NAME + "." + Contract.Chases._ID + "=" + uri.getPathSegments().get(1));
-			orderBy = null;
-			break;
-			
+		
 		case URI_HIT_DIR:
 			qb.setTables(Contract.Hits.TABLE_NAME);
 			qb.setProjectionMap(hitsProjectionMap);

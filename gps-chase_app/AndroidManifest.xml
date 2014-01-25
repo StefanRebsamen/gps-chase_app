@@ -58,6 +58,12 @@
             android:parentActivityName=".MainActivity"
             android:windowSoftInputMode="stateHidden|adjustResize">
         </activity>
+
+        <activity
+            android:name=".TrailInfoActivity"
+            android:parentActivityName=".MainActivity"
+            android:windowSoftInputMode="stateHidden|adjustResize">
+        </activity>
         
         <activity
             android:name=".ChaseTrailActivity"

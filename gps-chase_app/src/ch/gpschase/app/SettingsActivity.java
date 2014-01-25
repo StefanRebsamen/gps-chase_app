@@ -1,17 +1,15 @@
-/**
- * 
- */
 package ch.gpschase.app;
 
-import ch.gpschase.app.util.TrailMapFragment;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.widget.Toast;
+import ch.gpschase.app.util.TrailMapFragment;
 
 /**
  * Activity to allow the user to change settings
@@ -39,7 +37,7 @@ public class SettingsActivity extends Activity {
 			category = (PreferenceCategory)findPreference(getString(R.string.pref_cat_view_key));
 			category.addPreference(TrailMapFragment.getMapTypePreference(getActivity()));
 
-			// add the preference for the map type to category Chase
+			// add the preference for the update frequency
 			category = (PreferenceCategory)findPreference(getString(R.string.pref_cat_chase_key));
 			category.addPreference(ChaseTrailActivity.getUpdateFrequencyPreference(getActivity()));
 			
@@ -77,4 +75,12 @@ public class SettingsActivity extends Activity {
 		}
 	}
 
+	
+	/**
+	 * Opens the activity
+	 */
+	public static void show(Context context) {
+		Intent intent = new Intent(context, SettingsActivity.class);
+		context.startActivity(intent);
+	}		
 }

@@ -9,7 +9,7 @@ import android.provider.BaseColumns;
 /**
  * Defines a contract between the GPSchase content provider and its clients.
  */
-public final class Contract {
+final class Contract {
 
 	/**
 	 * Authority for this provider
@@ -135,7 +135,15 @@ public final class Contract {
 		 * </P>
 		 */
 		public static final String COLUMN_NAME_PASSWORD = "password";
-				
+
+		/**
+		 * Token which which is used to update or delete trail on server
+		 * <P>
+		 * Type: TEXT
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_TOKEN = "token";
+		
 		/**
 		 * The default sort order for this table
 		 */
@@ -153,7 +161,8 @@ public final class Contract {
 			COLUMN_NAME_DOWNLOADED,		//
 			COLUMN_NAME_NAME,			//
 			COLUMN_NAME_DESCRIPTION,	// 
-			COLUMN_NAME_PASSWORD		//
+			COLUMN_NAME_PASSWORD,		//
+			COLUMN_NAME_TOKEN		//
 		};
 
 		public static final int READ_PROJECTION_ID_INDEX = 0;
@@ -164,6 +173,7 @@ public final class Contract {
 		public static final int READ_PROJECTION_NAME_INDEX = 5;
 		public static final int READ_PROJECTION_DESCRIPTION_INDEX = 6;
 		public static final int READ_PROJECTION_PASSWORD_INDEX = 7;				
+		public static final int READ_PROJECTION_TOKEN_INDEX = 8;				
 
 	}	
 
@@ -245,12 +255,12 @@ public final class Contract {
 		public static final String COLUMN_NAME_TRAIL_ID = "trail_id";
 		
 		/**
-		 * Column name for the number of the checkpoint
+		 * Column name for the zero based index of the checkpoint
 		 * <P>
 		 * Type: TEXT
 		 * </P>
 		 */
-		public static final String COLUMN_NAME_NO = "no";
+		public static final String COLUMN_NAME_INDEX = "idx";
 
 		/**
 		 * Column name of the checkpoint hint
@@ -289,7 +299,7 @@ public final class Contract {
 		/**
 		 * The default sort order for this table
 		 */
-		public static final String DEFAULT_SORT_ORDER = COLUMN_NAME_NO + " ASC";
+		public static final String DEFAULT_SORT_ORDER = COLUMN_NAME_INDEX + " ASC";
 		
 		
 		/**
@@ -298,7 +308,7 @@ public final class Contract {
 		public static final String[] READ_PROJECTION = new String[] { 
 			_ID,					//
 			COLUMN_NAME_UUID,		//
-			COLUMN_NAME_NO,			//
+			COLUMN_NAME_INDEX,			//
 			COLUMN_NAME_LOC_LNG,	// 
 			COLUMN_NAME_LOC_LAT,	// 
 			COLUMN_NAME_LOC_SHOW,	// 
@@ -307,7 +317,7 @@ public final class Contract {
 
 		public static final int READ_PROJECTION_ID_INDEX = 0;
 		public static final int READ_PROJECTION_UUID_INDEX = 1;
-		public static final int READ_PROJECTION_NO_INDEX = 2;
+		public static final int READ_PROJECTION_INDEX_INDEX = 2;
 		public static final int READ_PROJECTION_LOC_LNG_INDEX = 3;
 		public static final int READ_PROJECTION_LOC_LAT_INDEX = 4;
 		public static final int READ_PROJECTION_LOC_SHOW_INDEX = 5;
@@ -349,7 +359,7 @@ public final class Contract {
 		public static Uri getUriDir(long checkpoinId) {
 			return Checkpoints.getUriId(checkpoinId).buildUpon().appendPath(PATH_DIR).build();
 		}
-				
+		
 		/**
 		 * @return	UriMatcher pattern for accessing a single record
 		 */
@@ -398,7 +408,7 @@ public final class Contract {
 		 * Type: TEXT
 		 * </P>
 		 */
-		public static final String COLUMN_NAME_NO = "no";
+		public static final String COLUMN_NAME_INDEX = "idx";
 
 		/**
 		 * Column name of the image description
@@ -411,7 +421,7 @@ public final class Contract {
 		/**
 		 * The default sort order for this table
 		 */
-		public static final String DEFAULT_SORT_ORDER = _ID + " ASC," +  COLUMN_NAME_NO + " ASC";
+		public static final String DEFAULT_SORT_ORDER = COLUMN_NAME_INDEX + " ASC";
 		
 		
 		/**
@@ -421,13 +431,13 @@ public final class Contract {
 			_ID,							//
 			COLUMN_NAME_UUID,				//
 			COLUMN_NAME_CHECKPOINT_ID,		//
-			COLUMN_NAME_NO,					//
+			COLUMN_NAME_INDEX,					//
 			COLUMN_NAME_DESCRIPTION,		//
 		};
 
 		public static final int READ_PROJECTION_ID_INDEX = 0;
 		public static final int READ_PROJECTION_UUID_INDEX = 1;
-		public static final int READ_PROJECTION_NO_INDEX = 2;
+		public static final int READ_PROJECTION_INDEX_INDEX = 2;
 		public static final int READ_PROJECTION_DESCRIPTION_INDEX = 3;
 			
 	}
@@ -445,8 +455,7 @@ public final class Contract {
 
 		private static final String PATH_DIR = "chases";		
 		private static final String PATH_ID = "chase";
-		private static final String PATH_DIR_EX = "chasesEx";		
-		private static final String PATH_ID_EX = "chaseEx";
+
 		
 		/**
 		 * @return Uri for listening records
@@ -476,34 +485,6 @@ public final class Contract {
 			return ContentUris.withAppendedId(new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath(PATH_ID).build(), Id);
 		}
 
-		/**
-		 * @return Uri for listening records, extended with columns from the trails table
-		 */
-		public static String getUriPatternDirEx() {
-			return PATH_DIR_EX;
-		}
-	
-		/**
-		 * @return	Uri for a acessing single record, extended with columns from the trails table
-		 */
-		public static String getUriPatternIdEx() {
-			return PATH_ID_EX + "/#";
-		}
-		
-		/**
-		 * @return	UriMatcher pattern for listening record, extended with columns from the trails table
-		 */
-		public static Uri getUriDirEx() {
-			return new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath(PATH_DIR_EX).build();
-		}
-				
-		/**
-		 * @return	UriMatcher pattern for accessing a single record, extended with columns from the trails table
-		 */
-		public static Uri getUriIdEx(long Id) {
-			return ContentUris.withAppendedId(new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath(PATH_ID_EX).build(), Id);
-		}
-		
 		/*
 		 * MIME type definitions
 		 */
@@ -565,29 +546,19 @@ public final class Contract {
 		/**
 		 * Standard projection for extended query
 		 */
-		public static final String[] READ_PROJECTION_EX = new String[] { 
+		public static final String[] READ_PROJECTION = new String[] { 
 			_ID,								// 
 			COLUMN_NAME_TRAIL_ID,				//
 			COLUMN_NAME_PLAYER,					//	
 			COLUMN_NAME_STARTED,				// 
-			COLUMN_NAME_FINISHED,				// 
-			Trails.COLUMN_NAME_UUID,			//
-			Trails.COLUMN_NAME_NAME,			//
-			Trails.COLUMN_NAME_DESCRIPTION,		// 
-			Trails.COLUMN_NAME_UPDATED,			// 
-			Trails.COLUMN_NAME_DOWNLOADED		// 
+			COLUMN_NAME_FINISHED				// 
 		};
 
-		public static final int READ_PROJECTION_EX_ID_INDEX = 0;
-		public static final int READ_PROJECTION_EX_TRAIL_ID_INDEX = 1;
-		public static final int READ_PROJECTION_EX_PLAYER_INDEX = 2;
-		public static final int READ_PROJECTION_EX_STARTED_INDEX = 3;
-		public static final int READ_PROJECTION_EX_FINISHED_INDEX = 4;
-		public static final int READ_PROJECTION_EX_TRAIL_UUID_INDEX = 5;
-		public static final int READ_PROJECTION_EX_TRAIL_NAME_INDEX = 6;
-		public static final int READ_PROJECTION_EX_TRAIL_DESCRIPTION_INDEX = 7;		
-		public static final int READ_PROJECTION_EX_TRAIL_UPDATED_INDEX = 8;		
-		public static final int READ_PROJECTION_EX_TRAIL_DOWNLOADED_INDEX = 9;		
+		public static final int READ_PROJECTION_ID_INDEX = 0;
+		public static final int READ_PROJECTION_TRAIL_ID_INDEX = 1;
+		public static final int READ_PROJECTION_PLAYER_INDEX = 2;
+		public static final int READ_PROJECTION_STARTED_INDEX = 3;
+		public static final int READ_PROJECTION_FINISHED_INDEX = 4;
 	}	
 
 	

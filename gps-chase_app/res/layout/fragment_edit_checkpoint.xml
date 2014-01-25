@@ -3,13 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content" >
 
-     <ImageButton
-         android:id="@+id/button_reorder_checkpoint_backward"
-         android:layout_width="wrap_content"
-         android:layout_height="wrap_content"
-         android:layout_alignParentRight="true"
-         android:layout_alignParentTop="true"
-         android:src="@drawable/ic_up" />
+    <ImageButton
+        android:id="@+id/button_reorder_checkpoint_backward"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/ic_up" />
 
     <ImageButton
         android:id="@+id/button_reorder_checkpoint_forward"
@@ -27,20 +27,34 @@
         android:layout_alignParentRight="true"
         android:layout_below="@+id/button_reorder_checkpoint_forward"
         android:src="@drawable/ic_delete" />
-    
+
+    <TextView
+        android:id="@+id/textView_checkpoint_no"
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="4dp"
+        android:text="#1"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
     <CheckBox
         android:id="@+id/checkBox_show_on_map"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/textView_checkpoint_no"
+        android:layout_toRightOf="@+id/textView_checkpoint_no"
         android:text="@string/field_show_on_map" />
-    
+
     <EditText
         android:id="@+id/editText_hint"
-        android:layout_width="fill_parent"
+        android:hint="@string/field_hint"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/checkBox_show_on_map"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/textView_checkpoint_no"
         android:layout_toLeftOf="@+id/button_reorder_checkpoint_backward"
-        android:ellipsize="end"
         android:ems="10"
         android:gravity="top"
         android:inputType="textCapSentences|textMultiLine"
@@ -52,9 +66,9 @@
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_below="@+id/editText_hint"
-        android:src="@drawable/ic_new_picture"
+        android:src="@drawable/ic_new_image"
         android:text="Button" />
-        
+
     <HorizontalScrollView
         android:id="@+id/scrollView_images"
         android:layout_width="match_parent"
@@ -71,6 +85,4 @@
         </LinearLayout>
     </HorizontalScrollView>
 
-
-    
 </RelativeLayout>

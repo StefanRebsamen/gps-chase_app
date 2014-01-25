@@ -1,7 +1,5 @@
 package ch.gpschase.app;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,11 +12,9 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -26,39 +22,36 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.Adapter;
+import android.view.Window;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
-import ch.gpschase.app.R.menu;
 import ch.gpschase.app.data.BackendClient;
-import ch.gpschase.app.data.Contract;
+import ch.gpschase.app.data.Chase;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.data.TrailInfo;
 import ch.gpschase.app.util.ChaseCreator;
+import ch.gpschase.app.util.DownloadTask;
 import ch.gpschase.app.util.SelectableListFragment;
 import ch.gpschase.app.util.TrailDownloadLink;
-import ch.gpschase.app.util.DownloadTask;
-import ch.gpschase.app.util.Duration;
 import ch.gpschase.app.util.UploadTask;
 
+/**
+ * 
+ */
 public class MainActivity extends Activity {
 
 	private static final String FRAGMENT_TAG_MY_TRAILS = "myTrails";
 	private static final String FRAGMENT_TAG_CLOUD_TRAILS = "cloudTrails";
-		
+
 	private MyTrailsFragment myTailsFragment;
 	private CloudTrailsFragment cloudTrailsFragment;
-	
+
 	/**
 	 * 
 	 */
@@ -91,23 +84,23 @@ public class MainActivity extends Activity {
 	/**
 	 * Fragment to display list of trails
 	 */
-	public static class MyTrailsFragment extends SelectableListFragment {
-
+	public static class MyTrailsFragment extends SelectableListFragment<Trail> {
+		
 		/**
 		 * 
 		 */
 		public MyTrailsFragment() {
-			super(Contract.Trails.getUriDir(), Contract.Trails.READ_PROJECTION, R.menu.menu_main_trails, R.menu.cab_main_trail);
+			super(R.menu.menu_main_trails, R.menu.cab_main_trail);
 		}
 
-		
 		@Override
 		public void onCreate(Bundle savedInstanceState) {
 			super.onCreate(savedInstanceState);
 
+			
 			// we want to create our own option menu
 			setHasOptionsMenu(true);
-		}		
+		}
 
 		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
@@ -115,76 +108,71 @@ public class MainActivity extends Activity {
 
 			// set empty text
 			CharSequence emptText = getResources().getText(R.string.empty_text_trails);
-			setEmptyText(emptText);			
-		}			
-		
+			setEmptyText(emptText);
+		}
+
 		@Override
 		public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 			// provide own option menu here
 			inflater.inflate(R.menu.menu_main_trails, menu);
 		}
+
 		
 		@Override
-		protected SimpleCursorAdapter onCreateAdapter() {
-			/**
-			 * 
-			 */
-			class Adapter extends SimpleCursorAdapter {
-			
-				private java.text.DateFormat dateFormat = android.text.format.DateFormat.getDateFormat(getActivity());
-				private java.text.DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(getActivity());
-			
-				public Adapter() {
-					super(getActivity(), R.layout.listrow_trail, null, new String[] {}, new int[] {}, 0);
-				}
-			
-				@Override
-				public void bindView(View view, Context context, Cursor cursor) {
-					
-					// create info and set as tag
-					TrailInfo info = TrailInfo.fromCursor(cursor);
-					view.setTag(info);
-					
-					// set texts
-					((TextView) view.findViewById(R.id.textView_trail_name)).setText(info.name);
-					((TextView) view.findViewById(R.id.textView_trail_description)).setText(info.description);
-					Date dateTime = new Date(info.updated);
-					((TextView) view.findViewById(R.id.textView_trail_updated))
-								.setText(dateFormat.format(dateTime) + " " + timeFormat.format(dateTime));
-					
-					if (info.downloaded != 0) {
-						((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_download);
-					} else {
-						((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_edit);
-					}					
-				}
-			}
-			
-			return new Adapter();
+		protected List<Trail> loadInBackground() {			
+			return Trail.list(getActivity());
 		}
 
+		@Override
+		protected View getView(Trail item, View convertView, ViewGroup parent) {
+
+			// make sure we've got a view
+			View view = convertView;
+			if (view == null) {
+				LayoutInflater vi = (LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			     view = vi.inflate(R.layout.listrow_trail, null);			
+			}
+			
+			// add item as tag
+			view.setTag(item);
+
+			// set UI elements
+			((TextView) view.findViewById(R.id.textView_trail_name)).setText(item.name);
+			((TextView) view.findViewById(R.id.textView_trail_description)).setText(item.description);
+			((TextView) view.findViewById(R.id.textView_trail_updated)).setText(App.formatDateTime(item.updated));
+
+			if (item.downloaded != 0) {
+				((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_download);
+			} else {
+				((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_edit);
+			}
+			
+			return view;
+		}
+
+		
 		@Override
 		protected boolean onActionItemClicked(MenuItem item, int position, long id) {
 
 			View view = getListView().getChildAt(position);
-			if (view != null) {					
-				TrailInfo trail = (TrailInfo)view.getTag();
+			if (view != null) {
+				Trail trail = (Trail) view.getTag();
 				switch (item.getItemId()) {
 				case R.id.action_new_chase:
 					// chase trail
 					chaseTrail(trail);
 					return true;
-					
+
 				case R.id.action_edit_trail:
 					// edit trail
-					editTrail(trail);				
+					EditTrailActivity.show(getActivity(), trail);
 					return true;
-				
+
 				case R.id.action_share_trail:
 					// upload and share trail
 					shareTrail(trail);
 					return true;
-	
+
 				case R.id.action_delete_trail:
 					// delete trail after asking user
 					deleteTrail(trail);
@@ -193,7 +181,6 @@ public class MainActivity extends Activity {
 			}
 			return false;
 		}
-
 
 		@Override
 		public boolean onOptionsItemSelected(MenuItem item) {
@@ -208,38 +195,37 @@ public class MainActivity extends Activity {
 		@Override
 		public void onListItemClick(int position, long id) {
 			View view = getListView().getChildAt(position);
-			if (view != null) {					
-				TrailInfo trail = (TrailInfo)view.getTag();
-				if (((TrailInfo)view.getTag()).downloaded != 0) {
+			if (view != null) {
+				Trail trail = (Trail) view.getTag();
+				if (((Trail) view.getTag()).downloaded != 0) {
 					chaseTrail(trail);
+				} else {
+					EditTrailActivity.show(getActivity(), trail);
 				}
-				else {
-					editTrail(trail);
-				}
-			}			
+			}
 		}
 
 		@Override
 		public void onSelectionChanged(int position, long id) {
-			if (actionMode != null) {				
+			if (actionMode != null) {
 				View view = getListView().getChildAt(position);
 				if (view != null) {
-					TrailInfo trail = (TrailInfo)view.getTag();
-					// update title				
-					actionMode.setTitle(trail.name);					
+					Trail trail = (Trail) view.getTag();
+					// update title
+					actionMode.setTitle(trail.name);
 					// modify menu
-					MenuItem menuEdit =  actionMode.getMenu().findItem(R.id.action_edit_trail);
+					MenuItem menuEdit = actionMode.getMenu().findItem(R.id.action_edit_trail);
 					if (menuEdit != null) {
 						menuEdit.setVisible(trail.downloaded == 0);
 					}
-					MenuItem menuShare =  actionMode.getMenu().findItem(R.id.action_share_trail);
+					MenuItem menuShare = actionMode.getMenu().findItem(R.id.action_share_trail);
 					if (menuShare != null) {
 						menuShare.setVisible(trail.downloaded == 0);
 					}
 				}
-			}			
+			}
 		}
-		
+
 		/**
 		 * 
 		 * @param name
@@ -249,30 +235,34 @@ public class MainActivity extends Activity {
 			// create a dialog which has it's OK button enabled when the text
 			// entered isn't empty
 			final EditText editText = new EditText(getActivity());
-			final AlertDialog dialog = new AlertDialog.Builder(getActivity()).setTitle(R.string.dialog_new_trail_title)
-					.setMessage(R.string.dialog_new_trail_message).setView(editText)
-					.setIcon(R.drawable.ic_new)
-					.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int whichButton) {
-
-							// insert new trail with specified name (or
-							// <untitled>
-							// if empty)
-							String name = editText.getText().toString().trim();
-
-							if (TextUtils.isEmpty(name)) {
-								name = getString(android.R.string.untitled);
-							}
-							ContentValues values = new ContentValues();
-							values.put(Contract.Trails.COLUMN_NAME_NAME, name);
-							values.put(Contract.Trails.COLUMN_NAME_UPDATED, System.currentTimeMillis());
-							Uri trailUri = getActivity().getContentResolver().insert(Contract.Trails.getUriDir(), values);
-
-							// switch to edit activity
-							Intent intent = new Intent(Intent.ACTION_DEFAULT, trailUri, getActivity(), EditTrailActivity.class);
-							startActivity(intent);							
-						}
-					}).setNegativeButton(R.string.dialog_cancel, null).create();
+			editText.setHint(R.string.dialog_new_trail_name_hint);
+			editText.setSingleLine();
+			
+			final AlertDialog dialog = new AlertDialog.Builder(getActivity())							//
+												.setTitle(R.string.dialog_new_trail_title)				//
+												.setView(editText).setIcon(R.drawable.ic_new)			//
+												.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+													public void onClick(DialogInterface dialog, int whichButton) {
+							
+														// insert new trail with specified name (or
+														// <untitled>
+														// if empty)
+														String name = editText.getText().toString().trim();
+							
+														if (TextUtils.isEmpty(name)) {
+															name = getString(android.R.string.untitled);
+														}
+							
+														Trail trail = new Trail();
+														trail.name = name;
+														trail.updated = System.currentTimeMillis();
+														trail.save(getActivity());
+							
+														// switch to edit activity
+														EditTrailActivity.show(getActivity(), trail);
+													}
+												})
+												.setNegativeButton(R.string.dialog_cancel, null).create();
 			// add listener to enable/disable OK button
 			editText.addTextChangedListener(new TextWatcher() {
 				@Override
@@ -300,29 +290,93 @@ public class MainActivity extends Activity {
 			dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
 		}
 
-		
 		/**
 		 * Downloads a trail from the server in an asynchronous task
 		 */
-		public void downloadTrail(Context context, UUID trailUuid) {			
+		public void downloadTrail(Context context, UUID trailUuid) {
 			// execute task
-			TrailInfo info =  new TrailInfo();
-			info.uuid = trailUuid;
-			new DownloadTask(context, info, true).execute();
+			Trail trail = new Trail();
+			trail.uuid = trailUuid;
+			new DownloadTask(context, trail, true).execute();
 		}
-		
+
 		/**
 		 * 
 		 * @param trailId
 		 */
-		private void deleteTrail(TrailInfo trail) {
+		private void deleteTrail(Trail trail) {
 
-			final Uri trailUri = Contract.Trails.getUriId(trail.id);
-
+			final Trail passedTrail = trail;
+			
 			/**
-			 * Dialog to ask before a trail is deleted
+			 * Asynchronous task to delete trail locally and from server
 			 */
-			class DeleteDialogFragment extends DialogFragment {
+			class DeleteTask extends AsyncTask<Void, Void, Boolean> {
+
+				// progress dialog
+				private ProgressDialog pd = null;
+				
+				
+				@Override
+				protected void onPreExecute() {
+					
+					pd = new ProgressDialog(getActivity());
+					pd.setCancelable(false);
+					pd.setIndeterminate(true);
+					pd.setMessage(getActivity().getResources().getText(R.string.dialog_deleting));
+					pd.setIcon(R.drawable.ic_delete);
+					pd.setTitle(R.string.action_delete_trail);			
+					pd.show();
+				}
+
+				@Override
+				protected Boolean doInBackground(Void... params) {
+					
+					// was it ever uploaded to the server?
+					if (passedTrail.uploaded != 0) {
+						// delete trail on server
+						try {
+							BackendClient client = new BackendClient(getActivity() );
+							client.deleteTrail(passedTrail);
+													
+						} catch (Exception ex) {
+							Log.e("uploadTrail", "Error while deleting trail", ex);
+							return false;
+						}
+					}
+					
+					// delete trail in database
+					passedTrail.delete(getActivity());
+					
+					return true;					
+				}
+
+				@Override
+				protected void onPostExecute(Boolean result) {
+
+					// hide progress dialog
+					pd.dismiss();
+					
+					if (result) {
+						// refresh list
+						MyTrailsFragment.this.reload();	
+					}
+					else {
+						// show dialog to inform user about failure
+						new AlertDialog.Builder(getActivity())								//
+							.setIcon(android.R.drawable.ic_dialog_alert)					//
+							.setTitle(R.string.dialog_delete_trail_error_title)				//
+							.setMessage(R.string.dialog_delete_trail_error_message)			//
+							.setPositiveButton(R.string.dialog_ok, null)					//
+							.show();														//
+						return;
+						
+					}
+				}
+			}
+			
+			// show a dialog for user confirmation
+			new DialogFragment() {
 				@Override
 				public Dialog onCreateDialog(Bundle savedInstanceState) {
 
@@ -330,87 +384,58 @@ public class MainActivity extends Activity {
 							.setMessage(R.string.dialog_delete_trail_message).setIcon(R.drawable.ic_delete)
 							.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
 								public void onClick(DialogInterface dialog, int whichButton) {
-									// delete trail in database
-									getActivity().getContentResolver().delete(trailUri, null, null);
-									
-									// TODO delete on server
-									
+
 									// finish action mode
-									finishActionMode();									
-									// refresh list
-									MyTrailsFragment.this.getLoaderManager().getLoader(0).forceLoad();
+									finishActionMode();
+
+									// delete in async task
+									new DeleteTask().execute();
+									
 								}
 							}).setNegativeButton(R.string.dialog_no, null).create();
 				}
-			}
-
-			// show dialog to create new trail
-			new DeleteDialogFragment().show(getFragmentManager(), null);
+			}.show(getFragmentManager(), null);
 		}
 
 		/**
 		 * 
 		 * @param trailId
 		 */
-		private void editTrail(TrailInfo trail) {
-			// switch to edit activity
-			Uri trailUri = Contract.Trails.getUriId(trail.id);
-			Intent intent = new Intent(Intent.ACTION_DEFAULT, trailUri, getActivity(), EditTrailActivity.class);
-			startActivity(intent);
-		}
+		private void chaseTrail(Trail trail) {
 
-		/**
-		 * 
-		 * @param trailId
-		 */
-		private void chaseTrail(TrailInfo trail) {
-			// check if there's an open chase for this trail
-			long openChaseId = 0;
-			String selection = Contract.Chases.COLUMN_NAME_TRAIL_ID + "=" + trail.id	// 
-								+ " AND " 												//
-								+ Contract.Chases.COLUMN_NAME_FINISHED + "=0"; 			//
-			Cursor chasesCursor =  getActivity().getContentResolver().query(							//
-														Contract.Chases.getUriDirEx(), 					//
-														Contract.Chases.READ_PROJECTION_EX,				//
-														selection, 										//
-														null, 											//
-														null);											//
-			if (chasesCursor.moveToNext()) {
-				openChaseId = chasesCursor.getLong(Contract.Trails.READ_PROJECTION_ID_INDEX);
-			}
-			chasesCursor.close();						
-			
-			// found an open chase?
-			if (openChaseId != 0) {
+			// find a running chase
+			Chase runningChase = trail.getFirstRunningChase(getActivity());
+			if (runningChase != null) {
 				// continue
-				ChaseTrailActivity.show(getActivity(), openChaseId);
-			}
-			else {
+				ChaseTrailActivity.show(getActivity(), runningChase);
+			} else {
 				// create a new one
 				new ChaseCreator(getActivity()).show(trail);
-			}		
+			}
 		}
 
-
 		/**
-		 * Upload a trail to the server and share it afterwards in an asynchronous task
+		 * Upload a trail to the server and share it afterwards in an
+		 * asynchronous task
 		 */
-		private void shareTrail(TrailInfo trail) {
-			
+		private void shareTrail(Trail trail) {
+
 			// execute task
 			new UploadTask(getActivity(), trail, true).execute();
 		}
 
+
+
+
 	}
 
-	
 	/**
 	 * Fragment to display list of trails on the clousd
 	 */
 	public static class CloudTrailsFragment extends Fragment {
-		
+
 	}
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -433,15 +458,18 @@ public class MainActivity extends Activity {
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 		actionBar.setDisplayShowTitleEnabled(true);
 
-		final Tab myTrailsTab = actionBar.newTab().setText(R.string.tab_title_my_trails).setTag(myTailsFragment).setIcon(R.drawable.ic_phone);
+		final Tab myTrailsTab = actionBar.newTab().setText(R.string.tab_title_my_trails).setTag(myTailsFragment)
+				.setIcon(R.drawable.ic_phone);
 		myTrailsTab.setTabListener(new TabListener<MyTrailsFragment>(myTailsFragment, FRAGMENT_TAG_MY_TRAILS));
 		actionBar.addTab(myTrailsTab);
 
-		final Tab cloudTrailsTab = actionBar.newTab().setText(R.string.tab_title_cloud_trails).setTag(cloudTrailsFragment).setIcon(R.drawable.ic_cloud);
+		final Tab cloudTrailsTab = actionBar.newTab().setText(R.string.tab_title_cloud_trails).setTag(cloudTrailsFragment)
+				.setIcon(R.drawable.ic_cloud);
 		cloudTrailsTab.setTabListener(new TabListener<CloudTrailsFragment>(cloudTrailsFragment, FRAGMENT_TAG_CLOUD_TRAILS));
 		actionBar.addTab(cloudTrailsTab);
 
 		actionBar.selectTab(myTrailsTab); // start with my trails tab
+
 		
 		// check if we have to open a download link
 		Intent intent = getIntent();
@@ -449,20 +477,17 @@ public class MainActivity extends Activity {
 			TrailDownloadLink.DownloadData data = null;
 			try {
 				data = TrailDownloadLink.parseDownloadLink(intent.getData());
-			}
-			catch (Exception ex) {
+			} catch (Exception ex) {
 				Log.d("MainActivity", "Error while parsing link", ex);
 			}
-			
+
 			// start downloading the trail
 			if (data != null) {
-				myTailsFragment.downloadTrail(this,  data.trailUuid);
+				myTailsFragment.downloadTrail(this, data.trailUuid); // todo nicht über fragment
 			}
 		}
 	}
 
-
-	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -473,7 +498,7 @@ public class MainActivity extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-		
+
 		case R.id.action_show_chases:
 			// show chases activity
 			Intent chasesIntent = new Intent(this, ChasesActivity.class);
@@ -482,8 +507,7 @@ public class MainActivity extends Activity {
 
 		case R.id.action_settings:
 			// show settings activity
-			Intent settingsIntent = new Intent(this, SettingsActivity.class);
-			startActivity(settingsIntent);
+			SettingsActivity.show(this);
 			return true;
 		}
 		return false;

@@ -29,6 +29,7 @@ import org.apache.http.protocol.HTTP;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Loader.ForceLoadContentObserver;
 import android.database.Cursor;
 import android.location.Location;
 import android.net.Uri;
@@ -60,21 +61,19 @@ public class BackendClient {
 		private static final String IMAGE_UUID = "uuid";
 		private static final String IMAGE_DESCRIPTION = "descr";
 		
-				
 		public static String write(Trail trail) throws IOException {
 			
 			StringWriter json = new StringWriter();
 			JsonWriter writer = new JsonWriter(json);
 
-			// trail info
+			// trail
 			writer.beginObject();
 
-			writer.name(Json.TRAIL_UUID).value(trail.info.uuid.toString());
-			writer.name(Json.TRAIL_NAME).value(trail.info.name);
-			writer.name(Json.TRAIL_DESCRIPTION).value(trail.info.description);
-			writer.name(Json.TRAIL_UPDATED).value(trail.info.updated);
-
-			// checkpoints
+			writer.name(Json.TRAIL_UUID).value(trail.uuid.toString());
+			writer.name(Json.TRAIL_NAME).value(trail.name);
+			writer.name(Json.TRAIL_DESCRIPTION).value(trail.description);
+			writer.name(Json.TRAIL_UPDATED).value(trail.updated);
+			
 			if (!trail.checkpoints.isEmpty()) {
 				writer.name(Json.TRAIL_CHECKPOINTS).beginArray();
 				for (Checkpoint checkpoint : trail.checkpoints) {
@@ -117,14 +116,14 @@ public class BackendClient {
 			while (reader.hasNext()) {
 				String name = reader.nextName();
 				if (name.equals(Json.TRAIL_UUID)) {
-					trail.info.uuid = UUID.fromString(reader.nextString());
+					trail.uuid = UUID.fromString(reader.nextString());
 				} else if (name.equals(Json.TRAIL_UPDATED)) {
-					trail.info.updated = reader.nextLong();
+					trail.updated = reader.nextLong();
 				} else if (name.equals(Json.TRAIL_NAME)) {
-					trail.info.name = reader.nextString();
+					trail.name = reader.nextString();
 				} else if (name.equals(Json.TRAIL_DESCRIPTION)) {
 					if (reader.peek() == JsonToken.STRING)
-						trail.info.description = reader.nextString();
+						trail.description = reader.nextString();
 					else
 						reader.skipValue();
 				} else if (name.equals(Json.TRAIL_CHECKPOINTS)) {
@@ -132,7 +131,7 @@ public class BackendClient {
 					reader.beginArray();
 					while (reader.hasNext()) {
 						reader.beginObject();
-						Checkpoint checkpoint = new Checkpoint();
+						Checkpoint checkpoint = trail.addCheckpoint();
 						while (reader.hasNext()) {
 							name = reader.nextName();
 							if (name.equals(Json.CHECKPOINT_UUID)) {
@@ -155,7 +154,7 @@ public class BackendClient {
 								reader.beginArray();
 								while (reader.hasNext()) {
 									reader.beginObject();
-									Image image = new Image();
+									Image image = checkpoint.addImage();
 									while (reader.hasNext()) {
 										name = reader.nextName();
 										if (name.equals(Json.IMAGE_UUID)) {
@@ -170,7 +169,6 @@ public class BackendClient {
 										}
 									}
 									reader.endObject();
-									checkpoint.images.add(image);
 								}
 								reader.endArray();
 							} else {
@@ -178,7 +176,6 @@ public class BackendClient {
 							}
 						}
 						reader.endObject();
-						trail.checkpoints.add(checkpoint);
 					}
 					reader.endArray();
 				} else {
@@ -194,6 +191,12 @@ public class BackendClient {
 
 	private final static Uri BASE_URI = Uri.parse("http://192.168.0.20:5000");
 
+	// field or parameter name for token
+	private static final String PARAM_TOKEN = "token";
+	// field or parameter name for updated
+	private static final String PARAM_UPDATED = "updated";
+
+	
 	/**
 	 * Exception thrown to signal an error within the client 
 	 */
@@ -256,21 +259,23 @@ public class BackendClient {
 	 * @param trailInfo
 	 * @throws ClientException
 	 */
-	public void uploadTrail(TrailInfo trailInfo) throws ClientException {
+	public void uploadTrail(Trail trail) throws ClientException {
 
 		try {
 			HttpResponse response;
 			int statusCode;
-					
+		
+			// make sure DTO is fully populated
+			trail.loadAll(context);
+			
 			// create json to upload
-			Trail trail = Trail.fromInfo(context, trailInfo);
 			String trailJson = Json.write(trail);
 
 			// create HTTP client
 			HttpClient http = createHttpClient();
 						
 			// retrieve a list of images on server
-			String imageJson = getJson(http, getTrailImagesUri(trailInfo.uuid));
+			String imageJson = getJson(http, getTrailImagesUri(trail.uuid));
 			List<UUID> imagesOnServer = new ArrayList<UUID>();
 			JsonReader reader = new JsonReader(new StringReader(imageJson));
 			reader.beginArray();
@@ -304,14 +309,15 @@ public class BackendClient {
 						}
 					}				
 					if (!skip) {					
-						HttpPut put = new HttpPut(getImageUri(trailInfo.uuid, image.uuid).toString());
+						Uri uri = getImageUri(trail.uuid, image.uuid).buildUpon().appendQueryParameter(PARAM_TOKEN, trail.token.toString()).build();						
+						HttpPut put = new HttpPut(uri.toString());
 						// upload full file
-						File fullFile = App.getImageManager().getFullFile(image.id);
+						File fullFile = App.getImageManager().getFullFile(image);
 						if (fullFile.exists()) {
 							put.setEntity(new FileEntity(fullFile, "image/jpeg"));
 							response = http.execute(put);
 							statusCode = response.getStatusLine().getStatusCode();
-							if (statusCode != 200) {
+							if (statusCode != 204) {
 								throw new ProtocolException("Server returned status code " + statusCode + " after uploading image");
 							}
 						}
@@ -320,33 +326,31 @@ public class BackendClient {
 			}
 
 			// upload trail as JSON
-			HttpPut put = new HttpPut(getTrailUri(trailInfo.uuid).toString());
+			Uri uri = getTrailUri(trail.uuid).buildUpon().appendQueryParameter(PARAM_TOKEN, trail.token.toString()).build();						
+			HttpPut put = new HttpPut(uri.toString());
 			put.addHeader("Content-Type", "application/json");
 			put.addHeader("Accept", "application/json");
 			put.setEntity(new StringEntity(trailJson, HTTP.UTF_8));
 			response = http.execute(put);
 			statusCode = response.getStatusLine().getStatusCode();
-			if (statusCode != 200) {
+			if (statusCode != 204) {
 				throw new ProtocolException("Server returned status code " + statusCode + " after uploading trail JSON");
 			}
-			
+							
 			// delete remaining images on server
 			for (UUID imageUuid : imagesOnServer) {
-				HttpDelete delete = new HttpDelete(getImageUri(trailInfo.uuid, imageUuid).toString());
+				uri = getImageUri(trail.uuid, imageUuid).buildUpon().appendQueryParameter(PARAM_TOKEN, trail.token.toString()).build();						
+				HttpDelete delete = new HttpDelete(uri.toString());
 				response = http.execute(delete);
 				statusCode = response.getStatusLine().getStatusCode();
-				if (statusCode != 200) {
+				if (statusCode != 204) {
 					throw new ProtocolException("Server returned status code " + statusCode + " after deleting image");
 				}				
 			}
 								
 			// update uploaded timestamp
-			trailInfo.uploaded = System.currentTimeMillis();
-			
-			// write to DB that it was uploaded
-			ContentValues values = new ContentValues();
-			values.put(Contract.Trails.COLUMN_NAME_UPLOADED, trailInfo.uploaded); 
-			context.getContentResolver().update(Contract.Trails.getUriId(trailInfo.id), values, null, null);
+			trail.uploaded = System.currentTimeMillis();
+			trail.save(context);
 									
 		} catch (Exception ex) {
 			throw new ClientException("Error while exporting trail to server", ex);
@@ -358,7 +362,7 @@ public class BackendClient {
 	 * @throws ClientException
 	 * @return downloaded trail or null if it wasn't modified
 	 */
-	public boolean downloadTrail(TrailInfo trailInfo) throws ClientException {
+	public Trail downloadTrail(Trail localTrail) throws ClientException {
 	
 		try {
 			// create HTTP client
@@ -366,8 +370,7 @@ public class BackendClient {
 			
 			/////////////////////////// 
 			// query server
-			Uri uri = getTrailUri(trailInfo.uuid);
-			uri = uri.buildUpon().appendQueryParameter("updated", Long.valueOf(trailInfo.updated).toString()).build();
+			Uri uri = getTrailUri(localTrail.uuid).buildUpon().appendQueryParameter(PARAM_UPDATED, Long.valueOf(localTrail.updated).toString()).build();
 			HttpGet get = new HttpGet(uri.toString());
 			get.addHeader("Accept", "application/json");
 			
@@ -375,7 +378,7 @@ public class BackendClient {
 			int statusCode = response.getStatusLine().getStatusCode();
 			if (statusCode == 304) {
 				// not modified
-				return false;
+				return null;
 			}
 			else if (statusCode != 200) {
 				throw new ProtocolException("Server returned status code " + statusCode);
@@ -395,166 +398,87 @@ public class BackendClient {
 			String json = result.toString();
 			
 			// parse JSON and create object tree of complete trail
-			Trail trail = Json.parse(json);
-
-			/////////////////////////// 
-			// save object tree to database
-			ContentValues values = new ContentValues();
-		
-			/////////////////////////// 
-			// update or insert trail
-			values.put(Contract.Trails.COLUMN_NAME_UUID, trail.info.uuid.toString());
-			values.put(Contract.Trails.COLUMN_NAME_UPDATED, trail.info.updated);
-			values.put(Contract.Trails.COLUMN_NAME_DOWNLOADED, System.currentTimeMillis());
-			values.put(Contract.Trails.COLUMN_NAME_NAME, trail.info.name);
-			values.put(Contract.Trails.COLUMN_NAME_DESCRIPTION, trail.info.description);
-
-			Uri trailDirUri = Contract.Trails.getUriDir();
-			Cursor trailCursor = context.getContentResolver().query(trailDirUri, Contract.Trails.READ_PROJECTION, 
-																	Contract.Trails.COLUMN_NAME_UUID+"=?", 
-																	new String[]{ trail.info.uuid.toString()}, 
-																	null);
-			if (trailCursor.moveToFirst()) {
-				trail.info.id = trailCursor.getLong(Contract.Trails.READ_PROJECTION_ID_INDEX);
-				Uri trailUri = Contract.Trails.getUriId(trail.info.id); 
-				context.getContentResolver().update(trailUri, values, null, null);
-			}
-			else {
-				Uri trailUri = context.getContentResolver().insert(Contract.Trails.getUriDir(), values);
-				trail.info.id = ContentUris.parseId(trailUri);
-			}
-			// close cursor
-			trailCursor.close();			
+			Trail downloadedTrail = Json.parse(json);			
 			
 			/////////////////////////// 
-			// update or insert checkpoints			
-			Uri checkpointDirUri = Contract.Checkpoints.getUriDir(trail.info.id);
-			Cursor checkpointCursor = context.getContentResolver().query(checkpointDirUri, Contract.Checkpoints.READ_PROJECTION,																			null, null,	null);			
-			for (Checkpoint checkpoint : trail.checkpoints) {
-
-				// fill in values
-				values.clear();
-				values.put(Contract.Checkpoints.COLUMN_NAME_UUID, checkpoint.uuid.toString());
-				values.put(Contract.Checkpoints.COLUMN_NAME_NO, trail.checkpoints.indexOf(checkpoint) + 1);
-				values.put(Contract.Checkpoints.COLUMN_NAME_LOC_SHOW, checkpoint.showLocation ? 1 : 0);
-				values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, checkpoint.location.getLongitude());
-				values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, checkpoint.location.getLatitude());
-				values.put(Contract.Checkpoints.COLUMN_NAME_HINT, checkpoint.hint);
-
-				// see if checkpoint already exists
-				if (checkpointCursor.moveToFirst()) {
-					do {
-						UUID uuid =  UUID.fromString(checkpointCursor.getString(Contract.Checkpoints.READ_PROJECTION_UUID_INDEX));
-						if (checkpoint.uuid.equals(uuid)) {
-							checkpoint.id = checkpointCursor.getLong(Contract.Checkpoints.READ_PROJECTION_ID_INDEX);
-							break;
-						}						
-					} while (checkpointCursor.moveToNext());
-				}
-				if (checkpoint.id != 0) {
-					// update
-					Uri checkpointUri =  Contract.Checkpoints.getUriId(checkpoint.id);
-					context.getContentResolver().update(checkpointUri, values, null, null);
-				}
-				else {
-					// insert
-					Uri checkpointUri = context.getContentResolver().insert(checkpointDirUri, values);
-					checkpoint.id = ContentUris.parseId(checkpointUri);					
-				}
-
-				/////////////////////////// 
-				// update or insert images for current checkpoint			
-				Uri imageDirUri = Contract.Images.getUriDir(checkpoint.id);
-				Cursor imageCursor = context.getContentResolver().query(imageDirUri, Contract.Images.READ_PROJECTION,																			null, null,	null);			
-				for (Image image : checkpoint.images) {
-
-					// fill in values
-					values.clear();
-					values.put(Contract.Images.COLUMN_NAME_UUID, image.uuid.toString());
-					values.put(Contract.Images.COLUMN_NAME_NO, checkpoint.images.indexOf(image) + 1);
-					values.put(Contract.Images.COLUMN_NAME_DESCRIPTION, image.description);
-
-					// see if image already exists
-					if (imageCursor.moveToFirst()) {
-						do {
-							UUID uuid =  UUID.fromString(imageCursor.getString(Contract.Images.READ_PROJECTION_UUID_INDEX));
-							if (image.uuid.equals(uuid)) {
-								image.id = imageCursor.getLong(Contract.Images.READ_PROJECTION_ID_INDEX);
-								break;
-							}						
-						} while (imageCursor.moveToNext());
+			// update or insert trail, checkpoints and images)
+			
+			// populate local trail
+			localTrail.loadAll(context);
+			
+			// overwrite some values from local trail and save it to the database;
+			downloadedTrail.password = localTrail.password;
+			downloadedTrail.setId(localTrail.getId());
+			downloadedTrail.save(context);
+					
+			// for each downloaded checkpoint
+			List<Checkpoint> localCheckpoints = new ArrayList<Checkpoint>(localTrail.checkpoints);
+			for (Checkpoint downloadedCheckpoint : downloadedTrail.checkpoints) {
+				// find local checkpoint to overwrite
+				Checkpoint localCheckpoint = null;
+				for (Checkpoint cp : localCheckpoints) {
+					if (cp.uuid.equals(downloadedCheckpoint.uuid)) {						
+						// assign id to update
+						downloadedCheckpoint.setId(cp.getId());
+						// remove from list
+						localCheckpoints.remove(cp);
+						
+						localCheckpoint = cp;
+						
+						break;
 					}
-					if (image.id != 0) {
-						// update
-						Uri imageUri =  Contract.Images.getUriId(image.id);
-						context.getContentResolver().update(imageUri, values, null, null);
-					}
-					else {
-						// insert
-						Uri imageUri = context.getContentResolver().insert(imageDirUri, values);
-						image.id = ContentUris.parseId(imageUri);					
-					}											
-				}			
+				}
+				// save it (updates or inserts)
+				downloadedCheckpoint.save(context);
 				
-				/////////////////////////// 
-				// delete images for current checkpoint
-				if (imageCursor.moveToFirst()) {
-					do {
-						UUID uuid =  UUID.fromString(imageCursor.getString(Contract.Images.READ_PROJECTION_UUID_INDEX));
-						boolean found = false;
-						for (Image image : checkpoint.images) {
-							if (image.uuid.equals(uuid)) {
-								found = true;
+				// was there a local checkpoint?
+				if (localCheckpoint != null) {
+					// for each image within downloaded checkpoint
+					List<Image> localImages = new ArrayList<Image>(localCheckpoint.images);
+					for (Image downloadedImage : downloadedCheckpoint.images) {
+						// find local image to overwrite
+						for (Image img : localImages) {
+							if (img.uuid.equals(downloadedImage.uuid)) {
+								// assign id to update
+								downloadedImage.setId(img.getId());
+								// remove from list
+								localImages.remove(img);
+								
 								break;
 							}
-						}
-						if (!found) {
-							long id =  imageCursor.getLong(Contract.Images.READ_PROJECTION_ID_INDEX);
-							Uri imageUri =  Contract.Images.getUriId(id);
-							context.getContentResolver().delete(imageUri, null, null);
-						}
-					} while (imageCursor.moveToNext());
+						}												
+						// save it (updates or inserts)
+						downloadedImage.save(context);																
+					}
+					// delete remaining local images
+					for (Image localImage : localImages) {
+						localImage.delete(context);
+					}					
 				}
-				
-				// close cursor
-				imageCursor.close();
-			}			
-			
-			/////////////////////////// 
-			// delete checkpoints
-			if (checkpointCursor.moveToFirst()) {
-				do {
-					UUID uuid =  UUID.fromString(checkpointCursor.getString(Contract.Checkpoints.READ_PROJECTION_UUID_INDEX));
-					boolean found = false;
-					for (Checkpoint checkpoint : trail.checkpoints) {
-						if (checkpoint.uuid.equals(uuid)) {
-							found = true;
-							break;
-						}
+				else {
+					// simply save all images, they are new anyway
+					for (Image downloadedImage : downloadedCheckpoint.images) {
+						downloadedImage.save(context);
 					}
-					if (!found) {
-						long id =  checkpointCursor.getLong(Contract.Checkpoints.READ_PROJECTION_ID_INDEX);
-						Uri checkpointUri =  Contract.Checkpoints.getUriId(id);
-						context.getContentResolver().delete(checkpointUri, null, null);
-					}
-				} while (checkpointCursor.moveToNext());
+				}
 			}
-			
-			// close cursor
-			checkpointCursor.close();
+			// delete remaining local checkpoints
+			for (Checkpoint localCp : localCheckpoints) {
+				localCp.delete(context);
+			}
 			
 			/////////////////////////// 
 			// download image files			
-			for (Checkpoint checkpoint : trail.checkpoints) {
+			for (Checkpoint checkpoint : downloadedTrail.checkpoints) {
 				for (Image image : checkpoint.images) {
 					
 					// skip if files already exist
-					if (App.getImageManager().exists(image.id)) {
+					if (App.getImageManager().exists(image)) {
 						continue;
 					}
 					
 					// query server
-					get = new HttpGet(getImageUri(trail.info.uuid, image.uuid).toString());
+					get = new HttpGet(getImageUri(downloadedTrail.uuid, image.uuid).toString());
 					response = http.execute(get);
 					statusCode = response.getStatusLine().getStatusCode();
 					if (statusCode != 200) {
@@ -562,14 +486,13 @@ public class BackendClient {
 					}
 					// get image from response and add it the the image manager
 					inputStream = response.getEntity().getContent();
-					App.getImageManager().add(image.id, inputStream);
+					App.getImageManager().add(image, inputStream);
 					inputStream.close();
 				}
 			}						
-						
-			/////////////////////////// 
-			// return the trail as result
-			return true;
+
+			// return downloaded trail
+			return downloadedTrail;
 			
 		} catch (Exception ex) {						
 			throw new ClientException("Error while downloading trail from server", ex);
@@ -683,4 +606,32 @@ public class BackendClient {
 		}
 	}
 
+	
+	/**
+	 * Deletes the trail from the server
+	 * @param trail
+	 * @throws ClientException
+	 */
+	public void deleteTrail(Trail trail) throws ClientException {
+	
+		try {
+			// create HTTP client
+			HttpClient http = createHttpClient();
+			
+			/////////////////////////// 
+			// query server
+			Uri uri = getTrailUri(trail.uuid).buildUpon().appendQueryParameter(PARAM_TOKEN, trail.token.toString()).build();
+			HttpDelete delete = new HttpDelete(uri.toString());
+			
+			HttpResponse response = http.execute(delete);
+			int statusCode = response.getStatusLine().getStatusCode();
+			if (statusCode != 204) {
+				throw new ProtocolException("Server returned status code " + statusCode);
+			}
+		} catch (Exception ex) {
+			throw new ClientException("Error while deleting trail from server", ex);
+		}
+	}
+	
 }
+	

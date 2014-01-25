@@ -1,10 +1,8 @@
 <resources>
 
-    <color name="white_overlay">#BBFFFFFF</color>
-    <color name="white">#FFFFFFFF</color>
-    
-   <color name="activity_background">#FFefefef </color>
-   
+   <color name="white_overlay">#BBFFFFFF</color>
+   <color name="white">#FFFFFFFF</color>
+       
    <color name="purple_dark">#FF9933cc</color>
    <color name="purple_light">#FFaa66cc</color>
    <color name="green_dark">#FF669900</color>

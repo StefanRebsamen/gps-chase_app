@@ -1,6 +1,8 @@
 package ch.gpschase.app;
 
-import ch.gpschase.app.data.ImageManager;
+import java.util.Date;
+
+import ch.gpschase.app.data.ImageFileManager;
 import android.app.Application;
 import android.os.Debug;
 
@@ -16,16 +18,20 @@ public class App extends Application {
     private static App instance = null;
 
     //keep references to our global resources
-    private static ImageManager imageManager = null;
+    private static ImageFileManager imageManager = null;
+    
+    // used to format data and time
+	private static java.text.DateFormat dateFormat;
+	private static java.text.DateFormat timeFormat;
     
     /**
      * Returns the ImageManager instance 
      */
-    public static ImageManager getImageManager() {
+    public static ImageFileManager getImageManager() {
         if (imageManager == null) {
             if (instance == null)
                 throw new IllegalStateException("Application not created yet!");
-            imageManager = new ImageManager(instance);
+            imageManager = new ImageFileManager(instance);
         }
         return imageManager;
     }
@@ -36,6 +42,10 @@ public class App extends Application {
         super.onCreate();
         //provide an instance for our static accessors
         instance = this;
+        
+    	dateFormat = android.text.format.DateFormat.getDateFormat(this);
+    	timeFormat = android.text.format.DateFormat.getTimeFormat(this);
+        
     }
 
     
@@ -49,4 +59,42 @@ public class App extends Application {
         return Debug.isDebuggerConnected();
     }
   
+	
+    public static String formatDate(long timestamp) {
+    	Date dateTime = new Date(timestamp);
+    	return dateFormat.format(dateTime);    	    	
+    }
+    
+    public static String formatTime(long timestamp) {
+    	Date dateTime = new Date(timestamp);
+    	return timeFormat.format(dateTime);    	    	
+    }
+    
+    public static String formatDateTime(long timestamp) {
+    	Date dateTime = new Date(timestamp);
+    	return dateFormat.format(dateTime) + " " + timeFormat.format(dateTime);    	
+    }
+
+    
+    public static String formatDuration(long duration) {		
+		if (duration < 0) {
+			return "";
+		}
+		// format into into seconds, minutes, hours
+		duration /= 1000;
+		long seconds = duration % 60;
+		long minutes = duration / 60 % 60;
+		long hours = duration / 3600;
+		String str = "";
+		if (hours > 0) {
+			str = String.format("%02d:%02d:%02d", hours,
+					minutes, seconds);
+		} else {
+			str = String.format("%02d:%02d", minutes,
+					seconds);
+		}
+
+		return str;
+	}
+    
 }

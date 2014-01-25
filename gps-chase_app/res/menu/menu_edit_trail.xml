@@ -1,6 +1,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
      <item
+         android:id="@+id/action_new_checkpoint"
+         android:icon="@drawable/ic_new"
+         android:showAsAction="always"
+         android:orderInCategory="10"
+         android:title="@string/action_new_checkpoint">
+     </item>
+    
+    <item
          android:id="@+id/action_upload_trail"
          android:icon="@drawable/ic_sync"
          android:showAsAction="always"
@@ -8,4 +16,12 @@
          android:title="@string/action_upload_trail">
      </item>
 
+    <item
+         android:id="@+id/action_trail_info"
+         android:icon="@drawable/ic_information"
+         android:showAsAction="always"
+         android:orderInCategory="21"
+         android:title="@string/action_trail_info">
+     </item>
+    
 </menu>

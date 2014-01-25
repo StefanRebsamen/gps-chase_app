@@ -7,12 +7,12 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 /**
- * Contain file utility functions
+ * Contains file utility functions
  */
 public class FileUtils {
 
 	/**
-	 * 
+	 * Copies a file to another
 	 * @param src
 	 * @param dst
 	 * @throws IOException

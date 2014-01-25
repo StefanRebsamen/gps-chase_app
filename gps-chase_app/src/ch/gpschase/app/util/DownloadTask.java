@@ -10,7 +10,6 @@ import android.util.Log;
 import ch.gpschase.app.R;
 import ch.gpschase.app.data.BackendClient;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.data.TrailInfo;
 
 /**
  * An asynchronous task to download a trail.
@@ -21,16 +20,16 @@ public class DownloadTask extends AsyncTask<Void, Void, Boolean> {
 	// context
 	private Context context;
 
-	// trail info
-	TrailInfo trailInfo;
+	// trail
+	Trail trail;
 	
 	// progress dialog
 	private ProgressDialog pd = null;
 
-	// indicates if the trail was downloaded
-	private boolean downloaded = false;
+	// The trail was that actually downloaded
+	private Trail downloadedTrail = null;
 	
-	// flag that the progres dialg should be shown from the start, not just after a progress event
+	// flag that the progress dialg should be shown from the start, not just after a progress event
 	boolean initialProgressDialog = false;
 	
 	/**
@@ -38,11 +37,11 @@ public class DownloadTask extends AsyncTask<Void, Void, Boolean> {
 	 * @param context
 	 * @param trailUuid
 	 */
-	public DownloadTask(Context context, TrailInfo trailInfo, boolean initialProgressDialog) {
+	public DownloadTask(Context context, Trail trail, boolean initialProgressDialog) {
 		super();
 
 		this.context = context;
-		this.trailInfo = trailInfo;
+		this.trail = trail;
 		this.initialProgressDialog = initialProgressDialog;			
 	}
 
@@ -78,7 +77,7 @@ public class DownloadTask extends AsyncTask<Void, Void, Boolean> {
 		try {
 			// create a client and download the trail
 			BackendClient client = new BackendClient(context);
-			downloaded = client.downloadTrail(trailInfo);
+			downloadedTrail = client.downloadTrail(trail);
 			return true;
 		} catch (Exception ex) {
 			Log.e("downloadTrail", "Error while downloading trail", ex);
@@ -106,14 +105,14 @@ public class DownloadTask extends AsyncTask<Void, Void, Boolean> {
 		}
 		
 		// continue
-		onComplete(downloaded);
+		onDownloaded(downloadedTrail);
 	}
 
 	/**
 	 * Called at the end of a download. Might be overridden to execute something
 	 * after a successful download
 	 */
-	protected void onComplete(boolean downloaded) {
+	protected void onDownloaded(Trail trail) {
 
 	}
 }
