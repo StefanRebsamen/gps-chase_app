@@ -126,8 +126,6 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		;
-
 		// we provide an option menu
 		this.setHasOptionsMenu(true);
 
@@ -236,7 +234,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	@Override
 	public void onStart() {
 		super.onStart();
-
+	
 		refreshTrailLine(true);
 	}
 
@@ -309,7 +307,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		Context context = getActivity();
 		if (context != null) {
 			return Integer.valueOf(PreferenceManager.getDefaultSharedPreferences(context).getString(getMapTypePreference(context).getKey(),
-					Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString()));
+					Integer.valueOf(GoogleMap.MAP_TYPE_HYBRID).toString()));
 		} else {
 			return GoogleMap.MAP_TYPE_NORMAL;
 		}
@@ -341,7 +339,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		Context context = getActivity();
 		if (context != null) {
 			if (key.equals(getMapTypePreference(context).getKey())) {
-				setMapType(Integer.valueOf(sharedPreferences.getString(key, Integer.valueOf(GoogleMap.MAP_TYPE_NORMAL).toString())));
+				setMapType(Integer.valueOf(sharedPreferences.getString(key, Integer.valueOf(GoogleMap.MAP_TYPE_HYBRID).toString())));
 			}
 		}
 	}

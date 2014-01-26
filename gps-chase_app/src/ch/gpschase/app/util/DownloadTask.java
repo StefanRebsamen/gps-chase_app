@@ -45,6 +45,7 @@ public class DownloadTask extends AsyncTask<Void, Void, Boolean> {
 		this.initialProgressDialog = initialProgressDialog;			
 	}
 
+
 	/**
 	 * 
 	 * @param values

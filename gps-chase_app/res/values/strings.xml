@@ -3,26 +3,33 @@
 
     <string name="app_name">GPSchase</string>
     <string name="action_settings">Settings</string>
+
+    <string name="drawer_open">Open</string>
+    <string name="drawer_close">Close</string>
+    
+    <string name="drawer_section_trails">Trails</string>
+    <string name="drawer_selectable_my_trails">Trails on Device</string>
+    <string name="drawer_selectable_cloud_trails">Trails in Cloud</string>
+    <string name="drawer_section_chases">Chases</string>
+    <string name="drawer_selectable_chases">Chases</string>
+    <string name="drawer_section_general">General</string>
+    <string name="drawer_selectable_settings">Settings</string>                    
     
     <string name="empty_text_chases">There are currently no chases available.\nStart one by selecting a trail.</string>
-    <string name="tab_title_my_trails">My Trails</string>
-    <string name="tab_title_cloud_trails">Trails in Cloud</string>
     <string name="action_new_trail">New trail</string>
-    <string name="action_show_chases">Show chases</string>
     <string name="empty_text_trails">There are currently no trails available.\nCreate a new one (\'+\' icon) or download one from a share link.</string>
     <string name="action_delete_trail">Delete trail</string>
     <string name="action_edit_trail">Edit trail</string>
     <string name="action_share_trail">Share trail</string>
     <string name="dialog_delete_trail_title">Delete trail</string>
     <string name="dialog_delete_trail_message">Delete the selected trail?</string>
-    <string name="dialog_new_trail_title">New trail</string>
     <string name="dialog_new_trail_name_hint">Name</string>
     <string name="dialog_share_trail_title">Share trail</string>
     <string name="share_trail_message">By following the appended link, you will be able to play a great game!</string>
     <string name="dialog_downloading">Downloading ...</string>
     <string name="dialog_download_trail_error_title">Error</string>
     <string name="dialog_download_trail_error_message">An error occurred while downloading the trail.</string>    
-    <string name="action_new_chase">New chase</string>
+    <string name="action_chase_trail">Chase trail</string>
     <string name="toast_chase_already_finished">Chase is already finished and can\'t be continued</string>
     <string name="action_continue_chase">Continue chase</string>
     <string name="action_delete_chase">Delete chase</string>
@@ -36,9 +43,7 @@
     <string name="dialog_share_trail_error_message">An error occurred while sharing the trail.</string>    
     <string name="dialog_delete_trail_error_title">Error</string>
     <string name="dialog_delete_trail_error_message">An error occurred while deleting the trail.</string>    
-    
-    <string name="activity_title_chases">Chases</string>    
-    
+       
     <string name="activity_title_edit_trail">Edit trail</string>
     <string name="field_hint">Hint</string>
     <string name="field_show_on_map">Show on map</string>    
@@ -64,7 +69,7 @@
     <string name="activity_title_trail_info">Trail information</string>
     <string name="field_name">Name</string>
     <string name="field_description">Description</string>    
-    
+    <string name="section_measures">Measures</string>    
     <string name="text_no_of_checkpoints">No. of checkpoints</string>    
     <string name="text_distance">Total (air-linie) distance</string>        
     
@@ -79,7 +84,6 @@
     <string name="dialog_yes">Yes</string>
     <string name="dialog_no">No</string>
     
-    <string name="activity_title_settings">Settings</string>                    
 
     <string name="pref_cat_view_title">View</string>
     <string name="pref_cat_view_key">CAT_VIEW</string>    

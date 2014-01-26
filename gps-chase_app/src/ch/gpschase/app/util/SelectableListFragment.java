@@ -2,7 +2,6 @@ package ch.gpschase.app.util;
 
 import java.util.List;
 
-import ch.gpschase.app.MainActivity.MyTrailsFragment;
 import ch.gpschase.app.data.Item;
 import ch.gpschase.app.R;
 import android.app.ListFragment;
@@ -29,7 +28,7 @@ import android.widget.SimpleCursorAdapter;
 /**
  * 
  */
-public abstract class SelectableListFragment<T extends Item> extends ListFragment implements ActionMode.Callback, AdapterView.OnItemLongClickListener {
+public abstract class SelectableListFragment<T extends Item> extends ListFragment implements LoaderCallbacks< List<T> >, ActionMode.Callback, AdapterView.OnItemLongClickListener {
 	
 	// Resource ids for option and contextual menu 
 	private int optionsMenuRes;
@@ -49,14 +48,17 @@ public abstract class SelectableListFragment<T extends Item> extends ListFragmen
 		
 		// data to show
 		List<T> data;
-		
-		public Adapter(List<T> data) {
-			this.data = data;
+
+		public Adapter() {
+			
 		}
 		
 		@Override
 		public int getCount() {
-			return data.size();
+			if (data != null)
+				return data.size();
+			else
+				return 0;			
 		}
 
 		@Override
@@ -66,57 +68,22 @@ public abstract class SelectableListFragment<T extends Item> extends ListFragmen
 
 		@Override
 		public long getItemId(int position) {
-			return data.get(position).getId(); 
+			return data.get(position).getId();
 		}
 
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {			
 			T item = data.get(position);
 			// delegate to fragment
-			return SelectableListFragment.this.getView(item, convertView, parent);		
+			return SelectableListFragment.this.getItemView(item, convertView, parent);		
 		}
-		
-	}
-	
-	
-	/**
-	 * 
-	 */
-	class LoaderCallback implements LoaderCallbacks< List<T> > {
-		
-		@Override
-		public android.content.Loader<List<T>> onCreateLoader(int id, Bundle args) {
-			
-			/**
-			 * Loader which loads data in the background
-			 */
-			 class Loader extends AsyncTaskLoader<List<T>> {
 
-				public Loader(Context context) {
-					super(context);
-				}
-
-				@Override
-				public List<T> loadInBackground() {
-					return SelectableListFragment.this.loadInBackground();
-				}
+		public Adapter(List<T> data) {
+			this.data = data;
+			// notify view
+			notifyDataSetChanged();
+		}
 				
-			}
-			 
-			return new Loader(getActivity());			 			
-		}
-
-		@Override
-		public void onLoadFinished(android.content.Loader<List<T>> loader, List<T> data) {
-			// assign result to list view (through an adapter)
-			setListAdapter(new Adapter(data));		
-		}
-
-		@Override
-		public void onLoaderReset(android.content.Loader<List<T>> loader) {
-			// nothing to do			
-		}
-		
 	}
 	
 	/**
@@ -144,7 +111,7 @@ public abstract class SelectableListFragment<T extends Item> extends ListFragmen
 	 * @param position
 	 * @param convertView
 	 */
-	protected abstract View getView(T item, View convertView, ViewGroup parent);
+	protected abstract View getItemView(T item, View convertView, ViewGroup parent);
 	
 	/**
 	 * Gets called when an menu item on the contextual action bar got clicked
@@ -172,22 +139,65 @@ public abstract class SelectableListFragment<T extends Item> extends ListFragmen
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		getLoaderManager().initLoader(0, null, new LoaderCallback());
 	}
 
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
+
 		// set to single choice mode
 		getListView().setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 		// listen to long clock
 		getListView().setOnItemLongClickListener(this);
-		// 
+
+		// fancy divider 
 		getListView().setDivider(getResources().getDrawable(R.color.green_light));
 		getListView().setDividerHeight(2);
+				
+		// init loader
+		getLoaderManager().initLoader(0, null, this);
+		
 	}
 
+	@Override
+	public android.content.Loader<List<T>> onCreateLoader(int id, Bundle args) {
+		
+		/**
+		 * Loader which loads data in the background
+		 */
+		 class Loader extends AsyncTaskLoader<List<T>> {
+
+			public Loader(Context context) {
+				super(context);
+			}
+
+			@Override
+			protected void onStartLoading() {
+				forceLoad();
+			}
+			
+			@Override
+			public List<T> loadInBackground() {
+				return SelectableListFragment.this.loadInBackground();
+			}
+			
+		}
+		Loader loader = new Loader(getActivity());
+		return loader; 			 			
+	}
+
+	@Override
+	public void onLoadFinished(android.content.Loader<List<T>> loader, List<T> data) {
+		// assign result to list vieLw (through an adapter)		
+		setListAdapter(new Adapter(data));
+	}
+
+	@Override
+	public void onLoaderReset(android.content.Loader<List<T>> loader) {
+				
+	}
+
+	
 	
 	@Override
 	public void onListItemClick(ListView listView, View view, int position, long id) {
@@ -261,14 +271,6 @@ public abstract class SelectableListFragment<T extends Item> extends ListFragmen
 		return onActionItemClicked(item, this.selectedPosition, this.selectedId);
 	}		
 
-
-	@Override
-	public void onStart() {
-		super.onStart();
-		
-		// refresh list
-		reload();			
-	}
 	
 	@Override
 	public void onStop() {
@@ -290,7 +292,7 @@ public abstract class SelectableListFragment<T extends Item> extends ListFragmen
 	 * Reloads the list
 	 */
 	public void reload() {
-		getLoaderManager().getLoader(0).forceLoad();
+		getLoaderManager().restartLoader(0, null, this);
 	}
 	
 }

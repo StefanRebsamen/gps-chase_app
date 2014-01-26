@@ -1,51 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"    
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="48dp"
-    android:layout_marginTop="4dp" 
-    android:layout_marginBottom="4dp" 
+    android:layout_marginBottom="4dp"
+    android:layout_marginTop="4dp"
     android:background="?android:attr/activatedBackgroundIndicator"
-    >
-    
+    android:minHeight="48dp"
+    android:orientation="horizontal" >
+
     <ImageView
         android:id="@+id/imageView_trail_type"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_centerVertical="true"
+        android:layout_gravity="center_vertical"
         android:layout_marginRight="4dp"
         android:adjustViewBounds="true"
         android:maxHeight="16dip"
         android:maxWidth="16dip" />
-    
-     <TextView
-         android:id="@+id/textView_trail_name"
-         android:layout_width="wrap_content"
-         android:layout_height="wrap_content"
-         android:layout_alignParentTop="true"
-         android:layout_toRightOf="@id/imageView_trail_type"
-         android:text="Trail"
-         android:textAppearance="?android:attr/textAppearanceMedium" />
-        
-    <TextView
-        android:id="@+id/textView_trail_description"
-        android:layout_width="wrap_content"
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="false"
-        android:layout_below="@id/textView_trail_name"
-        android:layout_toRightOf="@id/imageView_trail_type"
-        android:text="description description description description description description description description description description description description description description"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
-    
-    <TextView
-        android:id="@+id/textView_trail_updated"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@id/textView_trail_name"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:text="updated"
-        android:textAppearance="?android:attr/textAppearanceSmall" />
-         
-</RelativeLayout>
+        android:layout_gravity="center_vertical"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/textView_trail_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Trail"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <TextView
+                android:id="@+id/textView_trail_updated"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0"
+                android:text="updated"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/textView_trail_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+    </LinearLayout>
+
+</LinearLayout>

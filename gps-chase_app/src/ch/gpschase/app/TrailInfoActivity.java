@@ -71,6 +71,10 @@ public class TrailInfoActivity extends Activity {
 		editTextName.setText(trail.name);
 		editTextDescr.setText(trail.description);
 		
+		// lock if it's not editable
+		editTextName.setEnabled(trail.isEditable());;
+		editTextDescr.setEnabled(trail.isEditable());;
+		
 		// go through checkpoints and calculate info 
 		int cpCount = 0;
 		float distance = 0.0f;

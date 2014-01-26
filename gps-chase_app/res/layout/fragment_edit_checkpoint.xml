@@ -1,88 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content" >
+    android:layout_height="wrap_content"
+    android:orientation="horizontal" >
 
-    <ImageButton
-        android:id="@+id/button_reorder_checkpoint_backward"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:src="@drawable/ic_up" />
-
-    <ImageButton
-        android:id="@+id/button_reorder_checkpoint_forward"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/button_reorder_checkpoint_backward"
-        android:src="@drawable/ic_down" />
-
-    <ImageButton
-        android:id="@+id/button_delete_checkpoint"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="false"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/button_reorder_checkpoint_forward"
-        android:src="@drawable/ic_delete" />
-
-    <TextView
-        android:id="@+id/textView_checkpoint_no"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginLeft="4dp"
-        android:text="#1"
-        android:textSize="24sp"
-        android:textStyle="bold" />
-
-    <CheckBox
-        android:id="@+id/checkBox_show_on_map"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@+id/textView_checkpoint_no"
-        android:layout_toRightOf="@+id/textView_checkpoint_no"
-        android:text="@string/field_show_on_map" />
-
-    <EditText
-        android:id="@+id/editText_hint"
-        android:hint="@string/field_hint"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@+id/textView_checkpoint_no"
-        android:layout_toLeftOf="@+id/button_reorder_checkpoint_backward"
-        android:ems="10"
-        android:gravity="top"
-        android:inputType="textCapSentences|textMultiLine"
-        android:maxLines="6" />
-
-    <ImageButton
-        android:id="@+id/button_add_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@+id/editText_hint"
-        android:src="@drawable/ic_new_image"
-        android:text="Button" />
-
-    <HorizontalScrollView
-        android:id="@+id/scrollView_images"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignRight="@+id/editText_hint"
-        android:layout_below="@+id/editText_hint"
-        android:layout_toRightOf="@+id/button_add_image" >
+        android:layout_weight="1"
+        android:orientation="vertical" >
 
         <LinearLayout
-            android:id="@+id/layout_images"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:layout_marginTop="4dp"
             android:orientation="horizontal" >
-        </LinearLayout>
-    </HorizontalScrollView>
 
-</RelativeLayout>
+            <TextView
+                android:id="@+id/textView_checkpoint_no"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:text="#1"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <Switch
+                android:id="@+id/checkBox_show_on_map"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:textOff="Hide"
+                android:textOn="Show" />
+
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/editText_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:gravity="top"
+            android:hint="@string/field_hint"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="6" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" >
+
+            <ImageButton
+                android:id="@+id/button_add_image"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:src="@drawable/ic_new_image"
+                android:text="Button" />
+
+            <HorizontalScrollView
+                android:id="@+id/scrollView_images"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical" >
+
+                <LinearLayout
+                    android:id="@+id/layout_images"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal" >
+                </LinearLayout>
+            </HorizontalScrollView>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="4dp"
+        android:layout_marginTop="4dp"
+        android:background="@color/checkpoint_overlay_divider" />
+    
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <ImageButton
+            android:id="@+id/button_reorder_checkpoint_backward"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_up" />
+
+        <ImageButton
+            android:id="@+id/button_reorder_checkpoint_forward"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_down" />
+
+        <ImageButton
+            android:id="@+id/button_delete_checkpoint"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_delete" />
+    </LinearLayout>
+
+</LinearLayout>

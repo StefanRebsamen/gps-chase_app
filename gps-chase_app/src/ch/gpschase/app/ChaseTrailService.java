@@ -76,7 +76,7 @@ public class ChaseTrailService extends Service {
 				if (distance < (App.isDebuggable() ? HIT_DISTANCE_DEBUG : HIT_DISTANCE)) {
 
 					// create a new hit and save it
-					Hit hit = new Hit(chase, currentCheckpoint);
+					Hit hit = chase.addHit(currentCheckpoint);
 					hit.save(ChaseTrailService.this);
 			
 					// keep checkpoint we've hit
@@ -217,16 +217,19 @@ public class ChaseTrailService extends Service {
 
 		// load trail including its checkpoints
 		// the images will be loaded by the activity when necessary
-		trail = Trail.load(this, chase.getTrail().getId());
+		trail = chase.getTrail();
 		trail.loadCheckpoints(this);
 
-		// first checkpoint without a hit is our next one
+		// determine next checkpoint we need to hit
+		// it's the one after the last hit
 		chase.loadHits(this);
-		
+		currentCheckpoint = null;
 		for (Checkpoint checkpoint : trail.getCheckpoints()) {
-			if (!chase.isHit(checkpoint)) {
-				currentCheckpoint = checkpoint;
-				break;
+			if (chase.isHit(checkpoint)) {
+				currentCheckpoint = null;
+			}
+			else if (currentCheckpoint == null) {
+				currentCheckpoint = checkpoint;				
 			}
 		}
 	}

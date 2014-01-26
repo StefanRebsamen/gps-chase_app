@@ -1,8 +1,8 @@
 <resources>
+	
+   <color name="checkpoint_overlay">#DDE4E4E4</color>
+   <color name="checkpoint_overlay_divider">#FFB2B2B2</color>
 
-   <color name="white_overlay">#BBFFFFFF</color>
-   <color name="white">#FFFFFFFF</color>
-       
    <color name="purple_dark">#FF9933cc</color>
    <color name="purple_light">#FFaa66cc</color>
    <color name="green_dark">#FF669900</color>

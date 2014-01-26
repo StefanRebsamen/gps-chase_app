@@ -18,6 +18,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -34,8 +35,10 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 import ch.gpschase.app.data.Checkpoint;
 import ch.gpschase.app.data.Image;
 import ch.gpschase.app.data.ImageFileManager;
@@ -68,6 +71,42 @@ public class EditTrailActivity extends Activity {
 		private static final int REQUEST_CODE_IMPORT_IMAGE = 2;
 
 		/**
+		 * An extended ImageView with the ability to provide context menu info
+		 */		
+		private class ImageViewEx extends ImageView {
+			ImageViewContextMenuInfo contextMenuInfo = null;
+
+		    public ImageViewEx(Context context) {
+		        super(context);
+		        contextMenuInfo = new ImageViewContextMenuInfo(this);
+		    }
+
+		    public ImageViewEx(Context context, AttributeSet attrs) {
+		        super(context, attrs);
+		        contextMenuInfo = new ImageViewContextMenuInfo(this);
+		    }   
+
+		    protected ContextMenuInfo getContextMenuInfo() {
+		        return contextMenuInfo;
+		    }
+
+		    public boolean isContextView(ContextMenuInfo menuInfo) {
+		        return menuInfo == (ContextMenuInfo)contextMenuInfo;
+		    }
+		    
+		    /**
+		     * ContextMenuInfo for ImageView
+		     */
+			private class ImageViewContextMenuInfo implements ContextMenuInfo {
+		        protected ImageView imageView = null;
+	
+		        protected ImageViewContextMenuInfo(ImageView imageView) {
+		        	this.imageView = imageView;
+		        }		        
+			}
+		}
+	
+		/**
 		 * Used for callbacks from fragment
 		 */
 		public interface Listener {
@@ -89,7 +128,7 @@ public class EditTrailActivity extends Activity {
 
 		// references to UI elements
 		private TextView textViewNo;
-		private CheckBox checkBoxShowOnMap;
+		private Switch checkBoxShowOnMap;
 		private EditText editTextHint;
 		private LinearLayout layoutImages;
 		private ImageButton buttonNewImage;
@@ -108,7 +147,7 @@ public class EditTrailActivity extends Activity {
 
 			// get references to UI elements
 			textViewNo = (TextView) view.findViewById(R.id.textView_checkpoint_no);
-			checkBoxShowOnMap = (CheckBox) view.findViewById(R.id.checkBox_show_on_map);
+			checkBoxShowOnMap = (Switch) view.findViewById(R.id.checkBox_show_on_map);
 			editTextHint = (EditText) view.findViewById(R.id.editText_hint);
 			layoutImages = (LinearLayout) view.findViewById(R.id.layout_images);
 			buttonNewImage = (ImageButton) view.findViewById(R.id.button_add_image);
@@ -167,7 +206,7 @@ public class EditTrailActivity extends Activity {
 			super.onCreateContextMenu(menu, v, menuInfo);
 
 			// was it really from an image view?
-			if (v instanceof ImageView) {
+			if (v instanceof ImageViewEx) {
 
 				// inflate menu
 				MenuInflater inflater = getActivity().getMenuInflater();
@@ -175,15 +214,16 @@ public class EditTrailActivity extends Activity {
 				
 				// set a title
 				menu.setHeaderTitle(R.string.context_menu_image_title);
+				menu.setHeaderIcon(R.drawable.ic_image);
 			}
 		}
 
 		@Override
 		public boolean onContextItemSelected(MenuItem item) {
 
-			if (item.getMenuInfo() instanceof AdapterView.AdapterContextMenuInfo) {
-				AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
-				Image image = (Image)info.targetView.getTag();
+			if (item.getMenuInfo() instanceof ImageViewEx.ImageViewContextMenuInfo) {
+				ImageViewEx.ImageViewContextMenuInfo info = (ImageViewEx.ImageViewContextMenuInfo)item.getMenuInfo();
+				Image image = (Image)(info.imageView.getTag());
 				
 				switch (item.getItemId()) {
 				case R.id.action_delete_image:
@@ -231,7 +271,7 @@ public class EditTrailActivity extends Activity {
 			updateIndex();
 
 			// refresh images
-			updateImages();
+			refreshImages();
 		}
 
 		/**
@@ -284,7 +324,7 @@ public class EditTrailActivity extends Activity {
 		
 		
 		//
-		private void updateImages() {
+		private void refreshImages() {
 			
 			// nothing to do if view isn't yet created
 			if (layoutImages == null) {
@@ -303,7 +343,7 @@ public class EditTrailActivity extends Activity {
 				// ass them to their container
 				for (Image image : checkpoint.getImages()) {
 					// create an image view
-					ImageView imageView = new ImageView(getActivity());
+					ImageViewEx imageView = new ImageViewEx(getActivity());
 					imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 					imageView.setPadding(8, 8, 8, 8);
 					imageView.setImageBitmap(imageManager.getThumb(image));
@@ -480,7 +520,7 @@ public class EditTrailActivity extends Activity {
 				}
 				else {		
 					// refresh images
-					updateImages();
+					refreshImages();
 					
 					// mark trail as updated
 					checkpoint.getTrail().updated = System.currentTimeMillis();
@@ -496,13 +536,12 @@ public class EditTrailActivity extends Activity {
 		}
 
 		/**
-		 * 
+		 * Deletes the specified image after confirmation from user
 		 */
 		private void deleteImage(Image image) {
 
 			final Image passedImage = image;
 
-			// TODO do it with an aler dialog
 			class DeleteDialogFragment extends DialogFragment {
 				@Override
 				public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -516,8 +555,11 @@ public class EditTrailActivity extends Activity {
 					imageView.setAdjustViewBounds(true);
 					imageView.setImageBitmap(App.getImageManager().getFull(passedImage));
 
-					return new AlertDialog.Builder(getActivity()).setTitle(R.string.action_delete_image)
-							.setMessage(R.string.dialog_delete_image_message).setView(imageView).setIcon(R.drawable.ic_delete)
+					return new AlertDialog.Builder(getActivity())					//						
+							.setTitle(R.string.action_delete_image)					//
+							.setIcon(R.drawable.ic_delete)							//
+							.setMessage(R.string.dialog_delete_image_message)		//
+							.setView(imageView).setIcon(R.drawable.ic_delete)		//
 							.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
 								public void onClick(DialogInterface dialog, int whichButton) {
 
@@ -525,13 +567,14 @@ public class EditTrailActivity extends Activity {
 									passedImage.delete(getActivity());									
 
 									// refresh images
-									updateImages();
+									refreshImages();
 									
 									// mark trail as updated
 									checkpoint.getTrail().updated = System.currentTimeMillis();
 									checkpoint.getTrail().save(getActivity());									
 								}
-							}).setNegativeButton(R.string.dialog_no, null).create();
+							})	//
+							.setNegativeButton(R.string.dialog_no, null).create();
 				}
 
 			}
@@ -671,7 +714,7 @@ public class EditTrailActivity extends Activity {
 		actionBar.setDisplayHomeAsUpEnabled(true);
 		actionBar.setTitle(R.string.activity_title_edit_trail);
 		actionBar.setSubtitle(trail.name);
-
+				
 		// make sure nothing is selected
 		selectCheckpoint(null);
 	}
@@ -692,7 +735,7 @@ public class EditTrailActivity extends Activity {
 	public void onStart() {
 		super.onStart();
 
-		// TODO check if trail is not downloaded
+		// TODO check if trail is really editable
 
 		// init map
 		map.clearCheckpoints();

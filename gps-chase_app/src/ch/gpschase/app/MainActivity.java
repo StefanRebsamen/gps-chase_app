@@ -1,440 +1,265 @@
 package ch.gpschase.app;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+
+import org.w3c.dom.ls.LSInput;
 
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.DialogFragment;
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.text.Editable;
+import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.widget.DrawerLayout;
 import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.widget.EditText;
+import android.widget.Adapter;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.Space;
 import android.widget.TextView;
-import ch.gpschase.app.data.BackendClient;
-import ch.gpschase.app.data.Chase;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.util.ChaseCreator;
 import ch.gpschase.app.util.DownloadTask;
-import ch.gpschase.app.util.SelectableListFragment;
 import ch.gpschase.app.util.TrailDownloadLink;
-import ch.gpschase.app.util.UploadTask;
 
 /**
  * 
  */
 public class MainActivity extends Activity {
 
-	private static final String FRAGMENT_TAG_MY_TRAILS = "myTrails";
-	private static final String FRAGMENT_TAG_CLOUD_TRAILS = "cloudTrails";
-
-	private MyTrailsFragment myTailsFragment;
-	private CloudTrailsFragment cloudTrailsFragment;
+	/**
+	 * Abstract base class for an item in the drawer
+	 */
+	private abstract static class DrawerItem {
+        // possible types
+        static enum Type {
+        	SPACE,
+        	SECTION,
+        	SELECTABLE
+        }
+    	
+        Type type;
+        int value;
+        int labelResId;
+        int iconResId;
+    }
 
 	/**
-	 * 
+	 * A space in the drawer
 	 */
-	public static class TabListener<T extends Fragment> implements ActionBar.TabListener {
-
-		private final Fragment fragment;
-		private final String tag;
-
-		public TabListener(Fragment fragment, String tag) {
-			this.fragment = fragment;
-			this.tag = tag;
+	private class DrawerSpace extends DrawerItem {
+		
+		public DrawerSpace() {
+			type = Type.SPACE;
 		}
 
-		public void onTabSelected(Tab tab, FragmentTransaction ft) {
-			if (fragment.isDetached()) {
-				ft.attach(fragment);
-			} else if (!fragment.isAdded()) {
-				ft.add(R.id.layout_container, fragment, tag);
-			}
+	}
+
+	/**
+	 * A section in the drawer
+	 */
+	private class DrawerSection extends DrawerItem {
+		
+		public DrawerSection(int labelResId) {
+			type = Type.SECTION;
+			this.labelResId = labelResId;
 		}
 
-		public void onTabUnselected(Tab tab, FragmentTransaction ft) {
-			ft.detach(fragment);
+	}
+
+	/**
+	 * A selectable item in the drawer
+	 */
+	private class DrawerSelectable extends DrawerItem {
+		
+		public DrawerSelectable(int labelResId, int iconResId,  int value) {
+			type = Type.SELECTABLE;
+			this.labelResId = labelResId;
+			this.iconResId = iconResId;
+			this.value = value;
 		}
 
-		public void onTabReselected(Tab tab, FragmentTransaction ft) {
+	}
+
+	
+	/**
+	 * Handles toggling of the navigation drawer
+	 */
+	private final class DrawerToggle extends ActionBarDrawerToggle {
+		private DrawerToggle(Activity activity, DrawerLayout drawerLayout, int drawerImageRes, int openDrawerContentDescRes,
+				int closeDrawerContentDescRes) {
+			super(activity, drawerLayout, drawerImageRes, openDrawerContentDescRes, closeDrawerContentDescRes);
+		}
+
+		/** Called when a drawer has settled in a completely closed state. */
+		public void onDrawerClosed(View view) {
+		    super.onDrawerClosed(view);
+		    // show menu
+		    invalidateOptionsMenu();
+		}
+
+		/** Called when a drawer has settled in a completely open state. */
+		public void onDrawerOpened(View drawerView) {
+		    super.onDrawerOpened(drawerView);
+		    // hide menu
+		    invalidateOptionsMenu();
 		}
 	}
 
 	/**
-	 * Fragment to display list of trails
+	 * Listens to clicks on the navigation drawer items
 	 */
-	public static class MyTrailsFragment extends SelectableListFragment<Trail> {
+	private class DrawerItemClickListener implements ListView.OnItemClickListener {
+	    @Override
+	    public void onItemClick(AdapterView parent, View view, int position, long id) {
+	    	DrawerSelectable selectable = (DrawerSelectable)drawerItems.get(position);
+	    	// select item
+	        selecDrawertItem(selectable);
+	    }
+	}
+	
+
+	/**
+	 * Provides the drawer with its content
+	 */
+	private class DrawerListAdapter extends BaseAdapter {
+
+		final DrawerItem.Type[] typeValues = DrawerItem.Type.values();
+
+		@Override
+		public boolean areAllItemsEnabled() {
+			return false;
+		}
+
+		@Override
+		public int getCount() {
+			return drawerItems.size();
+		}
+
+		@Override
+		public Object getItem(int position) {
+			return drawerItems.get(position);		
+		}
+
+		@Override
+		public long getItemId(int position) {			
+			return position;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+
+			DrawerItem item = drawerItems.get(position);  
+			switch (item.type) {
+			case SELECTABLE:
+				return getSelectableView((DrawerSelectable)item, convertView, parent);
+
+			case SECTION :
+				return getSectionView((DrawerSection)item, convertView, parent);
+
+			case SPACE:
+				return getSpaceView((DrawerSpace)item, convertView, parent);
+
+			default:
+				throw new IllegalArgumentException();
+			}
+		}
+
 		
-		/**
-		 * 
-		 */
-		public MyTrailsFragment() {
-			super(R.menu.menu_main_trails, R.menu.cab_main_trail);
-		}
-
-		@Override
-		public void onCreate(Bundle savedInstanceState) {
-			super.onCreate(savedInstanceState);
-
-			
-			// we want to create our own option menu
-			setHasOptionsMenu(true);
-		}
-
-		@Override
-		public void onActivityCreated(Bundle savedInstanceState) {
-			super.onActivityCreated(savedInstanceState);
-
-			// set empty text
-			CharSequence emptText = getResources().getText(R.string.empty_text_trails);
-			setEmptyText(emptText);
-		}
-
-		@Override
-		public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-			// provide own option menu here
-			inflater.inflate(R.menu.menu_main_trails, menu);
-		}
-
-		
-		@Override
-		protected List<Trail> loadInBackground() {			
-			return Trail.list(getActivity());
-		}
-
-		@Override
-		protected View getView(Trail item, View convertView, ViewGroup parent) {
-
+		private View getSectionView(DrawerSection item, View convertView, ViewGroup parent) {
 			// make sure we've got a view
 			View view = convertView;
 			if (view == null) {
-				LayoutInflater vi = (LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			     view = vi.inflate(R.layout.listrow_trail, null);			
+				LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			    view = vi.inflate(R.layout.drawer_section, null);			
 			}
 			
-			// add item as tag
-			view.setTag(item);
-
-			// set UI elements
-			((TextView) view.findViewById(R.id.textView_trail_name)).setText(item.name);
-			((TextView) view.findViewById(R.id.textView_trail_description)).setText(item.description);
-			((TextView) view.findViewById(R.id.textView_trail_updated)).setText(App.formatDateTime(item.updated));
-
-			if (item.downloaded != 0) {
-				((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_download);
-			} else {
-				((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_edit);
-			}
+			// set text
+			((TextView)view.findViewById(R.id.textView_drawer_label)).setText(item.labelResId);
 			
-			return view;
+			return view;			
+		}
+		
+		private View getSpaceView(DrawerSpace item, View convertView, ViewGroup parent) {
+			// make sure we've got a view
+			View view = convertView;
+			if (view == null) {
+				view = new TextView(MainActivity.this);
+				view.setMinimumHeight(48);
+			}
+			return view;			
 		}
 
+		private View getSelectableView(DrawerSelectable item, View convertView, ViewGroup parent) {
+			// make sure we've got a view
+			View view = convertView;
+			if (view == null) {
+				LayoutInflater vi = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			    view = vi.inflate(R.layout.drawer_selectable, null);			
+			}
+			
+			// set text and icon
+			((TextView)view.findViewById(R.id.textView_drawer_label)).setText(item.labelResId);
+			((ImageView)view.findViewById(R.id.imageView_drawer_icon)).setImageResource(item.iconResId);
+			
+			return view;			
+		}
+		
 		
 		@Override
-		protected boolean onActionItemClicked(MenuItem item, int position, long id) {
-
-			View view = getListView().getChildAt(position);
-			if (view != null) {
-				Trail trail = (Trail) view.getTag();
-				switch (item.getItemId()) {
-				case R.id.action_new_chase:
-					// chase trail
-					chaseTrail(trail);
-					return true;
-
-				case R.id.action_edit_trail:
-					// edit trail
-					EditTrailActivity.show(getActivity(), trail);
-					return true;
-
-				case R.id.action_share_trail:
-					// upload and share trail
-					shareTrail(trail);
-					return true;
-
-				case R.id.action_delete_trail:
-					// delete trail after asking user
-					deleteTrail(trail);
-					return true;
-				}
-			}
-			return false;
+		public int getViewTypeCount() {
+			return typeValues.length;
 		}
 
 		@Override
-		public boolean onOptionsItemSelected(MenuItem item) {
-			switch (item.getItemId()) {
-			case R.id.action_new_trail:
-				createNewTrail();
-				return true;
+		public int getItemViewType(int position) {			
+			DrawerItem item = drawerItems.get(position);
+			for (int i = 0; i<typeValues.length; i++ ) {
+				if (typeValues[i] == item.type) {
+					return i;
+				}
 			}
-			return false;
+			return Adapter.IGNORE_ITEM_VIEW_TYPE;
 		}
-
+		
 		@Override
-		public void onListItemClick(int position, long id) {
-			View view = getListView().getChildAt(position);
-			if (view != null) {
-				Trail trail = (Trail) view.getTag();
-				if (((Trail) view.getTag()).downloaded != 0) {
-					chaseTrail(trail);
-				} else {
-					EditTrailActivity.show(getActivity(), trail);
-				}
-			}
+		public boolean isEnabled (int position) {			
+			return drawerItems.get(position).type == DrawerItem.Type.SELECTABLE;
 		}
-
-		@Override
-		public void onSelectionChanged(int position, long id) {
-			if (actionMode != null) {
-				View view = getListView().getChildAt(position);
-				if (view != null) {
-					Trail trail = (Trail) view.getTag();
-					// update title
-					actionMode.setTitle(trail.name);
-					// modify menu
-					MenuItem menuEdit = actionMode.getMenu().findItem(R.id.action_edit_trail);
-					if (menuEdit != null) {
-						menuEdit.setVisible(trail.downloaded == 0);
-					}
-					MenuItem menuShare = actionMode.getMenu().findItem(R.id.action_share_trail);
-					if (menuShare != null) {
-						menuShare.setVisible(trail.downloaded == 0);
-					}
-				}
-			}
-		}
-
-		/**
-		 * 
-		 * @param name
-		 */
-		private void createNewTrail() {
-
-			// create a dialog which has it's OK button enabled when the text
-			// entered isn't empty
-			final EditText editText = new EditText(getActivity());
-			editText.setHint(R.string.dialog_new_trail_name_hint);
-			editText.setSingleLine();
-			
-			final AlertDialog dialog = new AlertDialog.Builder(getActivity())							//
-												.setTitle(R.string.dialog_new_trail_title)				//
-												.setView(editText).setIcon(R.drawable.ic_new)			//
-												.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
-													public void onClick(DialogInterface dialog, int whichButton) {
-							
-														// insert new trail with specified name (or
-														// <untitled>
-														// if empty)
-														String name = editText.getText().toString().trim();
-							
-														if (TextUtils.isEmpty(name)) {
-															name = getString(android.R.string.untitled);
-														}
-							
-														Trail trail = new Trail();
-														trail.name = name;
-														trail.updated = System.currentTimeMillis();
-														trail.save(getActivity());
-							
-														// switch to edit activity
-														EditTrailActivity.show(getActivity(), trail);
-													}
-												})
-												.setNegativeButton(R.string.dialog_cancel, null).create();
-			// add listener to enable/disable OK button
-			editText.addTextChangedListener(new TextWatcher() {
-				@Override
-				public void beforeTextChanged(CharSequence c, int i, int i2, int i3) {
-				}
-
-				@Override
-				public void onTextChanged(CharSequence c, int i, int i2, int i3) {
-				}
-
-				@Override
-				public void afterTextChanged(Editable editable) {
-					if (editable.toString().trim().length() == 0) {
-						dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-					} else {
-						dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-					}
-				}
-			});
-
-			// show the Dialog:
-			dialog.show();
-			// the button is initially deactivated, as the field is initially
-			// empty:
-			dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-		}
-
-		/**
-		 * Downloads a trail from the server in an asynchronous task
-		 */
-		public void downloadTrail(Context context, UUID trailUuid) {
-			// execute task
-			Trail trail = new Trail();
-			trail.uuid = trailUuid;
-			new DownloadTask(context, trail, true).execute();
-		}
-
-		/**
-		 * 
-		 * @param trailId
-		 */
-		private void deleteTrail(Trail trail) {
-
-			final Trail passedTrail = trail;
-			
-			/**
-			 * Asynchronous task to delete trail locally and from server
-			 */
-			class DeleteTask extends AsyncTask<Void, Void, Boolean> {
-
-				// progress dialog
-				private ProgressDialog pd = null;
-				
-				
-				@Override
-				protected void onPreExecute() {
-					
-					pd = new ProgressDialog(getActivity());
-					pd.setCancelable(false);
-					pd.setIndeterminate(true);
-					pd.setMessage(getActivity().getResources().getText(R.string.dialog_deleting));
-					pd.setIcon(R.drawable.ic_delete);
-					pd.setTitle(R.string.action_delete_trail);			
-					pd.show();
-				}
-
-				@Override
-				protected Boolean doInBackground(Void... params) {
-					
-					// was it ever uploaded to the server?
-					if (passedTrail.uploaded != 0) {
-						// delete trail on server
-						try {
-							BackendClient client = new BackendClient(getActivity() );
-							client.deleteTrail(passedTrail);
-													
-						} catch (Exception ex) {
-							Log.e("uploadTrail", "Error while deleting trail", ex);
-							return false;
-						}
-					}
-					
-					// delete trail in database
-					passedTrail.delete(getActivity());
-					
-					return true;					
-				}
-
-				@Override
-				protected void onPostExecute(Boolean result) {
-
-					// hide progress dialog
-					pd.dismiss();
-					
-					if (result) {
-						// refresh list
-						MyTrailsFragment.this.reload();	
-					}
-					else {
-						// show dialog to inform user about failure
-						new AlertDialog.Builder(getActivity())								//
-							.setIcon(android.R.drawable.ic_dialog_alert)					//
-							.setTitle(R.string.dialog_delete_trail_error_title)				//
-							.setMessage(R.string.dialog_delete_trail_error_message)			//
-							.setPositiveButton(R.string.dialog_ok, null)					//
-							.show();														//
-						return;
-						
-					}
-				}
-			}
-			
-			// show a dialog for user confirmation
-			new DialogFragment() {
-				@Override
-				public Dialog onCreateDialog(Bundle savedInstanceState) {
-
-					return new AlertDialog.Builder(getActivity()).setTitle(R.string.dialog_delete_trail_title)
-							.setMessage(R.string.dialog_delete_trail_message).setIcon(R.drawable.ic_delete)
-							.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog, int whichButton) {
-
-									// finish action mode
-									finishActionMode();
-
-									// delete in async task
-									new DeleteTask().execute();
-									
-								}
-							}).setNegativeButton(R.string.dialog_no, null).create();
-				}
-			}.show(getFragmentManager(), null);
-		}
-
-		/**
-		 * 
-		 * @param trailId
-		 */
-		private void chaseTrail(Trail trail) {
-
-			// find a running chase
-			Chase runningChase = trail.getFirstRunningChase(getActivity());
-			if (runningChase != null) {
-				// continue
-				ChaseTrailActivity.show(getActivity(), runningChase);
-			} else {
-				// create a new one
-				new ChaseCreator(getActivity()).show(trail);
-			}
-		}
-
-		/**
-		 * Upload a trail to the server and share it afterwards in an
-		 * asynchronous task
-		 */
-		private void shareTrail(Trail trail) {
-
-			// execute task
-			new UploadTask(getActivity(), trail, true).execute();
-		}
-
-
-
-
 	}
+	
 
-	/**
-	 * Fragment to display list of trails on the clousd
-	 */
-	public static class CloudTrailsFragment extends Fragment {
+	private final int SELECTABLE_MYTRAILS = 10;
+	private final int SELECTABLE_CLOUDTRAILS = 20;
+	private final int SELECTABLE_CHASES = 30;
+	private final int SELECTABLE_PREFERENCES = 40;
+	
+	
+	// navigation drawer related variables
+	private final List<DrawerItem> drawerItems = new ArrayList<DrawerItem>(); 
+	private DrawerLayout drawerLayout;
+	private ListView drawerList;
+	private ActionBarDrawerToggle drawerToggle;
 
-	}
+	// what is currently active on drawer
+	DrawerSelectable currentSelectable = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -442,35 +267,36 @@ public class MainActivity extends Activity {
 
 		// load layout
 		setContentView(R.layout.activity_main);
-
-		// create fragments (if not recreated by the system)
-		myTailsFragment = (MyTrailsFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_MY_TRAILS);
-		if (myTailsFragment == null) {
-			myTailsFragment = new MyTrailsFragment();
-		}
-		cloudTrailsFragment = (CloudTrailsFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_CLOUD_TRAILS);
-		if (cloudTrailsFragment == null) {
-			cloudTrailsFragment = new CloudTrailsFragment();
-		}
-
-		// setup action bar
-		final ActionBar actionBar = getActionBar();
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-		actionBar.setDisplayShowTitleEnabled(true);
-
-		final Tab myTrailsTab = actionBar.newTab().setText(R.string.tab_title_my_trails).setTag(myTailsFragment)
-				.setIcon(R.drawable.ic_phone);
-		myTrailsTab.setTabListener(new TabListener<MyTrailsFragment>(myTailsFragment, FRAGMENT_TAG_MY_TRAILS));
-		actionBar.addTab(myTrailsTab);
-
-		final Tab cloudTrailsTab = actionBar.newTab().setText(R.string.tab_title_cloud_trails).setTag(cloudTrailsFragment)
-				.setIcon(R.drawable.ic_cloud);
-		cloudTrailsTab.setTabListener(new TabListener<CloudTrailsFragment>(cloudTrailsFragment, FRAGMENT_TAG_CLOUD_TRAILS));
-		actionBar.addTab(cloudTrailsTab);
-
-		actionBar.selectTab(myTrailsTab); // start with my trails tab
-
 		
+		// define the items we want to have in the drawer
+        drawerItems.add(new DrawerSpace());
+        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_my_trails, R.drawable.ic_phone,  SELECTABLE_MYTRAILS));
+        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_cloud_trails, R.drawable.ic_cloud, SELECTABLE_CLOUDTRAILS));
+        drawerItems.add(new DrawerSpace());
+        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_chases, R.drawable.ic_chases, SELECTABLE_CHASES));
+        drawerItems.add(new DrawerSpace());
+        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_settings, R.drawable.ic_settings, SELECTABLE_PREFERENCES));
+                
+        // set the adapter and listener for the list view
+        drawerList = (ListView) findViewById(R.id.left_drawer);
+        drawerList.setAdapter(new DrawerListAdapter());        
+        drawerList.setOnItemClickListener(new DrawerItemClickListener());
+        
+        // create a drawer toggle
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawerLayout != null) {
+	        drawerToggle = new DrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close);
+	        drawerLayout.setDrawerListener(drawerToggle);        
+        }
+        
+        // tune action bar
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setHomeButtonEnabled(true);        
+        
+        // start with trail on device
+        selectDrawertItem(SELECTABLE_MYTRAILS);        
+        
+		//////////////////////////////////////////
 		// check if we have to open a download link
 		Intent intent = getIntent();
 		if (intent.getAction().equals(Intent.ACTION_VIEW) && intent.getData() != null) {
@@ -483,11 +309,35 @@ public class MainActivity extends Activity {
 
 			// start downloading the trail
 			if (data != null) {
-				myTailsFragment.downloadTrail(this, data.trailUuid); // todo nicht über fragment
+				// load existing or create a new trail
+				Trail trail = Trail.loadOrCreate(this, data.trailUuid);				
+				// download in async task 
+				new DownloadTask(this, trail, true).execute();				
 			}
 		}
+		
 	}
 
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        
+        // sync drawer (if available)
+        if (drawerLayout != null) {	   
+	        drawerToggle.syncState();
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // tell it drawer (if available)
+        if (drawerLayout != null) {
+        	drawerToggle.onConfigurationChanged(newConfig);
+        }
+    }
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -495,21 +345,96 @@ public class MainActivity extends Activity {
 		return true;
 	}
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+    	super.onPrepareOptionsMenu(menu);
+    	
+        // If the nav drawer is open, hide action items related to the content view
+        if (drawerLayout != null) {
+	   	    boolean drawerOpen = drawerLayout.isDrawerOpen(drawerList);
+	   	    return !drawerOpen;
+        }
+        else {
+        	return true;
+        }
+    }	
+	
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // pass the event to ActionBarDrawerToggle, if it returns
+        // true, then it has handled the app icon touch event
+    	if (drawerLayout != null) {
+    		if (drawerToggle.onOptionsItemSelected(item)) {
+    	          return true;    			
+    		}
+        }
+        // handle your other action bar items...
 
-		case R.id.action_show_chases:
-			// show chases activity
-			Intent chasesIntent = new Intent(this, ChasesActivity.class);
-			startActivity(chasesIntent);
-			return true;
-
-		case R.id.action_settings:
-			// show settings activity
-			SettingsActivity.show(this);
-			return true;
+        return super.onOptionsItemSelected(item);
+    }
+    
+	/**
+	 * Selects the specified to show the desired fragment
+	 * @param value
+	 */
+	private void selectDrawertItem(int value) {
+		for (DrawerItem item : drawerItems) {
+			if (item instanceof DrawerSelectable &&  item.value == value) {
+				selecDrawertItem((DrawerSelectable)item);
+			}
 		}
-		return false;
 	}
+	
+	/**
+	 * 
+	 * @param value
+	 */
+	private void selecDrawertItem(DrawerSelectable selectable) {
+
+		// nothing to do if nothing changed
+		if (selectable == currentSelectable) {
+			return;
+		}
+		
+		// create a new fragment, dependent on what was chosen
+	    Fragment fragment = null;
+	    switch (selectable.value) {
+	    case SELECTABLE_MYTRAILS:
+	    	fragment = new MyTrailsFragment();
+	    	break;
+
+	    case SELECTABLE_CLOUDTRAILS:	
+	    	fragment = new CloudTrailsFragment();
+	    	break;
+
+	    case SELECTABLE_CHASES:	
+	    	fragment = new ChasesFragment();
+	    	break;
+	    	
+	    case SELECTABLE_PREFERENCES:	
+	    	fragment = new SettingsFragment();
+	    	break;
+	    }
+	    
+	    // keep current selection
+	    currentSelectable = selectable;	    
+
+	    // close the drawer (if available)
+	    if (drawerLayout != null) {
+	    	drawerLayout.closeDrawer(drawerList);
+	    }
+	    
+	    // highlight the selected item, update the title, and close the drawer
+	    drawerList.setItemChecked(drawerItems.indexOf(selectable), true);
+	    setTitle(currentSelectable.labelResId);
+
+	    
+	    // insert the fragment by replacing any existing fragment
+	    FragmentManager fragmentManager = getFragmentManager();
+	    fragmentManager.beginTransaction()
+	                   .replace(R.id.content_frame, fragment)
+	                   .commit();
+
+	}
+	
 }

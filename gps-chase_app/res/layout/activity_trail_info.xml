@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:layout_margin="16dp"
     android:orientation="vertical" >
-
+        
     <EditText
         android:id="@+id/editText_name"
         android:layout_width="match_parent"
@@ -26,12 +26,19 @@
         android:gravity="top"
         android:hint="@string/field_description"
         android:inputType="textMultiLine"
-        android:lines="3" />
+        android:minLines="2" />
+
+    <TextView
+        android:id="@+id/textView_section_measures"
+        style="?android:attr/listSeparatorTextViewStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/section_measures" />
 
     <TableLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
     	android:layout_marginLeft="8dp"
     	android:layout_marginRight="8dp"
         >

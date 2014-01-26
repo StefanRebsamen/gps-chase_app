@@ -10,6 +10,7 @@ import java.io.StringWriter;
 import java.net.ProtocolException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -112,7 +113,11 @@ public class BackendClient {
 			
 			JsonReader reader = new JsonReader(new StringReader(json));
 			reader.beginObject();
+
+			// create new trail and assign it an empty checkpoint list
 			Trail trail = new Trail();
+			trail.checkpoints = new LinkedList<Checkpoint>();
+
 			while (reader.hasNext()) {
 				String name = reader.nextName();
 				if (name.equals(Json.TRAIL_UUID)) {
@@ -131,7 +136,11 @@ public class BackendClient {
 					reader.beginArray();
 					while (reader.hasNext()) {
 						reader.beginObject();
+						
+						// add checkpoint and assign it it a list for its images
 						Checkpoint checkpoint = trail.addCheckpoint();
+						checkpoint.images = new LinkedList<Image>();						
+						
 						while (reader.hasNext()) {
 							name = reader.nextName();
 							if (name.equals(Json.CHECKPOINT_UUID)) {
@@ -406,6 +415,9 @@ public class BackendClient {
 			// populate local trail
 			localTrail.loadAll(context);
 			
+			// keep download timestamp
+			downloadedTrail.downloaded = System.currentTimeMillis();
+
 			// overwrite some values from local trail and save it to the database;
 			downloadedTrail.password = localTrail.password;
 			downloadedTrail.setId(localTrail.getId());

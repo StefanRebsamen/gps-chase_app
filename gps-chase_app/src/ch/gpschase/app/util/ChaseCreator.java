@@ -42,7 +42,7 @@ public class ChaseCreator {
 		editText.setSingleLine();
 		
 		new AlertDialog.Builder(context)											//
-				.setTitle(R.string.action_new_chase)								//
+				.setTitle(R.string.action_chase_trail)								//
 				.setIcon(R.drawable.ic_play)										//
 				.setView(editText)													//
 				.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
@@ -52,7 +52,7 @@ public class ChaseCreator {
 						dialog.dismiss();
 						
 						// create a new chase
-						Chase chase = new Chase(trail);
+						Chase chase = Chase.create(trail);
 						chase.player = playerName;
 						chase.save(context);
 						

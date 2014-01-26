@@ -83,7 +83,7 @@ public class ChaseTrailActivity extends Activity {
 				
 				// enable download button only if trail was downloaded
 				if (menuDownload != null) {
-					menuDownload.setVisible(chase.getTrail().downloaded != 0);
+					menuDownload.setVisible(chase.getTrail().isDownloaded());
 				}
 			}
 									
@@ -277,7 +277,7 @@ public class ChaseTrailActivity extends Activity {
 		
 						//////////////////////////////
 						// Update of trail 
-						if (chase.getTrail().downloaded != 0) {
+						if (chase.getTrail().isDownloaded()) {
 							
 							if (updateInterval > 0 &&  System.currentTimeMillis() - lastUpdateCheck >= (updateInterval * 1000)) {
 								
@@ -533,8 +533,6 @@ public class ChaseTrailActivity extends Activity {
 
 		Log.d("ChaseTrailActivity", "onCreate");
 
-
-
 		// add mock location provider if in debug mode
 		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 		if (App.isDebuggable()) {
@@ -620,12 +618,12 @@ public class ChaseTrailActivity extends Activity {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.menu_chase_trail, menu);
 
-		// find an enable download menu
+		// find and enable download menu
 		menuDownload = menu.findItem(R.id.action_download_trail);
 		if (service != null) {
 			Chase chase = service.getChase();
 			if (chase != null) {
-				menuDownload.setVisible(chase.getTrail().downloaded != 0);
+				menuDownload.setVisible(chase.getTrail().isDownloaded());
 			}
 		}
 		return true;

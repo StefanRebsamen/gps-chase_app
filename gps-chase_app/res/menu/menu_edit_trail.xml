@@ -3,15 +3,15 @@
      <item
          android:id="@+id/action_new_checkpoint"
          android:icon="@drawable/ic_new"
-         android:showAsAction="always"
+         android:showAsAction="always|withText"
          android:orderInCategory="10"
          android:title="@string/action_new_checkpoint">
      </item>
     
     <item
          android:id="@+id/action_upload_trail"
-         android:icon="@drawable/ic_sync"
-         android:showAsAction="always"
+         android:icon="@drawable/ic_upload"
+         android:showAsAction="ifRoom|withText"
          android:orderInCategory="20"
          android:title="@string/action_upload_trail">
      </item>
@@ -19,8 +19,8 @@
     <item
          android:id="@+id/action_trail_info"
          android:icon="@drawable/ic_information"
-         android:showAsAction="always"
-         android:orderInCategory="21"
+         android:showAsAction="ifRoom|withText"
+         android:orderInCategory="30"
          android:title="@string/action_trail_info">
      </item>
     

@@ -1,6 +1,7 @@
 package ch.gpschase.app.data;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -39,13 +40,58 @@ public class Trail extends Item {
 	protected List<Checkpoint> checkpoints = null;
 
 	/**
-	 * Public constructor
+	 * Protected constructor
 	 */
-	public Trail() {
-		uuid = UUID.randomUUID();
-		token = UUID.randomUUID();
+	protected Trail() {
+		
+	}
+	
+	/**
+	 * Creates a completely new trail
+	 * @param Trail to chase
+	 */
+	public static Trail create() {
+		
+		Trail trail = new Trail();
+		
+		// already assign an empty checkpoint list
+		trail.checkpoints = new LinkedList<Checkpoint>();
+		
+		// create an UUID and a token
+		trail.uuid = UUID.randomUUID();
+		trail.token = UUID.randomUUID();
+		
+		return trail;
 	}
 
+	/**
+	 * Creates a new trail based on a passed UUID
+	 * @param Trail to chase
+	 */
+	public static Trail loadOrCreate(Context context, UUID uuid) {
+				
+		Cursor cursor = context.getContentResolver().query(Contract.Trails.getUriDir(), 
+				Contract.Trails.READ_PROJECTION, Contract.Trails.COLUMN_NAME_UUID + " = '" + uuid.toString() + "'",
+				null, null);
+		
+		if (cursor.moveToNext()) {
+			Trail trail = load(cursor);
+			cursor.close();
+			return trail;
+
+		} else {
+			cursor.close();
+			Trail trail = new Trail();
+
+			// already assign an empty checkpoint list
+			trail.checkpoints = new LinkedList<Checkpoint>();
+
+			// assign passed uuid
+			trail.uuid = uuid;
+
+			return trail;
+		}
+	}
 	
 	/**
 	 * Load a list of trails from the database
@@ -89,7 +135,6 @@ public class Trail extends Item {
 		}
 	}
 
-	
 	/**
 	 * Populates the DTO from the cursor
 	 * @param cursor
@@ -105,8 +150,13 @@ public class Trail extends Item {
 		trail.description = cursor.getString(Contract.Trails.READ_PROJECTION_DESCRIPTION_INDEX);
 		trail.updated = cursor.getLong(Contract.Trails.READ_PROJECTION_UPDATED_INDEX);
 		trail.downloaded = cursor.getLong(Contract.Trails.READ_PROJECTION_DOWNLOADED_INDEX);		
-		trail.uploaded = cursor.getLong(Contract.Trails.READ_PROJECTION_UPLOADED_INDEX);		
-		trail.token = UUID.fromString(cursor.getString(Contract.Trails.READ_PROJECTION_TOKEN_INDEX));
+		trail.uploaded = cursor.getLong(Contract.Trails.READ_PROJECTION_UPLOADED_INDEX);
+		if (!cursor.isNull(Contract.Trails.READ_PROJECTION_TOKEN_INDEX)) {
+			trail.token = UUID.fromString(cursor.getString(Contract.Trails.READ_PROJECTION_TOKEN_INDEX));
+		}
+		else {
+			trail.token = null;
+		}
 
 		return trail;
 	}
@@ -224,5 +274,20 @@ public class Trail extends Item {
 		checkpoints = new LinkedList<Checkpoint>();
 		Checkpoint.load(context, this);
 	}
+	
+	/**
+	 * Returns if the specified trail is editable
+	 */
+	public boolean isEditable() {
+		return this.token != null;
+	}
+
+	/**
+	 * Returns if the specified trail was downloaded
+	 */
+	public boolean isDownloaded() {
+		return this.downloaded != 0;
+	}
+	
 	
 }

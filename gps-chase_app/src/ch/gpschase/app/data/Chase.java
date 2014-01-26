@@ -4,12 +4,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.util.Log;
 
 /**
  * DTO for a chase
@@ -30,10 +32,20 @@ public class Chase extends Item {
 	 * Public constructor
 	 * @param Trail to chase
 	 */
-	public Chase(Trail trail) {
+	protected Chase(Trail trail) {
 		this.trail = trail;
 	}
 	
+
+	/**
+	 * Creates a new chase
+	 * @param Trail to chase
+	 */
+	public static Chase create(Trail trail) {
+		Chase chase = new Chase(trail);
+		chase.hits = new HashMap<Checkpoint, Hit>();
+		return chase;
+	}
 	
 	/**
 	 * Loads a DTO for the specified id
@@ -112,7 +124,7 @@ public class Chase extends Item {
 			setId(ContentUris.parseId(uri));
 		}
 		else {
-			context.getContentResolver().update(Contract.Chases.getUriDir(), values, null, null);
+			context.getContentResolver().update(Contract.Chases.getUriId(getId()), values, null, null);
 		}
 	}	
 	
@@ -179,6 +191,11 @@ public class Chase extends Item {
 		if (hits == null) {
 			throw new IllegalStateException();
 		}
+		
+		for (Map.Entry<Checkpoint, Hit> entry : hits.entrySet()) {
+			Log.d("isHit", "Checkpoint " + entry.getKey().getId() + " : " + entry.getValue().getId());
+		}
+		
 		return hits.containsKey(checkpoint);
 	}
 	
