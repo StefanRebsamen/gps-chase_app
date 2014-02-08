@@ -97,9 +97,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="16.000001"
-     inkscape:cx="162.64774"
-     inkscape:cy="82.96643"
+     inkscape:zoom="45.254837"
+     inkscape:cx="66.58195"
+     inkscape:cy="34.22508"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -488,5 +488,29 @@
        inkscape:export-filename="/home/sr/Desktop/chases.png"
        inkscape:export-xdpi="658.62787"
        inkscape:export-ydpi="658.62787" />
+    <path
+       id="path2985-9-61-8"
+       style="fill:#aa66cc;fill-opacity:0.26666668;stroke:#9933cc;stroke-width:0.40000001000000002;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       d="m 65.57999,1020.5329 1.090053,-4.9777 c 0.11228,-0.786 1.707594,-0.1147 1.833909,-1.048 0,0 0.523974,-3.1438 0.261987,-3.4058 -0.261987,-0.786 -2.357883,-0.786 -3.185949,-0.786 m -0.0032,10.2186 -1.090053,-4.9777 c -0.11228,-0.786 -1.707593,-0.1146 -1.833909,-1.0479 0,0 -0.523974,-3.1439 -0.261987,-3.4059 0.261987,-0.786 2.357883,-0.786 3.185949,-0.786"
+       inkscape:export-filename="/home/sr/git/gps-chase_app/gps-chase_app/res/drawable/ic_cp_neutral_hidden_normal.png"
+       inkscape:export-xdpi="350"
+       inkscape:export-ydpi="350"
+       inkscape:connector-curvature="0" />
+    <path
+       id="path2985-9-4-0-2-1"
+       style="fill:none;fill-opacity:1;stroke:#0099cc;stroke-width:0.93754177999999999;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 74.762242,1020.9432 1.137607,-5.1948 c 0.117177,-0.8203 1.782089,-0.1197 1.913915,-1.0938 0,0 0.546833,-3.2809 0.273416,-3.5543 -0.273416,-0.8203 -2.460747,-0.8203 -3.324938,-0.8203 m -0.0033,10.6644 -1.137608,-5.1948 c -0.117178,-0.8203 -1.78209,-0.1197 -1.913915,-1.0937 0,0 -0.546833,-3.2809 -0.273417,-3.5544 0.273417,-0.8203 2.460748,-0.8203 3.32494,-0.8203"
+       inkscape:export-filename="/home/sr/git/gps-chase_app/gps-chase_app/res/drawable/ic_cp_neutral_hidden_selected.png"
+       inkscape:export-xdpi="350"
+       inkscape:export-ydpi="350"
+       inkscape:connector-curvature="0" />
+    <path
+       id="path2985-9-1-8"
+       style="fill:#aa66cc;fill-opacity:0.26666668;stroke:#9933cc;stroke-width:0.40000001000000002;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       d="m 74.762191,1020.7204 1.090053,-4.9778 c 0.112279,-0.786 1.707593,-0.1146 1.833909,-1.0479 0,0 0.523974,-3.1439 0.261987,-3.4059 -0.261987,-0.7859 -2.357883,-0.7859 -3.185949,-0.7859 m -0.0032,10.2186 -1.090053,-4.9778 c -0.11228,-0.7859 -1.707594,-0.1146 -1.833909,-1.0479 0,0 -0.523974,-3.1439 -0.261987,-3.4058 0.261987,-0.786 2.357883,-0.786 3.185949,-0.786"
+       inkscape:export-filename="/home/sr/git/gps-chase_app/gps-chase_app/res/drawable/ic_cp_neutral_hidden_selected.png"
+       inkscape:export-xdpi="350"
+       inkscape:export-ydpi="350"
+       inkscape:connector-curvature="0" />
   </g>
 </svg>

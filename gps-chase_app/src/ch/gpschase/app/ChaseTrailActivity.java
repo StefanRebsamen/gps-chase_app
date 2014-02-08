@@ -388,7 +388,7 @@ public class ChaseTrailActivity extends Activity {
 				}
 				
 				// tell if itn's not shown on the map
-				if (!checkpoint.showLocation) {
+				if (!(checkpoint.showLocation || checkpoint.getIndex() == 0)) {
 					textViewNotShown.setVisibility(View.VISIBLE);
 				}
 				else {
@@ -701,8 +701,7 @@ public class ChaseTrailActivity extends Activity {
 					LatLng nextCpLoc = null;
 					for (Checkpoint cp : checkpoints) {
 						// get location
-						LatLng location = new LatLng(cp.location
-								.getLatitude(), cp.location.getLongitude());						
+						LatLng location = new LatLng(cp.location.getLatitude(), cp.location.getLongitude());						
 	
 						if (service.getChase().isHit(cp) ) {
 							// show on map
@@ -710,7 +709,7 @@ public class ChaseTrailActivity extends Activity {
 							
 							lastHitLoc = location;
 						} else {
-							if (cp.showLocation) {
+							if (cp.showLocation || cp.getIndex() == 0) {
 								// show on map
 								map.addCheckpoint(cp, false, false);
 	

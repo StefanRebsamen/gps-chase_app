@@ -151,6 +151,7 @@ public class Trail extends Item {
 		trail.updated = cursor.getLong(Contract.Trails.READ_PROJECTION_UPDATED_INDEX);
 		trail.downloaded = cursor.getLong(Contract.Trails.READ_PROJECTION_DOWNLOADED_INDEX);		
 		trail.uploaded = cursor.getLong(Contract.Trails.READ_PROJECTION_UPLOADED_INDEX);
+		trail.password = cursor.getString(Contract.Trails.READ_PROJECTION_PASSWORD_INDEX);
 		if (!cursor.isNull(Contract.Trails.READ_PROJECTION_TOKEN_INDEX)) {
 			trail.token = UUID.fromString(cursor.getString(Contract.Trails.READ_PROJECTION_TOKEN_INDEX));
 		}

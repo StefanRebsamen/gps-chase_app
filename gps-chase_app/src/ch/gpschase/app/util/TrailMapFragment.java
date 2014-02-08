@@ -80,6 +80,8 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	// bitmaps used as custom markers
 	private BitmapDescriptor iconNeutralFirstNormal;
 	private BitmapDescriptor iconNeutralFirstSelected;
+	private BitmapDescriptor iconNeutralHiddenNormal;
+	private BitmapDescriptor iconNeutralHiddenSelected;
 	private BitmapDescriptor iconNeutralOtherNormal;
 	private BitmapDescriptor iconNeutralOtherSelected;
 	private BitmapDescriptor iconHitFirstNormal;
@@ -125,13 +127,15 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		
 		// we provide an option menu
 		this.setHasOptionsMenu(true);
 
 		// load images
 		iconNeutralFirstNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_first_normal);
 		iconNeutralFirstSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_first_selected);
+		iconNeutralHiddenNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_hidden_normal);
+		iconNeutralHiddenSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_hidden_selected);
 		iconNeutralOtherNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_other_normal);
 		iconNeutralOtherSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_other_selected);
 		iconHitFirstNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_first_normal);
@@ -497,13 +501,6 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	 * Appends a marker for the given point
 	 */
 	public void addCheckpoint(Checkpoint checkpoint, boolean hit, boolean refresh) {
-		addCheckpoint(checkpoint, points.size(), hit, refresh);
-	}
-
-	/**
-	 * Adds a marker for the given point at the given index
-	 */
-	public void addCheckpoint(Checkpoint checkpoint, int index, boolean hit, boolean refresh) {
 		// add
 		Point p = new Point();
 		p.checkpoint = checkpoint;
@@ -514,7 +511,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		p.marker = map.addMarker(new MarkerOptions().position(pos).icon(p.icon));
 		p.marker.setDraggable(draggable);
 		p.hit = hit;
-		points.add(index, p);
+		points.add(p);
 
 		if (refresh) {
 			refreshIcons();
@@ -615,6 +612,8 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 			if (!p.hit) {
 				if (index == 0) {
 					icon = selectedPoint == p ? iconNeutralFirstSelected : iconNeutralFirstNormal;
+				} else if (!p.checkpoint.showLocation){
+					icon = selectedPoint == p ? iconNeutralHiddenSelected : iconNeutralHiddenNormal;
 				} else {
 					icon = selectedPoint == p ? iconNeutralOtherSelected : iconNeutralOtherNormal;
 				}
@@ -670,5 +669,5 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	public void setDraggable(boolean draggable) {
 		this.draggable = draggable;
 	}
-
+	
 }

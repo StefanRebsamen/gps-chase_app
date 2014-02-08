@@ -11,90 +11,97 @@ import android.os.Debug;
  */
 public class App extends Application {
 
-    //sensible place to declare a log tag for the application
-    public static final String LOG_TAG = "myapp";
+	// sensible place to declare a log tag for the application
+	public static final String LOG_TAG = "myapp";
 
-    //instance 
-    private static App instance = null;
+	// instance
+	private static App instance = null;
 
-    //keep references to our global resources
-    private static ImageFileManager imageManager = null;
-    
-    // used to format data and time
+	// keep references to our global resources
+	private static ImageFileManager imageManager = null;
+
+	// used to format data and time
 	private static java.text.DateFormat dateFormat;
 	private static java.text.DateFormat timeFormat;
-    
-    /**
-     * Returns the ImageManager instance 
-     */
-    public static ImageFileManager getImageManager() {
-        if (imageManager == null) {
-            if (instance == null)
-                throw new IllegalStateException("Application not created yet!");
-            imageManager = new ImageFileManager(instance);
-        }
-        return imageManager;
-    }
 
+	/**
+	 * Returns the ImageManager instance
+	 */
+	public static ImageFileManager getImageManager() {
+		if (imageManager == null) {
+			if (instance == null)
+				throw new IllegalStateException("Application not created yet!");
+			imageManager = new ImageFileManager(instance);
+		}
+		return imageManager;
+	}
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        //provide an instance for our static accessors
-        instance = this;
-        
-    	dateFormat = android.text.format.DateFormat.getDateFormat(this);
-    	timeFormat = android.text.format.DateFormat.getTimeFormat(this);
-        
-    }
+	@Override
+	public void onCreate() {
+		super.onCreate();
+		// provide an instance for our static accessors
+		instance = this;
 
-    
-    /**
-     * Return if the app runs in the debugger
-     * @return True if is is debuggable
-     */
-    public static boolean isDebuggable() {
-        if (instance == null)
-            throw new IllegalStateException("Application not created yet!");
-        return Debug.isDebuggerConnected();
-    }
-  
-	
-    public static String formatDate(long timestamp) {
-    	Date dateTime = new Date(timestamp);
-    	return dateFormat.format(dateTime);    	    	
-    }
-    
-    public static String formatTime(long timestamp) {
-    	Date dateTime = new Date(timestamp);
-    	return timeFormat.format(dateTime);    	    	
-    }
-    
-    public static String formatDateTime(long timestamp) {
-    	Date dateTime = new Date(timestamp);
-    	return dateFormat.format(dateTime) + " " + timeFormat.format(dateTime);    	
-    }
+		dateFormat = android.text.format.DateFormat.getDateFormat(this);
+		timeFormat = android.text.format.DateFormat.getTimeFormat(this);
 
-    
-    public static String formatDuration(long duration) {		
-		if (duration < 0) {
+	}
+
+	/**
+	 * Return if the app runs in the debugger
+	 * 
+	 * @return True if is is debuggable
+	 */
+	public static boolean isDebuggable() {
+		if (instance == null)
+			throw new IllegalStateException("Application not created yet!");
+		return Debug.isDebuggerConnected();
+	}
+
+	public static String formatDate(long timestamp) {
+		if (timestamp > 0) {
+			Date dateTime = new Date(timestamp);
+			return dateFormat.format(dateTime);
+		} else {
 			return "";
 		}
-		// format into into seconds, minutes, hours
-		duration /= 1000;
-		long seconds = duration % 60;
-		long minutes = duration / 60 % 60;
-		long hours = duration / 3600;
-		String str = "";
-		if (hours > 0) {
-			str = String.format("%02d:%02d:%02d", hours,
-					minutes, seconds);
-		} else {
-			str = String.format("%02d:%02d", minutes,
-					seconds);
-		}
-
-		return str;
 	}
-    
+
+	public static String formatTime(long timestamp) {
+		if (timestamp > 0) {
+			Date dateTime = new Date(timestamp);
+			return timeFormat.format(dateTime);
+		} else {
+			return "";
+		}
+	}
+
+	public static String formatDateTime(long timestamp) {
+		if (timestamp > 0) {
+			Date dateTime = new Date(timestamp);
+			return dateFormat.format(dateTime) + " " + timeFormat.format(dateTime);
+		} else {
+			return "";
+		}
+	}
+
+	public static String formatDuration(long duration) {
+		if (duration > 0) {
+			// format into into seconds, minutes, hours
+			duration /= 1000;
+			long seconds = duration % 60;
+			long minutes = duration / 60 % 60;
+			long hours = duration / 3600;
+			String str = "";
+			if (hours > 0) {
+				str = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+			} else {
+				str = String.format("%02d:%02d", minutes, seconds);
+			}
+			return str;
+		} else {
+			return "";
+		}
+	}
+
 }

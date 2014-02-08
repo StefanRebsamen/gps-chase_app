@@ -18,6 +18,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.text.method.PasswordTransformationMethod;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -31,6 +36,8 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -43,7 +50,9 @@ import ch.gpschase.app.data.Checkpoint;
 import ch.gpschase.app.data.Image;
 import ch.gpschase.app.data.ImageFileManager;
 import ch.gpschase.app.data.Trail;
+import ch.gpschase.app.util.HashUtils;
 import ch.gpschase.app.util.TrailMapFragment;
+import ch.gpschase.app.util.TrailPasswordRequestDialog;
 import ch.gpschase.app.util.UploadTask;
 import ch.gpschase.app.util.ViewImageDialog;
 
@@ -119,6 +128,9 @@ public class EditTrailActivity extends Activity {
 
 			/** Delete checkpoint button was clicked */
 			public void onDeleteCheckpointClick();
+			
+			/** Show location switch was changed */
+			public void onShowLocationChanged(boolean show);
 		}
 
 		// listener for callbacks
@@ -128,7 +140,7 @@ public class EditTrailActivity extends Activity {
 
 		// references to UI elements
 		private TextView textViewNo;
-		private Switch checkBoxShowOnMap;
+		private Switch switchShowOnMap;
 		private EditText editTextHint;
 		private LinearLayout layoutImages;
 		private ImageButton buttonNewImage;
@@ -147,7 +159,7 @@ public class EditTrailActivity extends Activity {
 
 			// get references to UI elements
 			textViewNo = (TextView) view.findViewById(R.id.textView_checkpoint_no);
-			checkBoxShowOnMap = (Switch) view.findViewById(R.id.checkBox_show_on_map);
+			switchShowOnMap = (Switch) view.findViewById(R.id.checkBox_show_on_map);
 			editTextHint = (EditText) view.findViewById(R.id.editText_hint);
 			layoutImages = (LinearLayout) view.findViewById(R.id.layout_images);
 			buttonNewImage = (ImageButton) view.findViewById(R.id.button_add_image);
@@ -190,6 +202,17 @@ public class EditTrailActivity extends Activity {
 				}
 			});
 
+			switchShowOnMap.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+				@Override
+				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+					if (listener != null) {
+						save();
+						listener.onShowLocationChanged(isChecked);
+					}					
+				}
+			});
+			
+			
 			return view;
 		}
 
@@ -261,11 +284,11 @@ public class EditTrailActivity extends Activity {
 			// load data into UI elements
 			if (checkpoint != null) {
 				textViewNo.setText("#" + (checkpoint.getIndex() + 1));
-				checkBoxShowOnMap.setChecked(checkpoint.showLocation);
+				switchShowOnMap.setChecked(checkpoint.showLocation);
 				editTextHint.setText(checkpoint.hint);				
 			} else {
 				textViewNo.setText("#");
-				checkBoxShowOnMap.setChecked(false);
+				switchShowOnMap.setChecked(false);
 				editTextHint.setText("");
 			}
 			updateIndex();
@@ -308,6 +331,9 @@ public class EditTrailActivity extends Activity {
 			}
 			if (buttonDeleteCheckpoint != null) {
 				buttonDeleteCheckpoint.setVisibility(delete ? View.VISIBLE : View.INVISIBLE);
+			}			
+			if (switchShowOnMap != null) {
+				switchShowOnMap.setVisibility(backward ? View.VISIBLE : View.INVISIBLE);
 			}			
 		}
 
@@ -379,13 +405,13 @@ public class EditTrailActivity extends Activity {
 			}
 
 			// read back from UI
-			boolean showLocation = checkBoxShowOnMap.isChecked();
+			boolean showLocation = switchShowOnMap.isChecked();
 			String hint = editTextHint.getText().toString();
 
 			// apply new values (if really changed)
 			boolean changed = false;
 			if (showLocation != checkpoint.showLocation) {
-				checkpoint.showLocation = checkBoxShowOnMap.isChecked();
+				checkpoint.showLocation = switchShowOnMap.isChecked();
 				changed = true;
 			}
 			if (!hint.equals(checkpoint.hint)) {
@@ -393,7 +419,7 @@ public class EditTrailActivity extends Activity {
 				changed = true;
 			}
 			
-			// save if somethin changed
+			// save if something changed
 			if (changed) {
 				// save values in database
 				checkpoint.save(getActivity());
@@ -648,6 +674,12 @@ public class EditTrailActivity extends Activity {
 			// show dialog to ask if checkpoint should be really deleted
 			deleteSelectedCheckpoint();
 		}
+
+		@Override
+		public void onShowLocationChanged(boolean show) {
+			// refresh map
+			map.refresh();
+		}
 	}
 
 	// the trail we're editing
@@ -735,35 +767,35 @@ public class EditTrailActivity extends Activity {
 	public void onStart() {
 		super.onStart();
 
-		// TODO check if trail is really editable
-
-		// init map
-		map.clearCheckpoints();
-		boolean first = true;
-		for (Checkpoint checkpoint : trail.getCheckpoints()) {
-			LatLng location = new LatLng(checkpoint.location.getLatitude(), checkpoint.location.getLongitude());
-			
-			// add marker
-			map.addCheckpoint(checkpoint, false, false);
-
-			// mark point as selected if necessary
-			if (checkpoint == selectedCheckpoint) {
-				map.selectCheckpoint(checkpoint);
-			}
-
-			// set camera to start
-			if (first) {
-				map.setCameraTarget(location);
-				map.setCameraZoom(TrailMapFragment.DEFAULT_ZOOM);
-				first = false;
-			}
+		//  check if trail is really editable
+		if (!trail.isEditable()) {							
+			// finish and return immediately
+			finish();
+			return;
+		}		
+				
+		// ask user for password if one is set
+		if (!TextUtils.isEmpty(trail.password)) {
+			TrailPasswordRequestDialog requester = new TrailPasswordRequestDialog(this, trail) {
+				
+				@Override
+				protected void onSuccess() {
+					refresh();																		
+				}
+				
+				@Override
+				protected void onCancelled() {
+					EditTrailActivity.this.finish();
+				}
+			};
+			requester.show(R.string.activity_title_edit_trail, R.drawable.ic_edit,  false);	
 		}
-
-		// refresh map
-		map.refresh();
-
+		else {	// no password set
+			// refresh map directly
+			refresh();
+		}
 	}
-
+	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
@@ -783,16 +815,41 @@ public class EditTrailActivity extends Activity {
 			// upload the trail
 			uploadTrail();
 			return true;
-
-		case R.id.action_trail_info:
+			
+		case R.id.action_lock_trail:
 			// cancel adding checkpoint
 			addingCheckpoint = false;
-			// show the trail info activity
-			TrailInfoActivity.show(this, trail);
+			// lock the trail
+			lockTrail(false);
 			return true;
 			
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	private void refresh() {
+		// init and refresh map
+		map.clearCheckpoints();
+		boolean first = true;
+		for (Checkpoint checkpoint : trail.getCheckpoints()) {
+			LatLng location = new LatLng(checkpoint.location.getLatitude(), checkpoint.location.getLongitude());
+			
+			// add marker
+			map.addCheckpoint(checkpoint, false, false);
+	
+			// mark point as selected if necessary
+			if (checkpoint == selectedCheckpoint) {
+				map.selectCheckpoint(checkpoint);
+			}
+	
+			// set camera to start
+			if (first) {
+				map.setCameraTarget(location);
+				map.setCameraZoom(TrailMapFragment.DEFAULT_ZOOM);
+				first = false;
+			}
+		}
+		map.refresh();
 	}
 
 	/**
@@ -948,4 +1005,77 @@ public class EditTrailActivity extends Activity {
 		new UploadTask(this, trail, false).execute();
 	}
 
+	
+	/**
+	 * 
+	 * @param retry
+	 */
+	private void lockTrail(boolean retry) {
+
+		LinearLayout.LayoutParams lp; 
+		
+		LinearLayout layout = new LinearLayout(this);
+		layout.setOrientation(LinearLayout.VERTICAL);
+
+		final EditText editText1 = new EditText(this);
+		editText1.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		editText1.setTransformationMethod(PasswordTransformationMethod.getInstance());
+		editText1.setHint(R.string.field_password);
+		editText1.setSingleLine();
+		lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+		lp.setMargins(8,16,8,4);
+		editText1.setLayoutParams(lp);
+		layout.addView(editText1);
+
+		final EditText editText2 = new EditText(this);
+		editText2.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		editText1.setTransformationMethod(PasswordTransformationMethod.getInstance());
+		editText2.setHint(R.string.field_password_confirmation);
+		editText2.setSingleLine();
+		lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+		lp.setMargins(8,4,8,16);
+		editText2.setLayoutParams(lp);
+		layout.addView(editText2);
+		
+		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle(R.string.action_lock_trail);
+		builder.setView(layout);
+		builder.setIcon(R.drawable.ic_lock);
+		builder.setCancelable(true);
+		builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface d, int whichButton) {
+						// check if password match
+						String password1 = editText1.getText().toString().trim();
+						String password2 = editText2.getText().toString().trim();						
+						if (!TextUtils.isEmpty(password1) &&  password1.equals(password2)) {						
+							// save hash to database
+							String hash = "aVeryUnlikelyValue"; 
+							try {
+								hash = HashUtils.computeSha1Hash(password1);
+							}
+							catch (Exception ex){
+								Log.e("show", "error while calculating password hash", ex);
+							}
+							trail.password = hash;
+							trail.save(EditTrailActivity.this);
+						}
+						else {
+							lockTrail(true);
+						}
+					}
+				});
+		if (!TextUtils.isEmpty(trail.password)) {
+			builder.setNeutralButton(R.string.dialog_set_password_button_unlock, new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface d, int whichButton) {
+							// clear password in database
+							trail.password = null;
+							trail.save(EditTrailActivity.this);						
+						}
+					});
+		}
+		builder.setNegativeButton(R.string.dialog_cancel, null);
+		builder.create().show();
+	}
+	
+	
 }

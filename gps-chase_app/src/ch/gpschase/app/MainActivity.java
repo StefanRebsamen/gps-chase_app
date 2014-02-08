@@ -290,8 +290,8 @@ public class MainActivity extends Activity {
         }
         
         // tune action bar
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-        getActionBar().setHomeButtonEnabled(true);        
+        getActionBar().setDisplayHomeAsUpEnabled(drawerLayout != null);
+        getActionBar().setHomeButtonEnabled(drawerLayout != null);        
         
         // start with trail on device
         selectDrawertItem(SELECTABLE_MYTRAILS);        

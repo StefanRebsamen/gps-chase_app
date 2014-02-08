@@ -72,7 +72,6 @@
                 android:id="@+id/layout_checkpoint_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/checkpoint_overlay"
                 android:gravity="bottom"
                 android:orientation="vertical" >
             </LinearLayout>

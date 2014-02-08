@@ -20,6 +20,7 @@
     <string name="empty_text_trails">There are currently no trails available.\nCreate a new one (\'+\' icon) or download one from a share link.</string>
     <string name="action_delete_trail">Delete trail</string>
     <string name="action_edit_trail">Edit trail</string>
+    <string name="action_lock_trail">Lock trail</string>
     <string name="action_share_trail">Share trail</string>
     <string name="dialog_delete_trail_title">Delete trail</string>
     <string name="dialog_delete_trail_message">Delete the selected trail?</string>
@@ -42,8 +43,11 @@
     <string name="dialog_share_trail_error_title">Error</string>
     <string name="dialog_share_trail_error_message">An error occurred while sharing the trail.</string>    
     <string name="dialog_delete_trail_error_title">Error</string>
-    <string name="dialog_delete_trail_error_message">An error occurred while deleting the trail.</string>    
-       
+    <string name="dialog_delete_trail_error_message">An error occurred while deleting the trail.</string>           
+    <string name="dialog_set_password_button_unlock">Unlock</string>
+    <string name="field_password">Password</string>
+    <string name="field_password_confirmation">Confirm password</string>
+    
     <string name="activity_title_edit_trail">Edit trail</string>
     <string name="field_hint">Hint</string>
     <string name="field_show_on_map">Show on map</string>    
@@ -67,11 +71,20 @@
     <string name="dialog_uploading">Uploading ...</string>
 
     <string name="activity_title_trail_info">Trail information</string>
+    <string name="tab_overview">Overview</string>
+    <string name="tab_map">Map</string>
     <string name="field_name">Name</string>
     <string name="field_description">Description</string>    
+    <string name="section_data">Data</string>    
     <string name="section_measures">Measures</string>    
     <string name="text_no_of_checkpoints">No. of checkpoints</string>    
-    <string name="text_distance">Total (air-linie) distance</string>        
+    <string name="text_distance">Total (air-line) distance</string>        
+    <string name="section_general">General</string>    
+    <string name="field_id">ID</string>
+    <string name="field_uuid">UUID</string>
+    <string name="field_updated">Updated</string>
+    <string name="field_uploaded">Uploaded</string>
+    <string name="field_downloaded">Downloaded</string>        
     
     <string name="activity_title_chase_trail">Chase trail</string>
     <string name="action_download_trail">Download trail</string>

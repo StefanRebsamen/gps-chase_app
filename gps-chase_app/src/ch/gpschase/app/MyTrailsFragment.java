@@ -3,6 +3,8 @@ package ch.gpschase.app;
 import java.util.List;
 import java.util.UUID;
 
+import com.google.android.gms.maps.GoogleMap.InfoWindowAdapter;
+
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
@@ -25,12 +27,10 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import ch.gpschase.app.data.BackendClient;
-import ch.gpschase.app.data.Chase;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.util.ChaseCreator;
 import ch.gpschase.app.util.DownloadTask;
 import ch.gpschase.app.util.SelectableListFragment;
-import ch.gpschase.app.util.UploadTask;
+import ch.gpschase.app.util.TrailActions;
 
 /**
  * Fragment to display list of trails
@@ -41,7 +41,7 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 	 * 
 	 */
 	public MyTrailsFragment() {
-		super(R.menu.menu_main_trails, R.menu.cab_main_trail);
+		super(R.menu.menu_main_trails, R.menu.cab_trail);
 	}
 
 	@Override
@@ -118,7 +118,7 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 			switch (item.getItemId()) {
 			case R.id.action_chase_trail:
 				// chase trail
-				chaseTrail(trail);
+				TrailActions.chaseTrail(getActivity(), trail);
 				return true;
 
 			case R.id.action_edit_trail:
@@ -126,14 +126,9 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 				EditTrailActivity.show(getActivity(), trail);
 				return true;
 
-			case R.id.action_trail_info:
-				// switch to info activity
-				TrailInfoActivity.show(getActivity(), trail);
-				return true;
-
 			case R.id.action_share_trail:
 				// upload and share trail
-				shareTrail(trail);
+				TrailActions.shareTrail(getActivity(), trail);
 				return true;
 
 			case R.id.action_delete_trail:
@@ -160,7 +155,8 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 		View view = getListView().getChildAt(position);
 		if (view != null) {
 			Trail trail = (Trail) view.getTag();
-			chaseTrail(trail);
+			//chaseTrail(trail);
+			TrailInfoActivity.show(getActivity(), trail);
 		}
 	}
 
@@ -344,33 +340,6 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 						}).setNegativeButton(R.string.dialog_no, null).create();
 			}
 		}.show(getFragmentManager(), null);
-	}
-
-	/**
-	 * 
-	 * @param trailId
-	 */
-	private void chaseTrail(Trail trail) {
-
-		// find a running chase
-		Chase runningChase = trail.getFirstRunningChase(getActivity());
-		if (runningChase != null) {
-			// continue
-			ChaseTrailActivity.show(getActivity(), runningChase);
-		} else {
-			// create a new one
-			new ChaseCreator(getActivity()).show(trail);
-		}
-	}
-
-	/**
-	 * Upload a trail to the server and share it afterwards in an
-	 * asynchronous task
-	 */
-	private void shareTrail(Trail trail) {
-
-		// execute task
-		new UploadTask(getActivity(), trail, true).execute();
 	}
 
 

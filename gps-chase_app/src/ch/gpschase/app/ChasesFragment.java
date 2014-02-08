@@ -28,7 +28,7 @@ public class ChasesFragment extends SelectableListFragment<Chase> {
 	 * 
 	 */
 	public ChasesFragment() {
-		super(0, R.menu.cab_chases_chase);
+		super(0, R.menu.cab_chase);
 	}
 
 	@Override
