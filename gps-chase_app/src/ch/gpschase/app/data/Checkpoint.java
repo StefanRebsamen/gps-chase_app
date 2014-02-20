@@ -29,6 +29,8 @@ public class Checkpoint extends Item {
 	
 	public String hint;
 	
+	public int accuracy = 5;
+	
 	/**
 	 * List of images
 	 * ATTENTION: It's the user responsibility to populate!
@@ -66,6 +68,7 @@ public class Checkpoint extends Item {
 			checkpoint.location.setLongitude(cursor.getDouble(Contract.Checkpoints.READ_PROJECTION_LOC_LNG_INDEX));
 			checkpoint.showLocation = cursor.getInt(Contract.Checkpoints.READ_PROJECTION_LOC_SHOW_INDEX) != 0;
 			checkpoint.hint = cursor.getString(Contract.Checkpoints.READ_PROJECTION_HINT_INDEX);			
+			checkpoint.accuracy = cursor.getInt(Contract.Checkpoints.READ_PROJECTION_ACCURACY_INDEX);
 		}
 		cursor.close();
 	}
@@ -82,6 +85,7 @@ public class Checkpoint extends Item {
 		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, location.getLongitude());
 		values.put(Contract.Checkpoints.COLUMN_NAME_LOC_LAT, location.getLatitude());
 		values.put(Contract.Checkpoints.COLUMN_NAME_HINT, hint);
+		values.put(Contract.Checkpoints.COLUMN_NAME_ACCURACY, accuracy);
 		if (getId() == 0) {
 			Uri uri = context.getContentResolver().insert(Contract.Checkpoints.getUriDir(trail.getId()), values);
 			setId(ContentUris.parseId(uri));

@@ -4,7 +4,9 @@ import java.util.Date;
 
 import ch.gpschase.app.data.ImageFileManager;
 import android.app.Application;
+import android.content.res.Resources;
 import android.os.Debug;
+import android.util.TypedValue;
 
 /**
  * 
@@ -104,4 +106,13 @@ public class App extends Application {
 		}
 	}
 
+	/**
+	 * Converts device independent pixels to pixels
+	 */
+	public static float convertToPx(int dp) {
+		Resources r = instance.getResources();
+		float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, r.getDisplayMetrics());
+		return px;
+	}
+	
 }

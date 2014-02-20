@@ -1,6 +1,7 @@
 package ch.gpschase.app;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -10,12 +11,17 @@ import com.google.android.gms.maps.model.PolygonOptions;
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.NavUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -23,9 +29,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+import ch.gpschase.app.data.Chase;
 import ch.gpschase.app.data.Checkpoint;
 import ch.gpschase.app.data.Trail;
+import ch.gpschase.app.util.SelectableListFragment;
 import ch.gpschase.app.util.TrailActions;
 import ch.gpschase.app.util.TrailMapFragment;
 
@@ -37,21 +48,23 @@ public class TrailInfoActivity extends Activity {
 	/**
 	 * Listener for a tab
 	 */
-	public static class TabListener<T extends Fragment> implements ActionBar.TabListener {
+	public class TabListener<T extends Fragment> implements ActionBar.TabListener {
 
 		private final Fragment fragment;
 		private final String tag;
+		private final int containerViewId;
 
-		public TabListener(Fragment fragment, String tag) {
+		public TabListener(Fragment fragment, String tag, int containerViewId) {
 			this.fragment = fragment;
 			this.tag = tag;
+			this.containerViewId = containerViewId;
 		}
 
 		public void onTabSelected(Tab tab, FragmentTransaction ft) {
 			if (fragment.isDetached()) {
 				ft.attach(fragment);
 			} else if (!fragment.isAdded()) {
-				ft.add(R.id.content_frame, fragment, tag);
+				ft.add(containerViewId, fragment, tag);
 			}
 		}
 
@@ -72,31 +85,43 @@ public class TrailInfoActivity extends Activity {
 		// UI elements
 		private EditText editTextName;
 		private EditText editTextDescr;
-		private TextView textViewNoCp;
-		private TextView textViewDistance;
-		private TextView textViewUpdated;
-		private TextView textViewUploaded;
-		private TextView textViewDownloaded;
 		
-		private Trail trail;
-				
+		private Trail trail;				
 		
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		
-			// create view and get references to UI elements
+			// create view 
 			View view = inflater.inflate(R.layout.activity_trail_info_overview, null);
+					
+			//get references to UI elements
 			editTextName = (EditText)view.findViewById(R.id.editText_name);
 			editTextDescr = (EditText)view.findViewById(R.id.editText_description);
-			textViewNoCp = (TextView)view.findViewById(R.id.textView_no_checkpoints_value);
-			textViewDistance = (TextView)view.findViewById(R.id.textView_distance_value);
-			textViewUpdated = (TextView)view.findViewById(R.id.textView_updated);
-			textViewUploaded = (TextView)view.findViewById(R.id.textView_uploaded);
-			textViewDownloaded = (TextView)view.findViewById(R.id.textView_downloaded);
+			TextView textViewName = (TextView)view.findViewById(R.id.textView_name);
+			TextView textViewDescr = (TextView)view.findViewById(R.id.textView_description);
+			TextView textViewNoCp = (TextView)view.findViewById(R.id.textView_no_checkpoints_value);
+			TextView textViewLength = (TextView)view.findViewById(R.id.textView_length_value);
+			TextView textViewUpdated = (TextView)view.findViewById(R.id.textView_updated);
+			TextView textViewUploaded = (TextView)view.findViewById(R.id.textView_uploaded);
+			TextView textViewDownloaded = (TextView)view.findViewById(R.id.textView_downloaded);
 			
 			// load stuff into UI
-			editTextName.setText(trail.name);
-			editTextDescr.setText(trail.description);
+			if (trail.isEditable()) {
+				editTextName.setText(trail.name);
+				editTextDescr.setText(trail.description);
+				editTextName.setVisibility(View.VISIBLE);
+				editTextDescr.setVisibility(View.VISIBLE);
+				textViewName.setVisibility(View.GONE);
+				textViewDescr.setVisibility(View.GONE);
+			}
+			else {
+				textViewName.setText(trail.name);
+				textViewDescr.setText(trail.description);
+				textViewName.setVisibility(View.VISIBLE);
+				textViewDescr.setVisibility(View.VISIBLE);				
+				editTextName.setVisibility(View.GONE);
+				editTextDescr.setVisibility(View.GONE);
+			}
 			textViewUpdated.setText(App.formatDateTime(trail.updated));
 			textViewUploaded.setText(App.formatDateTime(trail.uploaded));
 			textViewDownloaded.setText(App.formatDateTime(trail.downloaded));
@@ -107,17 +132,17 @@ public class TrailInfoActivity extends Activity {
 			
 			// go through checkpoints and calculate info 
 			int cpCount = 0;
-			float distance = 0.0f;
+			float length = 0.0f;
 			Checkpoint previousCp = null;
 			for (Checkpoint cp : trail.getCheckpoints()) {
 				cpCount++;
 				if (previousCp != null) {
-					distance += cp.location.distanceTo(previousCp.location);
+					length += cp.location.distanceTo(previousCp.location);
 				}
 				previousCp = cp;			
 			}						
 			textViewNoCp.setText(Integer.valueOf(cpCount).toString());		
-			textViewDistance.setText(Integer.valueOf(Math.round(distance)).toString() +  "m");
+			textViewLength.setText(Integer.valueOf(Math.round(length)).toString() +  " m");
 			
 			return view;
 		}
@@ -155,9 +180,17 @@ public class TrailInfoActivity extends Activity {
 	/**
 	 * 
 	 */
-	public static class MapFragment extends TrailMapFragment {
+	public static class AreaFragment extends TrailMapFragment {
 		
 		private Trail trail;
+		
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
+			View view = super.onCreateView(inflater, container, savedInstanceState);
+						
+			return view;
+		}
 		
 		@Override
 		public void onStart() {
@@ -165,19 +198,19 @@ public class TrailInfoActivity extends Activity {
 			
 			// clear everything
 			getMap().clear();
-			
+									
 			// nothing to do without trail
 			if (trail == null) {
 				return;				
 			}			
 			
-			drawTrail();						
+			drawTrailArea();						
 		}
 
 		/**
-		 * 
+		 * Draws the area of the trail (just the surrounding rectangle)
 		 */
-		private void drawTrail() {
+		private void drawTrailArea() {
 			
 			// show region on map
 			LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
@@ -194,14 +227,16 @@ public class TrailInfoActivity extends Activity {
 
 			// several checkpoints?
 			if (locations.size() > 1) {
-				// draw a rectangle to show region
+				// draw a rectangle to show region. Add a bit overhead, so the start marker isn't right at the edgeare
 				LatLngBounds bounds =  boundsBuilder.build();
 				PolygonOptions rectOptions = new PolygonOptions();
-				rectOptions.add(bounds.northeast);
-				rectOptions.add(new LatLng(bounds.northeast.latitude, bounds.southwest.longitude));
-				rectOptions.add(bounds.southwest);		
-				rectOptions.add(new LatLng(bounds.southwest.latitude, bounds.northeast.longitude));
-				rectOptions.fillColor((getResources().getColor(R.color.green_light) & 0x00FFFFFF) | 0x44000000);
+				double latOverhead = Math.abs(bounds.northeast.latitude - bounds.southwest.latitude) * 0.05; 
+				double lngOverhead = Math.abs(bounds.northeast.longitude - bounds.southwest.longitude) * 0.05;							
+				rectOptions.add(new LatLng(bounds.northeast.latitude + latOverhead, bounds.northeast.longitude + lngOverhead));
+				rectOptions.add(new LatLng(bounds.northeast.latitude + latOverhead, bounds.southwest.longitude - lngOverhead));
+				rectOptions.add(new LatLng(bounds.southwest.latitude - latOverhead, bounds.southwest.longitude - lngOverhead));
+				rectOptions.add(new LatLng(bounds.southwest.latitude - latOverhead, bounds.northeast.longitude + lngOverhead));
+				rectOptions.fillColor(0x44FFFFFF);
 				rectOptions.strokeColor(Color.TRANSPARENT);
 				getMap().addPolygon(rectOptions).setZIndex(-1);
 				// place camera to include the call
@@ -218,23 +253,185 @@ public class TrailInfoActivity extends Activity {
 			}
 		}
 		
+		/**
+		 * Sets the trail
+		 * @param trail
+		 */
 		public void setTrail(Trail trail) {
 			this.trail = trail;
 		}
 		
 	}
+
+	
+	/**
+	 * Fragment to display a list of chases
+	 */
+	public static class ChasesFragment extends SelectableListFragment<Chase> {
+
+		private Trail trail;				
+		
+		/**
+		 * 
+		 */
+		public ChasesFragment() {
+			super(0, R.menu.cab_chase);
+		}
+	
+		@Override
+		public void onActivityCreated(Bundle savedInstanceState) {
+			super.onActivityCreated(savedInstanceState);
+
+			// set empty text
+			CharSequence emptText = getResources().getText(R.string.empty_text_chases);
+			setEmptyText(emptText);
+		}
+
+		@Override
+		protected List<Chase> loadInBackground() {
+			
+			trail.loadChases(getActivity());
+			
+			List<Chase> result = new LinkedList<Chase>();
+			for (Chase ch : trail.getChases()) {
+				result.add(ch);
+			}			
+			return result;
+		}
+
+		@Override
+		protected View getItemView(Chase item, View convertView, ViewGroup parent) {
+			// make sure we've got a view
+			View view = convertView;
+			if (view == null) {
+				LayoutInflater vi = (LayoutInflater)getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			     view = vi.inflate(R.layout.listrow_chase, null);			
+			}
+			
+			// add item as tag
+			view.setTag(item);
+
+			// set texts
+			((TextView) view.findViewById(R.id.textView_player)).setText(item.player);
+			((TextView) view.findViewById(R.id.textView_started)).setText(App.formatDateTime(item.started));
+			if (item.finished != 0) {
+				((TextView) view.findViewById(R.id.textView_time)).setText(App.formatDuration(item.finished - item.started));
+			} else {
+				((TextView) view.findViewById(R.id.textView_time)).setText("");
+			}
+			
+			return view;
+		}
+
+		@Override
+		protected boolean onActionItemClicked(MenuItem item, int position, long id) {
+
+			View view = getListView().getChildAt(position);
+			if (view != null) {
+				Chase chase = (Chase) view.getTag();
+
+				switch (item.getItemId()) {
+
+				case R.id.action_continue_chase:
+					// continue chase
+					ChaseTrailActivity.show(getActivity(), chase);
+					return true;
+
+				case R.id.action_delete_chase:
+					// delete trail after asking user
+					deleteChase(chase);
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		@Override
+		public void onListItemClick(int position, long id) {
+			View view = getListView().getChildAt(position);
+			if (view != null) {
+				Chase chase = (Chase) view.getTag();
+				if (chase.finished == 0) {
+					// continue chase
+					ChaseTrailActivity.show(getActivity(), chase);
+				} else {
+					// inform user that trail is finished already
+					Toast.makeText(getActivity(), R.string.toast_chase_already_finished, Toast.LENGTH_SHORT).show();
+				}
+			}
+		}
+
+		@Override
+		public void onSelectionChanged(int position, long id) {
+			if (actionMode != null) {
+				View view = getListView().getChildAt(position);
+				if (view != null) {
+					Chase chase = (Chase) view.getTag();
+					// update title
+					actionMode.setTitle(chase.getTrail().name);
+					actionMode.setSubtitle(chase.player);
+					// modify menu
+					MenuItem menuContinue = actionMode.getMenu().findItem(R.id.action_continue_chase);
+					if (menuContinue != null) {
+						menuContinue.setVisible(chase.finished == 0);
+					}
+				}
+			}
+		}
+
+		/**
+		 * 
+		 * @param chaseId
+		 */
+		private void deleteChase(Chase chase) {
+
+			final Chase passedChase = chase;
+
+			new DialogFragment() {
+				@Override
+				public Dialog onCreateDialog(Bundle savedInstanceState) {
+
+					return new AlertDialog.Builder(getActivity()).setTitle(R.string.action_delete_chase)
+							.setMessage(R.string.dialog_delete_chase_message).setIcon(R.drawable.ic_delete)
+							.setPositiveButton(R.string.dialog_yes, new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog, int whichButton) {
+									// delete chase in database
+									passedChase.delete(getActivity());
+									// finish action mode
+									finishActionMode();
+									// refresh list
+									ChasesFragment.this.reload();
+								}
+							}).setNegativeButton(R.string.dialog_no, null).create();
+				}
+			}.show(getFragmentManager(), null);
+		}
+
+		/**
+		 * 
+		 * @param trail
+		 */
+		public void setTrail(Trail trail) {
+			this.trail = trail;
+		}		
+	}
 	
 	
 	// name to identify trail id passed as extra in intent 
-	public static final String INTENT_EXTRA_TRAILID = "trailId";
+	public static final String KEY_TRAILID = "trailId";
 	
 	// name of the fragments
 	private static final String FRAGMENT_TAG_OVERVIEW = "overview";
-	private static final String FRAGMENT_TAG_MAP = "map";
+	private static final String FRAGMENT_TAG_AREA = "area";
+	private static final String FRAGMENT_TAG_CHASES = "chases";
 	
 	// fragments
 	private OverviewFragment overviewFragment;
-	private MapFragment mapFragment;
+	private AreaFragment areaFragment;
+	private ChasesFragment chasesFragment;
+	
+	FrameLayout frameContent;
 	
 	// the trail it's all about
 	Trail trail = null;
@@ -246,7 +443,7 @@ public class TrailInfoActivity extends Activity {
 	public static void show(Context context, Trail trail) {
 		// switch to chase activity
 		Intent intent = new Intent(context, TrailInfoActivity.class);
-		intent.putExtra(INTENT_EXTRA_TRAILID, trail.getId());
+		intent.putExtra(KEY_TRAILID, trail.getId());
 		context.startActivity(intent);
 	}
 		
@@ -254,26 +451,39 @@ public class TrailInfoActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// find out what trail we need to ashow
+		long trailId = getIntent().getLongExtra(KEY_TRAILID, 0);		
+		if (trailId == 0 && savedInstanceState != null) {
+			trailId = savedInstanceState.getLong(KEY_TRAILID);
+		}
+		
 		// load trail including its checkpoints
-		long trailId = getIntent().getLongExtra(INTENT_EXTRA_TRAILID, 0);		
 		trail = Trail.load(this, trailId);
 		trail.loadCheckpoints(this);
 		
 		// load layout
 		setContentView(R.layout.activity_trail_info);
 
+		// get reference to frame where content will be placed
+		frameContent = (FrameLayout)findViewById(R.id.content_frame);
+		
 		// create fragments (if not recreated by the system)	
 		overviewFragment = (OverviewFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_OVERVIEW);
 		if (overviewFragment == null) {
 			overviewFragment = new OverviewFragment();			
 		}		
-		mapFragment = (MapFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_MAP);
-		if (mapFragment == null) {
-			mapFragment = new MapFragment();
+		areaFragment = (AreaFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_AREA);
+		if (areaFragment == null) {
+			areaFragment = new AreaFragment();
+		}
+		chasesFragment = (ChasesFragment) getFragmentManager().findFragmentByTag(FRAGMENT_TAG_CHASES);
+		if (chasesFragment == null) {
+			chasesFragment = new ChasesFragment();
 		}
 		// pass trail to them
 		overviewFragment.setTrail(trail);
-		mapFragment.setTrail(trail);
+		areaFragment.setTrail(trail);
+		chasesFragment.setTrail(trail);
 		
 		// setup action bar
 		ActionBar actionBar = getActionBar();
@@ -283,20 +493,34 @@ public class TrailInfoActivity extends Activity {
 		getActionBar().setSubtitle(trail.name);
 		
 		// create tabs
-		Tab overiviewTab = actionBar.newTab()		//
-				.setText(R.string.tab_overview)	//
-				.setTag(overviewFragment);				//
-		overiviewTab.setTabListener(new TabListener<MyTrailsFragment>(overviewFragment, FRAGMENT_TAG_OVERVIEW));
+		Tab overiviewTab = actionBar.newTab()				//
+				.setText(R.string.tab_trail_overview)		//
+				.setTag(overviewFragment);					//
+		overiviewTab.setTabListener(new TabListener<LocalTrailsFragment>(overviewFragment,FRAGMENT_TAG_OVERVIEW, R.id.content_frame));
 		actionBar.addTab(overiviewTab);
 
-		Tab mapTab = actionBar.newTab()				//
-				.setText(R.string.tab_map)	//
-				.setTag(mapFragment);						//
-		mapTab.setTabListener(new TabListener<CloudTrailsFragment>(mapFragment, FRAGMENT_TAG_MAP));
-		actionBar.addTab(mapTab);
-			
+		Tab areaTab = actionBar.newTab()					//
+				.setText(R.string.tab_trail_area)			//
+				.setTag(areaFragment);						//
+		areaTab.setTabListener(new TabListener<CloudTrailsFragment>(areaFragment, FRAGMENT_TAG_AREA, R.id.root_frame));
+		actionBar.addTab(areaTab);
+
+		Tab chasesTab = actionBar.newTab()					//
+				.setText(R.string.tab_trail_chases)			//
+				.setTag(chasesFragment);					//
+		chasesTab.setTabListener(new TabListener<CloudTrailsFragment>(chasesFragment, FRAGMENT_TAG_CHASES, R.id.content_frame));
+		actionBar.addTab(chasesTab);
+
 	}
 
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+
+		// save trail we've been displaying 
+		outState.putLong(KEY_TRAILID, trail.getId());
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.menu_trail_info, menu);
@@ -321,6 +545,12 @@ public class TrailInfoActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 
 		switch (item.getItemId()) {
+		
+		case android.R.id.home:
+			// finish activity
+			finish();
+			return true;
+		
 		case R.id.action_chase_trail:
 			// chase trail
 			TrailActions.chaseTrail(this, trail);

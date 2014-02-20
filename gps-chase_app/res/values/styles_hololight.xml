@@ -31,7 +31,7 @@
         <item name="android:actionModeBackground">@drawable/cab_background_top_hololight</item>
         <item name="android:actionModeSplitBackground">@drawable/cab_background_bottom_hololight</item>
         <item name="android:actionModeCloseButtonStyle">@style/ActionButton.CloseMode.Hololight</item>
-        <item name="android:windowBackground">@color/WindowBackground</item>       
+        <item name="android:windowBackground">@color/gray</item>        
     </style>
 
     <style name="ActionBar.Solid.Hololight" parent="@android:style/Widget.Holo.Light.ActionBar.Solid">

@@ -27,6 +27,7 @@ import android.os.Vibrator;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NavUtils;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -58,7 +59,8 @@ public class ChaseTrailActivity extends Activity {
 	private static final String FRAGMENT_TAG_CPVIEW = "cpview";
 	private static final String FRAGMENT_TAG_MAP = "map";
 	
-	// name to identify chase id passed as extra in intent 
+	// name to identify trail and chase id passed as extra in intent 
+	public static final String INTENT_EXTRA_TRAILID = "trailId";
 	public static final String INTENT_EXTRA_CHASEID = "chaseId";
 	
 	/**
@@ -394,7 +396,7 @@ public class ChaseTrailActivity extends Activity {
 				else {
 					textViewNotShown.setVisibility(View.INVISIBLE);					
 				}
-				textViewNo.setText("# " + (checkpoint.getIndex() + 1));
+				textViewNo.setText("#" + (checkpoint.getIndex() + 1));
 
 				// load images
 				ImageFileManager imageManager = App.getImageManager();
@@ -487,6 +489,7 @@ public class ChaseTrailActivity extends Activity {
 	public static void show(Context context, Chase chase) {
 		// switch to chase activity
 		Intent intent = new Intent(context, ChaseTrailActivity.class);
+		intent.putExtra(INTENT_EXTRA_TRAILID, chase.getTrail().getId());
 		intent.putExtra(INTENT_EXTRA_CHASEID, chase.getId());
 		context.startActivity(intent);
 	}	
@@ -583,6 +586,7 @@ public class ChaseTrailActivity extends Activity {
 				chaseServiceConnection, Context.BIND_AUTO_CREATE);		
 		// start service. Pass id of trail as intent extra
 		Intent intent = new Intent(Intent.ACTION_DEFAULT, getIntent().getData(), this,  ChaseTrailService.class);
+		intent.putExtra(INTENT_EXTRA_TRAILID, getIntent().getLongExtra(INTENT_EXTRA_TRAILID, 0));
 		intent.putExtra(INTENT_EXTRA_CHASEID, getIntent().getLongExtra(INTENT_EXTRA_CHASEID, 0));
 		startService(intent);		
 	}
@@ -633,6 +637,12 @@ public class ChaseTrailActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 
 		switch (item.getItemId()) {
+		
+		case android.R.id.home:
+			// finish activity
+			finish();
+			return true;
+		
 		case R.id.action_download_trail:
 			downloadTrail(true);
 			return true;

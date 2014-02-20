@@ -46,7 +46,7 @@ public class Provider extends ContentProvider {
 	/**
 	 * The database version
 	 */
-	private static final int DATABASE_VERSION = 1;
+	private static final int DATABASE_VERSION = 2;
 
 	/**
 	 * A projection map used to select columns from trails table
@@ -158,6 +158,7 @@ public class Provider extends ContentProvider {
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_LOC_LNG, Contract.Checkpoints.COLUMN_NAME_LOC_LNG);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_LOC_SHOW, Contract.Checkpoints.COLUMN_NAME_LOC_SHOW);
 		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_HINT, Contract.Checkpoints.COLUMN_NAME_HINT);
+		checkpointsProjectionMap.put(Contract.Checkpoints.COLUMN_NAME_ACCURACY, Contract.Checkpoints.COLUMN_NAME_ACCURACY);
 	
 		// create and initialize projection map for table images
 		imagesProjectionMap = new HashMap<String, String>();
@@ -226,6 +227,7 @@ public class Provider extends ContentProvider {
 					+ Contract.Checkpoints.COLUMN_NAME_LOC_LNG + " REAL	NOT NULL,"						//
 					+ Contract.Checkpoints.COLUMN_NAME_LOC_LAT + " REAL	NOT NULL," 						//
 					+ Contract.Checkpoints.COLUMN_NAME_LOC_SHOW + " INTEGER	NOT NULL,"					//
+					+ Contract.Checkpoints.COLUMN_NAME_ACCURACY + " INTEGER	NOT NULL DEFAULT 5,"		//
 					+ "FOREIGN KEY( " + Contract.Checkpoints.COLUMN_NAME_TRAIL_ID + ") "				//
 					+ "  REFERENCES " + Contract.Trails.TABLE_NAME + "(" + Contract.Trails._ID + ") "	//
 					+ "  ON DELETE CASCADE ON UPDATE CASCADE"
@@ -272,8 +274,8 @@ public class Provider extends ContentProvider {
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-//			db.execSQL("ALTER TABLE " + Contract.Trails.TABLE_NAME										// 
-//					+ " ADD COLUMN " + Contract.Trails.COLUMN_NAME_SHARED + " INTEGER NULL;");			
+			db.execSQL("ALTER TABLE " + Contract.Checkpoints.TABLE_NAME										// 
+					+ " ADD COLUMN " + Contract.Checkpoints.COLUMN_NAME_ACCURACY + " INTEGER NOT NULL DEFAULT 5 ;");			
 		}
 				
 		@Override
@@ -348,6 +350,7 @@ public class Provider extends ContentProvider {
 		case URI_CHASE_DIR:
 			qb.setTables(Contract.Chases.TABLE_NAME);
 			qb.setProjectionMap(chasesProjectionMap);
+			qb.appendWhere(Contract.Chases.COLUMN_NAME_TRAIL_ID + "=" + uri.getPathSegments().get(1));
 			orderBy = !TextUtils.isEmpty(sortOrder) ? sortOrder : Contract.Chases.DEFAULT_SORT_ORDER;
 			break;
 
@@ -480,6 +483,8 @@ public class Provider extends ContentProvider {
 
 			case URI_CHASE_DIR:
 				tableName =  Contract.Chases.TABLE_NAME;
+				parentId = Long.parseLong(uri.getPathSegments().get(1));				
+				values.put(Contract.Chases.COLUMN_NAME_TRAIL_ID, parentId);
 				break;
 
 			case URI_HIT_DIR:

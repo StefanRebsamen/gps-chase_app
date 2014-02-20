@@ -34,6 +34,7 @@ public class Chase extends Item {
 	 */
 	protected Chase(Trail trail) {
 		this.trail = trail;
+		trail.chases.add(this);
 	}
 	
 
@@ -48,40 +49,18 @@ public class Chase extends Item {
 	}
 	
 	/**
-	 * Loads a DTO for the specified id
-	 * @param context
-	 * @param id
-	 * @return
-	 */
-	public static Chase load(Context context, long id) {
-		
-		Cursor cursor = context.getContentResolver().query(Contract.Chases.getUriId(id), 
-															Contract.Chases.READ_PROJECTION, null, null, null);
-		if (cursor.moveToNext()) {
-			Chase chase = load(context, cursor);
-			cursor.close();
-			return chase;
-		}
-		else {
-			cursor.close();
-			throw new IllegalArgumentException("Chase with id " + id + " not found");
-		}
-	}
-	
-	/**
 	 * Loads a list of chases
 	 * @param context
 	 * @return
 	 */
-	public static List<Chase> list(Context context) {
+	protected static List<Chase> load(Context context, Trail trail) {
 		
 		List<Chase> result = new LinkedList<Chase>();
-		
-		Cursor cursor = context.getContentResolver().query(Contract.Chases.getUriDir(), 
-															Contract.Chases.READ_PROJECTION, 
+		Cursor cursor = context.getContentResolver().query(Contract.Chases.getUriDir(trail.getId()), 
+															Contract.Chases.READ_PROJECTION,															
 															null, null, null);		
 		while (cursor.moveToNext()) {
-			result.add(Chase.load(context, cursor));
+			result.add(Chase.load(context, trail, cursor));
 		}
 		cursor.close();
 		
@@ -94,10 +73,9 @@ public class Chase extends Item {
 	 * @param cursor
 	 * @return
 	 */
-	protected static Chase load(Context context, Cursor cursor) {
+	protected static Chase load(Context context, Trail trail, Cursor cursor) {
 		
 		long trailId = cursor.getLong(Contract.Chases.READ_PROJECTION_TRAIL_ID_INDEX);		
-		Trail trail = Trail.load(context, trailId); // TODO optimize
 		Chase chase = new Chase(trail);
 
 		chase.setId(cursor.getLong(Contract.Chases.READ_PROJECTION_ID_INDEX));
@@ -114,13 +92,12 @@ public class Chase extends Item {
 	 */
 	public void save(Context context) {
 		ContentValues values = new ContentValues();
-		values.put(Contract.Chases.COLUMN_NAME_TRAIL_ID, getTrail().getId());
 		values.put(Contract.Chases.COLUMN_NAME_PLAYER, player);
 		values.put(Contract.Chases.COLUMN_NAME_STARTED, started);
 		values.put(Contract.Chases.COLUMN_NAME_FINISHED, finished);
 		
 		if (getId() == 0) {
-			Uri uri = context.getContentResolver().insert(Contract.Chases.getUriDir(), values);
+			Uri uri = context.getContentResolver().insert(Contract.Chases.getUriDir(trail.getId()), values);
 			setId(ContentUris.parseId(uri));
 		}
 		else {

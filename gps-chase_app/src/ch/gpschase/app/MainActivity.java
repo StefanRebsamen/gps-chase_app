@@ -35,6 +35,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Space;
 import android.widget.TextView;
+import ch.gpschase.app.LocalTrailsFragment.Mode;
 import ch.gpschase.app.data.Trail;
 import ch.gpschase.app.util.DownloadTask;
 import ch.gpschase.app.util.TrailDownloadLink;
@@ -202,7 +203,7 @@ public class MainActivity extends Activity {
 			View view = convertView;
 			if (view == null) {
 				view = new TextView(MainActivity.this);
-				view.setMinimumHeight(48);
+				view.setMinimumHeight(24);
 			}
 			return view;			
 		}
@@ -246,11 +247,12 @@ public class MainActivity extends Activity {
 	}
 	
 
-	private final int SELECTABLE_MYTRAILS = 10;
+	private final int SELECTABLE_EDITABLE_TRAILS = 10;
+	private final int SELECTABLE_DOWNLOADED_TRAILS = 15;
 	private final int SELECTABLE_CLOUDTRAILS = 20;
-	private final int SELECTABLE_CHASES = 30;
 	private final int SELECTABLE_PREFERENCES = 40;
-	
+
+	private final String KEY_SELECTABLE = "selectable";
 	
 	// navigation drawer related variables
 	private final List<DrawerItem> drawerItems = new ArrayList<DrawerItem>(); 
@@ -269,12 +271,12 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		
 		// define the items we want to have in the drawer
-        drawerItems.add(new DrawerSpace());
-        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_my_trails, R.drawable.ic_phone,  SELECTABLE_MYTRAILS));
-        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_cloud_trails, R.drawable.ic_cloud, SELECTABLE_CLOUDTRAILS));
-        drawerItems.add(new DrawerSpace());
-        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_chases, R.drawable.ic_chases, SELECTABLE_CHASES));
-        drawerItems.add(new DrawerSpace());
+        drawerItems.add(new DrawerSection(R.string.drawer_section_trails));
+        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_editable_trails, R.drawable.ic_edit,  SELECTABLE_EDITABLE_TRAILS));
+        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_downloaded_trails, R.drawable.ic_download,  SELECTABLE_DOWNLOADED_TRAILS));
+        //drawerItems.add(new DrawerSpace());
+        //drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_cloud_trails, R.drawable.ic_cloud, SELECTABLE_CLOUDTRAILS));
+        drawerItems.add(new DrawerSection(R.string.drawer_section_general));
         drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_settings, R.drawable.ic_settings, SELECTABLE_PREFERENCES));
                 
         // set the adapter and listener for the list view
@@ -293,8 +295,12 @@ public class MainActivity extends Activity {
         getActionBar().setDisplayHomeAsUpEnabled(drawerLayout != null);
         getActionBar().setHomeButtonEnabled(drawerLayout != null);        
         
-        // start with trail on device
-        selectDrawertItem(SELECTABLE_MYTRAILS);        
+        // choose the selectable we were in or show the editable trails
+        int selectable = SELECTABLE_EDITABLE_TRAILS;
+        if (savedInstanceState != null) {
+        	selectable = savedInstanceState.getInt(KEY_SELECTABLE, SELECTABLE_EDITABLE_TRAILS);
+        }
+        selectDrawertItem(selectable);        
         
 		//////////////////////////////////////////
 		// check if we have to open a download link
@@ -310,14 +316,27 @@ public class MainActivity extends Activity {
 			// start downloading the trail
 			if (data != null) {
 				// load existing or create a new trail
-				Trail trail = Trail.loadOrCreate(this, data.trailUuid);				
-				// download in async task 
-				new DownloadTask(this, trail, true).execute();				
+				final Trail trail = Trail.loadOrCreate(this, data.trailUuid);
+				
+				// download in async task
+				// switch to downloaded trails when finished 
+				class Task extends DownloadTask {
+
+					public Task() {
+						super(MainActivity.this, trail, true);
+					}
+					
+					@Override
+					protected void onDownloaded(Trail trail) {
+						selectDrawertItem(SELECTABLE_DOWNLOADED_TRAILS);
+					}
+				}				
+				new Task().execute();				
 			}
 		}
 		
 	}
-
+	
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
@@ -328,6 +347,15 @@ public class MainActivity extends Activity {
         }
     }
 
+    
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+
+		// save the selectable we're currently in 
+		outState.putInt(KEY_SELECTABLE, currentSelectable.value);
+	}
+	
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -399,16 +427,16 @@ public class MainActivity extends Activity {
 		// create a new fragment, dependent on what was chosen
 	    Fragment fragment = null;
 	    switch (selectable.value) {
-	    case SELECTABLE_MYTRAILS:
-	    	fragment = new MyTrailsFragment();
+	    case SELECTABLE_EDITABLE_TRAILS:
+	    	fragment = LocalTrailsFragment.create(Mode.EDITABLE);
+	    	break;
+
+	    case SELECTABLE_DOWNLOADED_TRAILS:
+	    	fragment = LocalTrailsFragment.create(Mode.DOWNLOADED);
 	    	break;
 
 	    case SELECTABLE_CLOUDTRAILS:	
 	    	fragment = new CloudTrailsFragment();
-	    	break;
-
-	    case SELECTABLE_CHASES:	
-	    	fragment = new ChasesFragment();
 	    	break;
 	    	
 	    case SELECTABLE_PREFERENCES:	

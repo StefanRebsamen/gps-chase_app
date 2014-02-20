@@ -2,102 +2,106 @@
 <resources>
 
     <string name="app_name">GPSchase</string>
-    <string name="action_settings">Settings</string>
 
-    <string name="drawer_open">Open</string>
-    <string name="drawer_close">Close</string>
-    
-    <string name="drawer_section_trails">Trails</string>
-    <string name="drawer_selectable_my_trails">Trails on Device</string>
-    <string name="drawer_selectable_cloud_trails">Trails in Cloud</string>
-    <string name="drawer_section_chases">Chases</string>
-    <string name="drawer_selectable_chases">Chases</string>
-    <string name="drawer_section_general">General</string>
-    <string name="drawer_selectable_settings">Settings</string>                    
-    
-    <string name="empty_text_chases">There are currently no chases available.\nStart one by selecting a trail.</string>
-    <string name="action_new_trail">New trail</string>
-    <string name="empty_text_trails">There are currently no trails available.\nCreate a new one (\'+\' icon) or download one from a share link.</string>
-    <string name="action_delete_trail">Delete trail</string>
-    <string name="action_edit_trail">Edit trail</string>
-    <string name="action_lock_trail">Lock trail</string>
-    <string name="action_share_trail">Share trail</string>
-    <string name="dialog_delete_trail_title">Delete trail</string>
-    <string name="dialog_delete_trail_message">Delete the selected trail?</string>
-    <string name="dialog_new_trail_name_hint">Name</string>
-    <string name="dialog_share_trail_title">Share trail</string>
-    <string name="share_trail_message">By following the appended link, you will be able to play a great game!</string>
-    <string name="dialog_downloading">Downloading ...</string>
-    <string name="dialog_download_trail_error_title">Error</string>
-    <string name="dialog_download_trail_error_message">An error occurred while downloading the trail.</string>    
-    <string name="action_chase_trail">Chase trail</string>
-    <string name="toast_chase_already_finished">Chase is already finished and can\'t be continued</string>
-    <string name="action_continue_chase">Continue chase</string>
-    <string name="action_delete_chase">Delete chase</string>
-    <string name="dialog_new_chase_player_hint">Player</string>
-    <string name="dialog_new_chase_default_player">Player</string>
-    <string name="dialog_delete_chase_message">Delete the selected chase?</string>
-    <string name="dialog_deleting">Deleting ...</string>
-    <string name="dialog_upload_trail_error_title">Error</string>
-    <string name="dialog_upload_trail_error_message">An error occurred while uploading the trail.</string>    
-    <string name="dialog_share_trail_error_title">Error</string>
-    <string name="dialog_share_trail_error_message">An error occurred while sharing the trail.</string>    
-    <string name="dialog_delete_trail_error_title">Error</string>
-    <string name="dialog_delete_trail_error_message">An error occurred while deleting the trail.</string>           
-    <string name="dialog_set_password_button_unlock">Unlock</string>
-    <string name="field_password">Password</string>
-    <string name="field_password_confirmation">Confirm password</string>
-    
-    <string name="activity_title_edit_trail">Edit trail</string>
-    <string name="field_hint">Hint</string>
-    <string name="field_show_on_map">Show on map</string>    
-    <string name="action_delete_checkpoint">Delete checkpoint</string>
-    <string name="dialog_delete_checkpoint_message">Delete the selected checkpoint?</string>    
-    <string name="action_new_checkpoint">Add checkpoint</string>
-    <string name="action_trail_info">Trail information</string>
-    <string name="toast_new_checkpoint">Click on map to add new checkpoint</string>
-    <string name="action_new_image">Add image</string>
-    <string name="action_upload_trail">Upload</string>
-    <string name="new_image_capture">Capture image from Camera</string>
-    <string name="new_image_import">Import image from Gallery</string>
-    <string name="action_reorder_checkpoint_backward">Backward</string>
-    <string name="action_reorder_checkpoint_forward">Forward</string>
-    <string name="dialog_show_image_title">Image</string>
-    <string name="action_delete_image">Delete image</string>
-    <string name="dialog_delete_image_message">Delete the image?</string>
-    <string name="dialog_add_image_error_title">Error</string>
-    <string name="dialog_add_image_error_message">An error occurred while adding the image.</string>    
-    <string name="context_menu_image_title">Image</string>
-    <string name="dialog_uploading">Uploading ...</string>
-
-    <string name="activity_title_trail_info">Trail information</string>
-    <string name="tab_overview">Overview</string>
-    <string name="tab_map">Map</string>
-    <string name="field_name">Name</string>
-    <string name="field_description">Description</string>    
-    <string name="section_data">Data</string>    
-    <string name="section_measures">Measures</string>    
-    <string name="text_no_of_checkpoints">No. of checkpoints</string>    
-    <string name="text_distance">Total (air-line) distance</string>        
-    <string name="section_general">General</string>    
-    <string name="field_id">ID</string>
-    <string name="field_uuid">UUID</string>
-    <string name="field_updated">Updated</string>
-    <string name="field_uploaded">Uploaded</string>
-    <string name="field_downloaded">Downloaded</string>        
-    
-    <string name="activity_title_chase_trail">Chase trail</string>
-    <string name="action_download_trail">Download trail</string>
-    <string name="text_checkpoint_not_shown">not on map</string>    
-    <string name="toast_finished_chase">Chase has been finished</string>
-    
+    <!-- general text -->
     <string name="dialog_ok">OK</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_close">Close</string>
     <string name="dialog_yes">Yes</string>
     <string name="dialog_no">No</string>
+    <string name="dialog_title_error">Error</string>
     
+    <!-- drawer related stuff -->
+    <string name="drawer_open">Open</string>
+    <string name="drawer_close">Close</string>    
+    <string name="drawer_section_trails">Trails</string>
+    <string name="drawer_selectable_editable_trails">Editable trails</string>
+    <string name="drawer_selectable_downloaded_trails">Downloaded trails</string>
+    <string name="drawer_selectable_cloud_trails">Trails in cloud</string>
+    <string name="drawer_section_general">General</string>
+    <string name="drawer_selectable_settings">Settings</string>                            
 
+    <string name="activity_title_edit_trail">Edit trail</string>
+    <string name="activity_title_trail_info">Trail information</string>
+    <string name="activity_title_chase_trail">Chase trail</string>           
+
+    <string name="tab_trail_overview">Overview</string>
+    <string name="tab_trail_area">Area</string>
+    <string name="tab_trail_chases">Chases</string>
+    
+    <string name="section_trail_data">Data</string>    
+    <string name="section_trail_measures">Measures</string>    
+    <string name="section_trail_general">General</string>    
+    
+    <string name="action_new_trail">New trail</string>
+    <string name="action_upload_trail">Upload</string>
+    <string name="action_download_trail">Download trail</string>
+    <string name="action_delete_trail">Delete trail</string>
+    <string name="action_edit_trail">Edit trail</string>
+    <string name="action_lock_trail">Lock trail</string>
+    <string name="action_share_trail">Share trail</string>
+
+    <string name="action_new_checkpoint">Add checkpoint</string>
+    <string name="action_reorder_checkpoint_backward">Backward</string>
+    <string name="action_reorder_checkpoint_forward">Forward</string>
+    <string name="action_delete_checkpoint">Delete checkpoint</string>
+    <string name="action_new_image">Add image</string>
+    <string name="action_new_image_capture">Capture image from Camera</string>
+    <string name="action_new_image_import">Import image from Gallery</string>
+    <string name="action_delete_image">Delete image</string>    
+    <string name="action_chase_trail">Chase trail</string>
+    <string name="action_continue_chase">Continue chase</string>
+    <string name="action_delete_chase">Delete chase</string>
+
+    <string name="context_menu_image_title">Image</string>
+    
+    <string name="field_name">Name</string>
+    <string name="field_description">Description</string>    
+    <string name="field_id">ID</string>
+    <string name="field_uuid">UUID</string>
+    <string name="field_updated">Updated</string>
+    <string name="field_uploaded">Uploaded</string>
+    <string name="field_downloaded">Downloaded</string>        
+    <string name="field_password">Password</string>
+    <string name="field_password_confirmation">Confirm password</string>    
+    <string name="field_hint">Hint</string>
+    <string name="field_show_on_map_shown">Shown</string>    
+    <string name="field_show_on_map_hidden">Hidden</string>    
+    <string name="label_no_of_checkpoints">No. of checkpoints</string>    
+    <string name="label_trail_length">Total length (air-line)</string>            
+    
+    <string name="empty_text_chases">No chases available</string>
+    <string name="empty_text_trails">No trails available.\nCreate a new one (\'+\' icon) or download one from a share link</string>
+    
+    <string name="dialog_delete_trail_title">Delete trail</string>
+    <string name="dialog_delete_trail_message">Delete the selected trail?</string>
+    <string name="dialog_share_trail_title">Share trail</string>
+    <string name="dialog_downloading">Downloading ...</string>
+    <string name="dialog_download_trail_error_message">An error occurred while downloading the trail.</string>    
+    <string name="dialog_new_chase_player_hint">Player</string>
+    <string name="dialog_new_chase_default_player">Player</string>
+    <string name="dialog_delete_chase_message">Delete the selected chase?</string>
+    <string name="dialog_deleting">Deleting ...</string>
+    <string name="dialog_upload_trail_error_message">An error occurred while uploading the trail.</string>    
+    <string name="dialog_share_trail_error_message">An error occurred while sharing the trail.</string>    
+    <string name="dialog_delete_trail_error_message">An error occurred while deleting the trail.</string>           
+    <string name="dialog_set_password_button_unlock">Unlock</string>
+    <string name="dialog_delete_checkpoint_message">Delete the selected checkpoint?</string>    
+    <string name="dialog_show_image_title">Image</string>
+    <string name="dialog_delete_image_message">Delete the image?</string>
+    <string name="dialog_add_image_error_message">An error occurred while adding the image.</string>    
+    <string name="dialog_uploading">Uploading ...</string>
+
+    <string name="toast_new_checkpoint">Click on map to add new checkpoint</string>
+    <string name="toast_chase_already_finished">Chase is already finished and can\'t be continued</string>
+
+    <string name="share_trail_message">By following the appended link, you will be able to play a great game!</string>
+    
+    <!-- Trail information -->
+
+    <string name="toast_finished_chase">Chase has been finished</string>
+    
+    <!-- Settings -->
     <string name="pref_cat_view_title">View</string>
     <string name="pref_cat_view_key">CAT_VIEW</string>    
     <string name="pref_map_type_key">KEY_MAP_TYPE</string>
@@ -120,7 +124,7 @@
     <string name="pref_update_frequency_never">Never</string>
     <string name="pref_update_frequency_2">2 minutes</string>
     <string name="pref_update_frequency_5">5 minutes</string>
-    <string name="pref_update_frequency_10">10 Minutes</string>
+    <string name="pref_update_frequency_10">10 minutes</string>
     
     <string name="pref_cat_data_title">Data</string>
     <string name="pref_cat_data_key">CAT_DATA</string>

@@ -149,6 +149,10 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 
 		View view = super.onCreateView(inflater, container, savedInstanceState);
 
+		// set background
+		view.setBackgroundResource(android.R.color.white);
+		
+		// get reference to the map object
 		map = getMap();
 
 		// enable my location

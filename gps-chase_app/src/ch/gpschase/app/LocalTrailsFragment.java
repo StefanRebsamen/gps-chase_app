@@ -33,23 +33,51 @@ import ch.gpschase.app.util.SelectableListFragment;
 import ch.gpschase.app.util.TrailActions;
 
 /**
- * Fragment to display list of trails
+ * Fragment to display list of trails from the local database
  */
-public class MyTrailsFragment extends SelectableListFragment<Trail> {
+public class LocalTrailsFragment extends SelectableListFragment<Trail> {
+
+	/**
+	 * 
+	 */
+	public enum Mode {
+		EDITABLE,
+		DOWNLOADED
+	}
+	
+	private Mode mode = Mode.EDITABLE;
+	
+	// argument key used to pass the mode
+	private static final String ARG_MODE = "mode";  
 	
 	/**
 	 * 
 	 */
-	public MyTrailsFragment() {
+	public LocalTrailsFragment() {
 		super(R.menu.menu_main_trails, R.menu.cab_trail);
 	}
 
+	/**
+	 * Factory method
+	 * @param mode
+	 * @return
+	 */
+	public static LocalTrailsFragment create(Mode mode) {
+		LocalTrailsFragment instance = new LocalTrailsFragment();
+		Bundle args = new Bundle();
+		args.putString(ARG_MODE, mode.toString());
+		instance.setArguments(args);
+		return instance;
+	}
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		mode = Mode.valueOf(getArguments().getString(ARG_MODE));
 		
-		// we want to create our own option menu
-		setHasOptionsMenu(true);
+		// we want to create our own option menu (only in mode editable)
+		setHasOptionsMenu(mode != Mode.DOWNLOADED);
 	}
 
 	@Override
@@ -69,8 +97,13 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 
 	
 	@Override
-	protected List<Trail> loadInBackground() {			
-		return Trail.list(getActivity());
+	protected List<Trail> loadInBackground() {
+		if (mode ==Mode.EDITABLE) { 
+			return Trail.listEditable(getActivity());
+		}
+		else {
+			return Trail.listDownloaded(getActivity());			
+		}
 	}
 
 	@Override
@@ -98,12 +131,6 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 			tvDescr.setVisibility(View.GONE);
 		}
 		((TextView) view.findViewById(R.id.textView_trail_updated)).setText(App.formatDateTime(item.updated));
-
-		if (item.isEditable()) {
-			((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_edit);
-		} else {
-			((ImageView) view.findViewById(R.id.imageView_trail_type)).setImageResource(R.drawable.ic_download);
-		}
 		
 		return view;
 	}
@@ -155,7 +182,7 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 		View view = getListView().getChildAt(position);
 		if (view != null) {
 			Trail trail = (Trail) view.getTag();
-			//chaseTrail(trail);
+			// show info
 			TrailInfoActivity.show(getActivity(), trail);
 		}
 	}
@@ -190,7 +217,7 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 		// create a dialog which has it's OK button enabled when the text
 		// entered isn't empty
 		final EditText editText = new EditText(getActivity());
-		editText.setHint(R.string.dialog_new_trail_name_hint);
+		editText.setHint(R.string.field_name);
 		editText.setSingleLine();
 		
 		final AlertDialog dialog = new AlertDialog.Builder(getActivity())							//
@@ -304,13 +331,13 @@ public class MyTrailsFragment extends SelectableListFragment<Trail> {
 				
 				if (result) {
 					// refresh list
-					MyTrailsFragment.this.reload();	
+					LocalTrailsFragment.this.reload();	
 				}
 				else {
 					// show dialog to inform user about failure
 					new AlertDialog.Builder(getActivity())								//
 						.setIcon(android.R.drawable.ic_dialog_alert)					//
-						.setTitle(R.string.dialog_delete_trail_error_title)				//
+						.setTitle(R.string.dialog_title_error)				//
 						.setMessage(R.string.dialog_delete_trail_error_message)			//
 						.setPositiveButton(R.string.dialog_ok, null)					//
 						.show();														//

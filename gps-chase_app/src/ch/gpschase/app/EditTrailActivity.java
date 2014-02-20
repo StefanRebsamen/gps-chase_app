@@ -1,6 +1,8 @@
 package ch.gpschase.app;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import android.app.ActionBar;
@@ -14,10 +16,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.v4.app.NavUtils;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -27,6 +31,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -35,6 +40,8 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
@@ -42,6 +49,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -57,6 +65,8 @@ import ch.gpschase.app.util.UploadTask;
 import ch.gpschase.app.util.ViewImageDialog;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.PolygonOptions;
 
 /**
  * Activity to edit a trail
@@ -79,6 +89,58 @@ public class EditTrailActivity extends Activity {
 		private static final int REQUEST_CODE_CAPTURE_IMAGE = 1;
 		private static final int REQUEST_CODE_IMPORT_IMAGE = 2;
 
+		
+		private class AccuracyAdapter extends BaseAdapter {
+
+			private int choices[] = new int[]{5, 10, 20, 50 };
+			
+			/** 
+			 * return the selection (position) for the given accuracy
+			 * @param accuracy
+			 * @return
+			 */
+			public int getSelection(int accuracy) {
+				int s = 0;
+				for (s = 0; s < choices.length; s++) {
+					if (choices[s] >= accuracy) {
+						break;
+					}
+				}
+				return s;
+			}
+			
+			@Override
+			public int getCount() {
+				return choices.length;
+			}
+
+			@Override
+			public Object getItem(int position) {
+				return choices[position];
+			}
+
+			@Override
+			public long getItemId(int position) {
+				return choices[position];
+			}
+
+			@Override
+			public View getView(int position, View convertView, ViewGroup parent) {
+				View v = convertView;
+				if (v == null) {
+					v = getActivity().getLayoutInflater().inflate(R.layout.itemview_accuracy_spinner, null);
+				}
+				TextView tv = (TextView)v.findViewById(R.id.textView_value);
+				tv.setText(choices[position] + " m");
+				return v;
+			}
+
+			@Override
+		    public View getDropDownView(int position, View convertView, ViewGroup parent) {
+		        return getView(position, convertView, parent);
+		    }
+		}
+		
 		/**
 		 * An extended ImageView with the ability to provide context menu info
 		 */		
@@ -115,6 +177,7 @@ public class EditTrailActivity extends Activity {
 			}
 		}
 	
+	
 		/**
 		 * Used for callbacks from fragment
 		 */
@@ -133,14 +196,24 @@ public class EditTrailActivity extends Activity {
 			public void onShowLocationChanged(boolean show);
 		}
 
+		// indicates that we're currently loading data into UI elements
+		boolean loading = false;
+		
+		// list of possible choices
+		private final List<String> accuracyChoices = new ArrayList<String>();
+		
 		// listener for callbacks
 		private Listener listener;
 
 		private Checkpoint checkpoint;
-
+		
+		// adapter for accuracy
+		private final AccuracyAdapter accuracyAdapter = new AccuracyAdapter();
+		
 		// references to UI elements
 		private TextView textViewNo;
 		private Switch switchShowOnMap;
+		private Spinner spinnerAccuracy;
 		private EditText editTextHint;
 		private LinearLayout layoutImages;
 		private ImageButton buttonNewImage;
@@ -159,14 +232,26 @@ public class EditTrailActivity extends Activity {
 
 			// get references to UI elements
 			textViewNo = (TextView) view.findViewById(R.id.textView_checkpoint_no);
-			switchShowOnMap = (Switch) view.findViewById(R.id.checkBox_show_on_map);
+			switchShowOnMap = (Switch) view.findViewById(R.id.switch_show_on_map);
+			spinnerAccuracy = (Spinner) view.findViewById(R.id.spinner_accuracy);
 			editTextHint = (EditText) view.findViewById(R.id.editText_hint);
 			layoutImages = (LinearLayout) view.findViewById(R.id.layout_images);
 			buttonNewImage = (ImageButton) view.findViewById(R.id.button_add_image);
 			buttonMoveBackward = (ImageButton) view.findViewById(R.id.button_reorder_checkpoint_backward);
 			buttonMoveForward = (ImageButton) view.findViewById(R.id.button_reorder_checkpoint_forward);
 			buttonDeleteCheckpoint = (ImageButton) view.findViewById(R.id.button_delete_checkpoint);
+			
+			// populate spinner
+			spinnerAccuracy.setAdapter(accuracyAdapter);			
 
+			// catch clicks on fragment, otherwise they go through to the map
+			view.setOnClickListener(new OnClickListener() {				
+				@Override
+				public void onClick(View v) {
+					// do nothing
+				}
+			});
+						
 			// register handler for buttons
 			buttonNewImage.setOnClickListener(new OnClickListener() {
 				@Override
@@ -205,8 +290,12 @@ public class EditTrailActivity extends Activity {
 			switchShowOnMap.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 				@Override
 				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+					// ignore if we are loading
+					if (loading) return;
+					
+					save();
+					
 					if (listener != null) {
-						save();
 						listener.onShowLocationChanged(isChecked);
 					}					
 				}
@@ -282,19 +371,25 @@ public class EditTrailActivity extends Activity {
 			this.checkpoint = checkpoint;
 			
 			// load data into UI elements
+			loading = true;
 			if (checkpoint != null) {
 				textViewNo.setText("#" + (checkpoint.getIndex() + 1));
 				switchShowOnMap.setChecked(checkpoint.showLocation);
 				editTextHint.setText(checkpoint.hint);				
+				spinnerAccuracy.setSelection(accuracyAdapter.getSelection(checkpoint.accuracy));
 			} else {
 				textViewNo.setText("#");
 				switchShowOnMap.setChecked(false);
 				editTextHint.setText("");
+				spinnerAccuracy.setSelection(0);
 			}
+
 			updateIndex();
 
 			// refresh images
 			refreshImages();
+			
+			loading = false;
 		}
 
 		/**
@@ -407,15 +502,20 @@ public class EditTrailActivity extends Activity {
 			// read back from UI
 			boolean showLocation = switchShowOnMap.isChecked();
 			String hint = editTextHint.getText().toString();
+			int accuracy = (Integer)spinnerAccuracy.getSelectedItem();
 
 			// apply new values (if really changed)
 			boolean changed = false;
 			if (showLocation != checkpoint.showLocation) {
-				checkpoint.showLocation = switchShowOnMap.isChecked();
+				checkpoint.showLocation = showLocation;
 				changed = true;
 			}
 			if (!hint.equals(checkpoint.hint)) {
-				checkpoint.hint = editTextHint.getText().toString();
+				checkpoint.hint = hint;
+				changed = true;
+			}
+			if (accuracy != checkpoint.accuracy) {
+				checkpoint.accuracy = accuracy;
 				changed = true;
 			}
 			
@@ -440,7 +540,7 @@ public class EditTrailActivity extends Activity {
 			final int IMPORT = 1;
 
 			// show a dialog to choose and image source
-			String[] sources = { getString(R.string.new_image_capture), getString(R.string.new_image_import) };
+			String[] sources = { getString(R.string.action_new_image_capture), getString(R.string.action_new_image_import) };
 			new AlertDialog.Builder(getActivity()) //
 					.setTitle(R.string.action_new_image) //
 					.setIcon(R.drawable.ic_new_image).setItems(sources, new DialogInterface.OnClickListener() {
@@ -494,7 +594,7 @@ public class EditTrailActivity extends Activity {
 			Intent intent = new Intent();
 			intent.setType("image/*");
 			intent.setAction(Intent.ACTION_GET_CONTENT);
-			startActivityForResult(Intent.createChooser(intent, getString(R.string.new_image_import)), REQUEST_CODE_IMPORT_IMAGE);
+			startActivityForResult(Intent.createChooser(intent, getString(R.string.action_new_image_import)), REQUEST_CODE_IMPORT_IMAGE);
 
 			// callback will be made to onActivityResult()
 		}
@@ -538,7 +638,7 @@ public class EditTrailActivity extends Activity {
 
 					// show alert dialog
 					new AlertDialog.Builder(getActivity()) //
-							.setTitle(R.string.dialog_add_image_error_title) //
+							.setTitle(R.string.dialog_title_error) //
 							.setIcon(android.R.drawable.ic_dialog_alert) //
 							.setMessage(R.string.dialog_add_image_error_message) //
 							.setPositiveButton(R.string.dialog_ok, null) //
@@ -799,7 +899,11 @@ public class EditTrailActivity extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-
+		case android.R.id.home:
+			// finish activity
+			finish();
+			return true;
+			
 		case R.id.action_new_checkpoint:
 			// unselect current checkpoint
 			selectCheckpoint(null);
@@ -830,9 +934,13 @@ public class EditTrailActivity extends Activity {
 	private void refresh() {
 		// init and refresh map
 		map.clearCheckpoints();
-		boolean first = true;
+		LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+		List<LatLng> locations = new ArrayList<LatLng>(); 
 		for (Checkpoint checkpoint : trail.getCheckpoints()) {
+			
 			LatLng location = new LatLng(checkpoint.location.getLatitude(), checkpoint.location.getLongitude());
+			boundsBuilder.include(location);				
+			locations.add(location);
 			
 			// add marker
 			map.addCheckpoint(checkpoint, false, false);
@@ -841,15 +949,27 @@ public class EditTrailActivity extends Activity {
 			if (checkpoint == selectedCheckpoint) {
 				map.selectCheckpoint(checkpoint);
 			}
-	
-			// set camera to start
-			if (first) {
-				map.setCameraTarget(location);
-				map.setCameraZoom(TrailMapFragment.DEFAULT_ZOOM);
-				first = false;
-			}
-		}
+
+		}		
 		map.refresh();
+		
+		// several checkpoints?
+		if (locations.size() > 1) {
+			// draw a rectangle to show region. Add a bit overhead, so the start marker isn't right at the edgeare
+			LatLngBounds bounds =  boundsBuilder.build();
+			// place camera to include the call
+			map.setCamera(locations);				
+		}
+		// just one?
+		else if (locations.size() == 1) {
+			// place camera to this one
+			map.setCameraTarget(locations.get(1));
+			map.setCameraZoom(TrailMapFragment.DEFAULT_ZOOM);
+		}
+		else {
+			// nothing to show!
+		}
+		
 	}
 
 	/**

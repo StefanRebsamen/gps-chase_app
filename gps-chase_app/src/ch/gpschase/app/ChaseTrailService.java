@@ -57,8 +57,7 @@ public class ChaseTrailService extends Service {
 	private class LocationCallback implements LocationListener, GooglePlayServicesClient.ConnectionCallbacks,
 			GooglePlayServicesClient.OnConnectionFailedListener {
 
-		private static final int HIT_DISTANCE = 5;
-		public static final int HIT_DISTANCE_DEBUG = 100;
+		private static final int ACCURACY_DEBUG = 100;
 
 		@Override
 		public void onLocationChanged(Location location) {
@@ -73,7 +72,7 @@ public class ChaseTrailService extends Service {
 				}
 
 				// did we hit a checkpoint?
-				if (distance < (App.isDebuggable() ? HIT_DISTANCE_DEBUG : HIT_DISTANCE)) {
+				if (distance < (App.isDebuggable() ? ACCURACY_DEBUG : currentCheckpoint.accuracy)) {
 
 					// create a new hit and save it
 					Hit hit = chase.addHit(currentCheckpoint);
@@ -125,7 +124,8 @@ public class ChaseTrailService extends Service {
 		public void onConnected(Bundle arg0) {
 			// request location updates each second
 			LocationRequest request = LocationRequest.create();
-			request.setInterval(1000).setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+			request.setInterval(2000);
+			request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 			locationClient.requestLocationUpdates(request, locationCallback);
 		}
 
@@ -184,12 +184,13 @@ public class ChaseTrailService extends Service {
 		Log.d("ChaseService", "onStartCommand");
 
 		// get chase id from intent extra
+		long trailId = intent.getLongExtra(ChaseTrailActivity.INTENT_EXTRA_TRAILID, 0);
 		long chaseId = intent.getLongExtra(ChaseTrailActivity.INTENT_EXTRA_CHASEID, 0);
 
 		// load data
 		try {
 			// load chase
-			load(chaseId);
+			load(trailId, chaseId);
 			
 			// mark it as started (if not already done)
 			if (chase.started == 0) {
@@ -210,14 +211,20 @@ public class ChaseTrailService extends Service {
 	 * @param chaseId
 	 * @throws IllegalArgumentException
 	 */
-	private void load(long chaseId) throws IllegalArgumentException {
+	private void load(long trailId, long chaseId) throws IllegalArgumentException {
 
 		// load chase
-		chase = Chase.load(this, chaseId);
+		trail = Trail.load(this, trailId);
+		trail.loadChases(this);
+		for (Chase ch : trail.getChases()) {
+			if (ch.getId() == chaseId) {
+				chase = ch;
+				break;
+			}
+		}
 
-		// load trail including its checkpoints
+		// load checkpoints
 		// the images will be loaded by the activity when necessary
-		trail = chase.getTrail();
 		trail.loadCheckpoints(this);
 
 		// determine next checkpoint we need to hit
@@ -243,7 +250,7 @@ public class ChaseTrailService extends Service {
 		if (chase != null) {
 			// load data
 			try {
-				load(chase.getId());
+				load(chase.getTrail().getId(),  chase.getId());
 				return true;
 			} catch (Exception ex) {
 				return false;

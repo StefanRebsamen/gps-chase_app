@@ -6,11 +6,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
+import com.google.android.gms.internal.cg;
+
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.util.Log;
 
 /**
  * DTO for a trail
@@ -39,6 +42,12 @@ public class Trail extends Item {
 	 */
 	protected List<Checkpoint> checkpoints = null;
 
+	/**
+	 * List of chases
+	 * ATTENTION: It's the user responsibility to populate!
+	 */
+	protected List<Chase> chases = null;
+	
 	/**
 	 * Protected constructor
 	 */
@@ -92,19 +101,42 @@ public class Trail extends Item {
 			return trail;
 		}
 	}
+
+	
+	/**
+	 * Load a list of trails from the database which are editable
+	 * @param context
+	 * @return
+	 */
+	public static List<Trail> listEditable(Context context) {
+		String selection = Contract.Trails.COLUMN_NAME_TOKEN + " NOTNULL";
+		return list(context, selection);
+	}
+
+	/**
+	 * Load a list of trails from the database which were downloaded
+	 * @param context
+	 * @return
+	 */
+	public static List<Trail> listDownloaded(Context context) {
+		String selection = Contract.Trails.COLUMN_NAME_DOWNLOADED + " > 0";
+		return list(context, selection);
+	}
 	
 	/**
 	 * Load a list of trails from the database
 	 * @param context
+	 * @param selection
 	 * @return
 	 */
-	public static List<Trail> list(Context context) {
+	private static List<Trail> list(Context context, String selection) {
 	
 		List<Trail> result = new LinkedList<Trail>();
 		
 		Cursor cursor = context.getContentResolver().query(Contract.Trails.getUriDir(), 
 															Contract.Trails.READ_PROJECTION, 
-															null, null, null);		
+															selection, 
+															null, null);		
 		while (cursor.moveToNext()) {
 			result.add(Trail.load(cursor));
 		}
@@ -219,23 +251,14 @@ public class Trail extends Item {
 	 * @return
 	 */
 	public Chase getFirstRunningChase(Context context) {
-		long chaseId = 0;
-		String selection = Contract.Chases.COLUMN_NAME_TRAIL_ID + "=" + getId()
-							+ " AND " 											//
-							+ Contract.Chases.COLUMN_NAME_FINISHED + "=0"; 		//
-		Cursor chasesCursor =  context.getContentResolver().query(							//
-													Contract.Chases.getUriDir(), 					//
-													Contract.Chases.READ_PROJECTION,				//
-													selection, 										//
-													null, 											//
-													null);											//
-		if (chasesCursor.moveToNext()) {
-			chaseId = chasesCursor.getLong(Contract.Trails.READ_PROJECTION_ID_INDEX);
-		}
-		chasesCursor.close();						
 		
-		if (chaseId != 0) {
-			return Chase.load(context, chaseId);
+		loadChases(context);
+		
+		for (Chase ch : chases) {
+			if (ch.finished == 0) {
+				Log.i("getFirstRunningChase", "found chase " + ch.getId());
+				return ch;
+			}
 		}
 		return null;
 	}
@@ -249,6 +272,17 @@ public class Trail extends Item {
 			throw new IllegalStateException();
 		}
 		return checkpoints;
+	}
+
+	/**
+	 * Return an iterable of chases
+	 * @return
+	 */
+	public Iterable<Chase> getChases() {
+		if (chases == null) {
+			throw new IllegalStateException();
+		}
+		return chases;
 	}
 	
 	/**
@@ -274,6 +308,19 @@ public class Trail extends Item {
 		
 		checkpoints = new LinkedList<Checkpoint>();
 		Checkpoint.load(context, this);
+	}
+
+	/**
+	 * Loads the chases (if not already done)
+	 * @param context
+	 */
+	public void loadChases(Context context) {
+		if (chases != null) {
+			return;
+		}
+		
+		chases = new LinkedList<Chase>();
+		Chase.load(context, this);
 	}
 	
 	/**

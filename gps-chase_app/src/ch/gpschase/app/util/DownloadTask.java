@@ -98,7 +98,7 @@ public class DownloadTask extends AsyncTask<Void, Void, Boolean> {
 			// show dialog to inform user about failure
 			new AlertDialog.Builder(context) //
 					.setIcon(android.R.drawable.ic_dialog_alert) //
-					.setTitle(R.string.dialog_download_trail_error_title) //
+					.setTitle(R.string.dialog_title_error) //
 					.setMessage(R.string.dialog_download_trail_error_message) //
 					.setPositiveButton(R.string.dialog_ok, null) //
 					.show(); //

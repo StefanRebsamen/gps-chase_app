@@ -1,10 +1,18 @@
 <resources>
-	
-   <color name="checkpoint_overlay_divider">#FFafafaf</color>
-
-   <color name="purple_dark">#FF9933cc</color>
+	   
+   <color name="gray_very_light">#FFf2f2f2</color>
+   <color name="gray_light">#FFe4e4e4</color>
+   <color name="gray">#FF949494</color>
+   <color name="gray_dark">#FF7a7a7a</color>
+   
+   <color name="purple_very_light">#FFd6adeb</color>
    <color name="purple_light">#FFaa66cc</color>
-   <color name="green_dark">#FF669900</color>
+   <color name="purple_dark">#FF9933cc</color>
+   
+   <color name="green_very_light">#FFe2f0b6</color>
    <color name="green_light">#FF99cc00</color>
+   <color name="green_dark">#FF669900</color>
+   
+   <color name="gray_shadow">#88666666</color>
    
 </resources>

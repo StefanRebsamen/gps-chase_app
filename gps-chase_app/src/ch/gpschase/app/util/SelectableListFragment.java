@@ -14,6 +14,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.ActionMode;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -22,6 +23,8 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout.LayoutParams;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
@@ -135,12 +138,6 @@ public abstract class SelectableListFragment<T extends Item> extends ListFragmen
 	 */
 	public abstract void onSelectionChanged(int position, long id);
 
-	
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-	}
-
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
@@ -151,8 +148,8 @@ public abstract class SelectableListFragment<T extends Item> extends ListFragmen
 		getListView().setOnItemLongClickListener(this);
 
 		// fancy divider 
-		getListView().setDivider(getResources().getDrawable(R.color.green_light));
-		getListView().setDividerHeight(2);
+		getListView().setDivider(getResources().getDrawable(android.R.color.transparent));
+		getListView().setDividerHeight(8);
 				
 		// init loader
 		getLoaderManager().initLoader(0, null, this);

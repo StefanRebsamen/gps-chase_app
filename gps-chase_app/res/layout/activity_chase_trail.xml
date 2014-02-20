@@ -8,6 +8,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/gray_light"
         android:paddingLeft="4dp"
         android:paddingRight="2dp" >
 

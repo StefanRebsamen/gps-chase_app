@@ -4,6 +4,10 @@ import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ListView;
 import android.widget.Toast;
 import ch.gpschase.app.util.TrailMapFragment;
 
@@ -43,4 +47,19 @@ public class SettingsFragment extends PreferenceFragment {
 			}
 		});
 	}
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+	        Bundle savedInstanceState) {
+		
+	    View view = super.onCreateView(inflater, container, savedInstanceState);
+	    // we want no padding
+	    if(view != null) {
+	        ListView lv = (ListView) view.findViewById(android.R.id.list);
+	        lv.setPadding(0, 0, 0, 0);
+	    }
+	    // set background
+		view.setBackgroundResource(R.drawable.card_background);
+		return view;
+	}	
 }

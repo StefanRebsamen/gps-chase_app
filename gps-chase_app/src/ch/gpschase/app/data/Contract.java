@@ -206,7 +206,7 @@ final class Contract {
 		}
 		
 		/**
-		 * @return	UriMatcher pattern for listening record
+		 * @return	UriMatcher pattern for listening records
 		 */
 		public static Uri getUriDir(long trailId) {
 			return Trails.getUriId(trailId).buildUpon().appendPath(PATH_DIR).build();
@@ -295,6 +295,13 @@ final class Contract {
 		 */
 		public static final String COLUMN_NAME_LOC_SHOW = "loc_show";
 		
+		/**
+		 * Column name of the checkpoint accuracy
+		 * <P>
+		 * Type: REAL
+		 * </P>
+		 */
+		public static final String COLUMN_NAME_ACCURACY = "accuracy";
 		
 		/**
 		 * The default sort order for this table
@@ -306,13 +313,14 @@ final class Contract {
 		 * Standard projection
 		 */
 		public static final String[] READ_PROJECTION = new String[] { 
-			_ID,					//
-			COLUMN_NAME_UUID,		//
+			_ID,						//
+			COLUMN_NAME_UUID,			//
 			COLUMN_NAME_INDEX,			//
-			COLUMN_NAME_LOC_LNG,	// 
-			COLUMN_NAME_LOC_LAT,	// 
-			COLUMN_NAME_LOC_SHOW,	// 
-			COLUMN_NAME_HINT		//
+			COLUMN_NAME_LOC_LNG,		// 
+			COLUMN_NAME_LOC_LAT,		// 
+			COLUMN_NAME_LOC_SHOW,		// 
+			COLUMN_NAME_HINT,			//
+			COLUMN_NAME_ACCURACY		//
 		};
 
 		public static final int READ_PROJECTION_ID_INDEX = 0;
@@ -322,7 +330,7 @@ final class Contract {
 		public static final int READ_PROJECTION_LOC_LAT_INDEX = 4;
 		public static final int READ_PROJECTION_LOC_SHOW_INDEX = 5;
 		public static final int READ_PROJECTION_HINT_INDEX = 6;
-		
+		public static final int READ_PROJECTION_ACCURACY_INDEX = 7;		
 	}
 	
 	
@@ -461,7 +469,7 @@ final class Contract {
 		 * @return Uri for listening records
 		 */
 		public static String getUriPatternDir() {
-			return PATH_DIR;
+			return Trails.getUriPatternId() + "/" + PATH_DIR;
 		}
 	
 		/**
@@ -472,17 +480,17 @@ final class Contract {
 		}
 		
 		/**
-		 * @return	UriMatcher pattern for listening record
+		 * @return	UriMatcher pattern for listening records
 		 */
-		public static Uri getUriDir() {
-			return new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath(PATH_DIR).build();
+		public static Uri getUriDir(long trailId) {
+			return Trails.getUriId(trailId).buildUpon().appendPath(PATH_DIR).build();
 		}
 				
 		/**
 		 * @return	UriMatcher pattern for accessing a single record
 		 */
 		public static Uri getUriId(long Id) {
-			return ContentUris.withAppendedId(new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath(PATH_ID).build(), Id);
+			return ContentUris.withAppendedId(new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).appendPath(PATH_ID).build(), Id) ;
 		}
 
 		/*

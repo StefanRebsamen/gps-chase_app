@@ -57,6 +57,7 @@ public class BackendClient {
 		private static final String CHECKPOINT_LOCATION = "loc";
 		private static final String CHECKPOINT_SHOW_ON_MAP = "loc_show";
 		private static final String CHECKPOINT_HINT = "hint";
+		private static final String CHECKPOINT_ACCURACY = "accuracy";
 		private static final String CHECKPOINT_IMAGES = "images";
 
 		private static final String IMAGE_UUID = "uuid";
@@ -85,6 +86,7 @@ public class BackendClient {
 							.value(checkpoint.location.getLatitude()).endArray();
 					writer.name(Json.CHECKPOINT_SHOW_ON_MAP).value(checkpoint.showLocation);
 					writer.name(Json.CHECKPOINT_HINT).value(checkpoint.hint);
+					writer.name(Json.CHECKPOINT_ACCURACY).value(checkpoint.accuracy);
 			
 					if (!checkpoint.images.isEmpty()) {
 						writer.name(Json.CHECKPOINT_IMAGES).beginArray();
@@ -158,6 +160,8 @@ public class BackendClient {
 								checkpoint.location.setLongitude(reader.nextDouble());
 								checkpoint.location.setLatitude(reader.nextDouble());
 								reader.endArray();
+							} else if (name.equals(Json.CHECKPOINT_ACCURACY)) {
+								checkpoint.accuracy  = reader.nextInt();
 							} else if (name.equals(Json.CHECKPOINT_IMAGES)) {
 								// images
 								reader.beginArray();
@@ -198,7 +202,8 @@ public class BackendClient {
 		}
 	}
 
-	private final static Uri BASE_URI = Uri.parse("http://192.168.0.20:5000");
+	private final static Uri BASE_URI = Uri.parse("http://192.168.0.20:5000/api");
+	//private final static Uri BASE_URI = Uri.parse("http://www-gpschase.rhcloud.com/api");
 
 	// field or parameter name for token
 	private static final String PARAM_TOKEN = "token";
