@@ -5,6 +5,7 @@ import java.util.Date;
 import ch.gpschase.app.data.ImageFileManager;
 import android.app.Application;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Debug;
 import android.util.TypedValue;
 
@@ -115,4 +116,8 @@ public class App extends Application {
 		return px;
 	}
 	
+	/**
+	 * Website URL of the application
+	 */
+	public final static Uri URL = Uri.parse("http://www.gpschase.ch");  
 }

@@ -251,6 +251,7 @@ public class MainActivity extends Activity {
 	private final int SELECTABLE_DOWNLOADED_TRAILS = 15;
 	private final int SELECTABLE_CLOUDTRAILS = 20;
 	private final int SELECTABLE_PREFERENCES = 40;
+	private final int SELECTABLE_WEBSITE = 90;
 
 	private final String KEY_SELECTABLE = "selectable";
 	
@@ -278,6 +279,7 @@ public class MainActivity extends Activity {
         //drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_cloud_trails, R.drawable.ic_cloud, SELECTABLE_CLOUDTRAILS));
         drawerItems.add(new DrawerSection(R.string.drawer_section_general));
         drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_settings, R.drawable.ic_settings, SELECTABLE_PREFERENCES));
+        drawerItems.add(new DrawerSelectable(R.string.drawer_selectable_website, R.drawable.ic_web_site, SELECTABLE_WEBSITE));
                 
         // set the adapter and listener for the list view
         drawerList = (ListView) findViewById(R.id.left_drawer);
@@ -442,6 +444,14 @@ public class MainActivity extends Activity {
 	    case SELECTABLE_PREFERENCES:	
 	    	fragment = new SettingsFragment();
 	    	break;
+
+	    case SELECTABLE_WEBSITE:
+	    	// we don not want to have this one selected!
+		    drawerList.setItemChecked(drawerItems.indexOf(currentSelectable), true);
+		    // start browser
+	    	Intent browserIntent = new Intent(Intent.ACTION_VIEW, App.URL);
+	    	startActivity(browserIntent);
+	    	return;
 	    }
 	    
 	    // keep current selection
@@ -455,7 +465,6 @@ public class MainActivity extends Activity {
 	    // highlight the selected item, update the title, and close the drawer
 	    drawerList.setItemChecked(drawerItems.indexOf(selectable), true);
 	    setTitle(currentSelectable.labelResId);
-
 	    
 	    // insert the fragment by replacing any existing fragment
 	    FragmentManager fragmentManager = getFragmentManager();

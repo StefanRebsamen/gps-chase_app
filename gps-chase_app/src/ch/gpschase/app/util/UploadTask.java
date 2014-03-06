@@ -73,9 +73,9 @@ import ch.gpschase.app.R;
 			pd.dismiss();
 			if (!result) {
 				// show dialog to inform user about failure
-				new AlertDialog.Builder(context)						//
+				new AlertDialog.Builder(context)									//
 					.setIcon(android.R.drawable.ic_dialog_alert)					//
-					.setTitle(R.string.dialog_title_error)				//
+					.setTitle(R.string.dialog_title_error)							//
 					.setMessage(R.string.dialog_upload_trail_error_message)			//
 					.setPositiveButton(R.string.dialog_ok, null)					//
 					.show();														//
@@ -89,9 +89,9 @@ import ch.gpschase.app.R;
 				// send through any app that is capable 
 				CharSequence appName = context.getResources().getText(R.string.app_name);
 				Intent sendIntent = new Intent();
-				sendIntent.setAction(Intent.ACTION_SEND);	// TODO set text properly
-				sendIntent.putExtra(Intent.EXTRA_SUBJECT, "Link to trail '" + trail.name + "'");
-				sendIntent.putExtra(Intent.EXTRA_TEXT, "Please use the Android app " + appName + " to download trail '" + trail.name + "': " + link);
+				sendIntent.setAction(Intent.ACTION_SEND);
+				sendIntent.putExtra(Intent.EXTRA_SUBJECT, context.getResources().getString(R.string.share_trail_subject, trail.name));
+				sendIntent.putExtra(Intent.EXTRA_TEXT, context.getResources().getString(R.string.share_trail_text, context.getResources().getString(R.string.app_name), trail.name, link));
 				sendIntent.setType("text/plain");
 				context.startActivity(Intent.createChooser(sendIntent, context.getResources().getText(R.string.dialog_share_trail_title)));					
 			}

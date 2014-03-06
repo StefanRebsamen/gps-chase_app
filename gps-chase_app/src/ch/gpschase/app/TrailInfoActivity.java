@@ -236,8 +236,9 @@ public class TrailInfoActivity extends Activity {
 				rectOptions.add(new LatLng(bounds.northeast.latitude + latOverhead, bounds.southwest.longitude - lngOverhead));
 				rectOptions.add(new LatLng(bounds.southwest.latitude - latOverhead, bounds.southwest.longitude - lngOverhead));
 				rectOptions.add(new LatLng(bounds.southwest.latitude - latOverhead, bounds.northeast.longitude + lngOverhead));
-				rectOptions.fillColor(0x44FFFFFF);
-				rectOptions.strokeColor(Color.TRANSPARENT);
+				rectOptions.fillColor((getResources().getColor(R.color.purple_very_light) & 0x00FFFFFF) | 0x44000000);
+				rectOptions.strokeColor(getResources().getColor(R.color.purple_light));
+				rectOptions.strokeWidth(2);
 				getMap().addPolygon(rectOptions).setZIndex(-1);
 				// place camera to include the call
 				setCamera(locations);				

@@ -63,6 +63,10 @@ public class ChaseTrailActivity extends Activity {
 	public static final String INTENT_EXTRA_TRAILID = "trailId";
 	public static final String INTENT_EXTRA_CHASEID = "chaseId";
 	
+	// determines if a mock location is set by cliking on the map in debug mode
+	// Needes the permission ACCESS_MOCK_LOCATION
+	private final boolean setMockLocations = false;
+	
 	/**
 	 * 
 	 */
@@ -177,7 +181,7 @@ public class ChaseTrailActivity extends Activity {
 
 		@Override
 		public void onClickedMap(LatLng position) {
-			if (App.isDebuggable()) {
+			if (App.isDebuggable() && setMockLocations) {
 
 				// set mock location
 				locationManager.setTestProviderStatus(mockLocationProviderName,
@@ -344,7 +348,7 @@ public class ChaseTrailActivity extends Activity {
 		// references to UI elements
 		private TextView textViewHint;
 		private TextView textViewNo;
-		private TextView textViewNotShown;
+		private ImageView imageViewShowLocation;
 		private TextView textViewDistance;
 		private LinearLayout layoutImages;				
 	
@@ -357,7 +361,7 @@ public class ChaseTrailActivity extends Activity {
 			// get references to UI elements
 			textViewHint = (TextView)view.findViewById(R.id.textView_checkpoint_hint);
 			textViewNo = (TextView)view.findViewById(R.id.textView_checkpoint_no);
-			textViewNotShown = (TextView)view.findViewById(R.id.textView_not_shown);
+			imageViewShowLocation = (ImageView)view.findViewById(R.id.imageView_show_location);
 			textViewDistance = (TextView)view.findViewById(R.id.textView_distance);
 			layoutImages = (LinearLayout)view.findViewById(R.id.layout_images);		
 						
@@ -389,12 +393,12 @@ public class ChaseTrailActivity extends Activity {
 					textViewHint.setVisibility(View.GONE);					
 				}
 				
-				// tell if itn's not shown on the map
-				if (!(checkpoint.showLocation || checkpoint.getIndex() == 0)) {
-					textViewNotShown.setVisibility(View.VISIBLE);
+				// show location
+				if (checkpoint.showLocation || checkpoint.getIndex() == 0) {
+					imageViewShowLocation.setImageResource(R.drawable.ic_cp_shown);
 				}
 				else {
-					textViewNotShown.setVisibility(View.INVISIBLE);					
+					imageViewShowLocation.setImageResource(R.drawable.ic_cp_hidden);
 				}
 				textViewNo.setText("#" + (checkpoint.getIndex() + 1));
 
@@ -427,7 +431,7 @@ public class ChaseTrailActivity extends Activity {
 			else {
 				textViewHint.setText("");
 				textViewNo.setText("");
-				textViewNotShown.setVisibility(View.INVISIBLE);					
+				imageViewShowLocation.setImageResource(android.R.color.transparent);
 				layoutImages.removeAllViews();			
 			}				
 		}
@@ -538,7 +542,7 @@ public class ChaseTrailActivity extends Activity {
 
 		// add mock location provider if in debug mode
 		locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-		if (App.isDebuggable()) {
+		if (App.isDebuggable() && setMockLocations) {
 			mockLocationProviderName = LocationManager.GPS_PROVIDER;
 			locationManager.addTestProvider(mockLocationProviderName, false,
 					false, false, false, true, true, true, Criteria.POWER_LOW,
@@ -598,7 +602,7 @@ public class ChaseTrailActivity extends Activity {
 		Log.d("ChaseTrailActivity", "onDestroy");
 
 		// remove mock location provider if in debug mode
-		if (App.isDebuggable()) {
+		if (App.isDebuggable() && setMockLocations ) {
 			if (locationManager.getProvider(mockLocationProviderName) != null) {
 				locationManager.removeTestProvider(mockLocationProviderName);
 			}

@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@drawable/overlay_background"
+    android:background="@drawable/bg_map_overlay"
     android:orientation="horizontal" >
 
     <LinearLayout
@@ -28,17 +28,19 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
-            <Switch
-                android:id="@+id/switch_show_on_map"
+            <ToggleButton
+                android:id="@+id/toggleBtn_show_on_map"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_centerHorizontal="true"
                 android:layout_centerVertical="true"
                 android:layout_gravity="center_vertical|center_horizontal"
                 android:layout_marginBottom="4dp"
                 android:layout_marginTop="4dp"
-                android:textOff="@string/field_show_on_map_hidden"
-                android:textOn="@string/field_show_on_map_shown" />
+                android:background="@drawable/selector_show_on_map"
+                android:checked="false"
+                android:textOff=" "
+                android:textOn=" " />
             
 			<Spinner
 			    android:id="@+id/spinner_accuracy"

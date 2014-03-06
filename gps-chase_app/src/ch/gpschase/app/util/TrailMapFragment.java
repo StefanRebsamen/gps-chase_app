@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -36,6 +37,7 @@ import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
 import com.google.android.gms.maps.GoogleMap.OnMapClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
+import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -130,7 +132,21 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		
 		// we provide an option menu
 		this.setHasOptionsMenu(true);
+	}
 
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
+		View view = super.onCreateView(inflater, container, savedInstanceState);
+
+		try {
+			MapsInitializer.initialize(getActivity());
+		}
+		catch (Exception ex) {
+			// ignore
+			Log.e("TrailMapFragment", "Error while initializing map", ex);
+		}
+		
 		// load images
 		iconNeutralFirstNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_first_normal);
 		iconNeutralFirstSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_neutral_first_selected);
@@ -142,13 +158,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		iconHitFirstSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_first_selected);
 		iconHitOtherNormal = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_other_normal);
 		iconHitOtherSelected = BitmapDescriptorFactory.fromResource(R.drawable.ic_cp_done_other_selected);
-	}
-
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
-		View view = super.onCreateView(inflater, container, savedInstanceState);
-
+				
 		// set background
 		view.setBackgroundResource(android.R.color.white);
 		

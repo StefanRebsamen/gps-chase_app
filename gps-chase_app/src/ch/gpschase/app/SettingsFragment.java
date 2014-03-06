@@ -59,7 +59,7 @@ public class SettingsFragment extends PreferenceFragment {
 	        lv.setPadding(0, 0, 0, 0);
 	    }
 	    // set background
-		view.setBackgroundResource(R.drawable.card_background);
+		view.setBackgroundResource(R.drawable.bg_item);
 		return view;
 	}	
 }

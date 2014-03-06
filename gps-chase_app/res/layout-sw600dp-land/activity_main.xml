@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:background="@drawable/gradient_background">
+    android:background="@drawable/bg_activity">
 
     <!-- The navigation drawer -->
     <ListView
@@ -11,16 +11,11 @@
         android:layout_width="200dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="@color/gray_very_light"
+        android:background="@drawable/nd_solid_hololight"
         android:choiceMode="singleChoice"
         android:divider="@android:color/transparent"
         android:dividerHeight="0dp" />
-    
-    <View
-        android:layout_width="2dp"
-        android:layout_height="match_parent"
-        android:background="@color/purple_light" />
-        
+            
     <!-- The main content view -->
     <FrameLayout
         android:id="@+id/content_frame"

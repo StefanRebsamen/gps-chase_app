@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">GPSchase</string>
+
+    <!-- general text -->
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Abbrechen</string>
+    <string name="dialog_close">Schliessen</string>
+    <string name="dialog_yes">Ja</string>
+    <string name="dialog_no">Nein</string>
+    <string name="dialog_title_error">Fehler</string>
+    
+    <!-- drawer related stuff -->
+    <string name="drawer_open">Öffnen</string>
+    <string name="drawer_close">Schliessen</string>    
+    <string name="drawer_section_trails">Spureh</string>
+    <string name="drawer_selectable_editable_trails">Editierbare Spuren</string>
+    <string name="drawer_selectable_downloaded_trails">Heruntergeladene Spuren</string>
+    <string name="drawer_selectable_cloud_trails">Spuren in Cloud</string>
+    <string name="drawer_section_general">Allgemein</string>
+    <string name="drawer_selectable_settings">Einstellungen</string>                            
+    <string name="drawer_selectable_website">Website</string>                            
+    
+    <string name="activity_title_edit_trail">Spur bearbeiten</string>
+    <string name="activity_title_trail_info">Spur Information</string>
+    <string name="activity_title_chase_trail">Spur verfolgen</string>           
+
+    <string name="tab_trail_overview">Übersicht</string>
+    <string name="tab_trail_area">Gebiet</string>
+    <string name="tab_trail_chases">Verfolgungen</string>
+    
+    <string name="section_trail_data">Daten</string>    
+    <string name="section_trail_measures">Masse</string>    
+    <string name="section_trail_general">Allgemein</string>    
+    
+    <string name="action_new_trail">Neue Spur</string>
+    <string name="action_upload_trail">Spur heraufladen</string>
+    <string name="action_download_trail">Spur herunterladen</string>
+    <string name="action_delete_trail">Spur löschen</string>
+    <string name="action_edit_trail">Spur bearbeiten</string>
+    <string name="action_protect_trail">Spur schützen</string>
+    <string name="action_share_trail">Spur teilen</string>
+    <string name="action_chase_trail">Spur verfolgen</string>
+    <string name="action_continue_chase">Verfolgung weiterfahren</string>
+    <string name="action_delete_chase">Verfolgung löschen</string>  
+    <string name="action_new_checkpoint">Posten hinzufügen</string>
+    <string name="action_reorder_checkpoint_backward">Zurück</string>
+    <string name="action_reorder_checkpoint_forward">Vor</string>
+    <string name="action_delete_checkpoint">Posten löschen</string>
+    <string name="action_new_image">Bild hinzufügen</string>
+    <string name="action_new_image_capture">Bild von Kamera hinzufügen</string>
+    <string name="action_new_image_import">Bild aus Gallerie hinzufügen</string>
+    <string name="action_delete_image">Bild löschen</string>    
+
+    <string name="context_menu_image_title">Bild</string>
+    
+    <string name="field_name">Name</string>
+    <string name="field_description">Beschreibung</string>    
+    <string name="field_id">ID</string>
+    <string name="field_uuid">UUID</string>
+    <string name="field_updated">Aktualisiert</string>
+    <string name="field_uploaded">Heraufgeladen</string>
+    <string name="field_downloaded">Heruntergeladen</string>        
+    <string name="field_password">Passwort</string>
+    <string name="field_password_confirmation">Passwort bestätigen</string>    
+    <string name="field_hint">Hinweis</string>
+    <string name="label_no_of_checkpoints">Anzahl Posten</string>    
+    <string name="label_trail_length">Gesamtlänge (Luftlinie)</string>            
+    
+    <string name="empty_text_chases">Keine Verfolgungen verfügbar</string>
+    <string name="empty_text_trails">Kein Spuren verfügar.\nErstelle eine neue (\'+\' icon) oder lade mittels Link eine herunter</string>
+    
+    <string name="dialog_delete_trail_title">Spur löschen</string>
+    <string name="dialog_delete_trail_message">Ausgewählte Spur löschen?</string>
+    <string name="dialog_share_trail_title">Spur teilen</string>
+    <string name="dialog_downloading">Lade herunter ...</string>
+    <string name="dialog_download_trail_error_message">Fehler während Herunterladen der Spur.</string>    
+    <string name="dialog_new_chase_player_hint">Spieler</string>
+    <string name="dialog_new_chase_default_player">Spieler</string>
+    <string name="dialog_delete_chase_message">Gewählte Verfolgung löschen?</string>
+    <string name="dialog_deleting">Lösche ...</string>
+    <string name="dialog_upload_trail_error_message">Fehler beim Heraufladen der Spur.</string>    
+    <string name="dialog_share_trail_error_message">Fehler beim Teilen der Spur.</string>    
+    <string name="dialog_delete_trail_error_message">Fehler beim Löschen der Spur.</string>           
+    <string name="dialog_set_password_button_unprotect">Schutz aufheben</string>
+    <string name="dialog_delete_checkpoint_message">Gewählten Posten löschen?</string>    
+    <string name="dialog_show_image_title">Bild</string>
+    <string name="dialog_delete_image_message">Bild löschen?</string>
+    <string name="dialog_add_image_error_message">Fehler beim Hinzufügen des Bildes.</string>    
+    <string name="dialog_uploading">Lade herauf ...</string>
+
+    <string name="toast_new_checkpoint">Klick auf Kart um einen Posten hinzuzufügen</string>
+    <string name="toast_chase_already_finished">Verfolgung ist bereits beendet und kann nicht weitergeführt werden</string>
+
+    <string name="share_trail_subject">Link zu GPSchase Spur \'%s\'</string>
+    <string name="share_trail_text">"Bitte verwende die Android App %1$s um die Spur \'%2$s\' unter %3$s herunterzuladen.</string>
+    <!-- Trail information -->
+
+    <string name="toast_finished_chase">Verfolgung ist beendet</string>
+    
+    <!-- Settings -->
+    <string name="pref_cat_view_title">Ansicht</string>
+    <string name="pref_cat_view_key">CAT_VIEW</string>    
+    <string name="pref_map_type_key">KEY_MAP_TYPE</string>
+    <string name="pref_map_type_title">Kartentyp</string>
+    <string name="pref_map_type_normal">Normal</string>
+		<string name="pref_map_type_satellite">Satellit</string>    
+		<string name="pref_map_type_hybrid">Hybrid</string>
+		<string name="pref_map_type_terrain">Gelände</string>
+
+    <string name="pref_cat_chase_title">Verfolgung</string>
+    <string name="pref_cat_chase_key">CAT_CHASE</string>
+    	
+		<string name="pref_keep_awake_key">KEY_KEEP_AWAKE</string>
+    <string name="pref_keep_awake_title">Aktiviert halten</string>
+    <string name="pref_keep_awake_summary">Gerät bleibt während Verfolgung aktiv</string>
+
+    <string name="pref_update_frequency_key">UPDATE_FREQUENCY</string>
+    <string name="pref_update_frequency_title">Aktualisierungs-Häufigkeit</string>
+    <string name="pref_update_frequency_summary">Häufigkeit zum Überprüfen auf Spur-Aktualisierungen</string>
+    <string name="pref_update_frequency_never">Nie</string>
+    <string name="pref_update_frequency_2">2 Minuten</string>
+    <string name="pref_update_frequency_5">5 Minuten</string>
+    <string name="pref_update_frequency_10">10 Minuten</string>
+    
+    <string name="pref_cat_data_title">Daten</string>
+    <string name="pref_cat_data_key">CAT_DATA</string>
+    <string name="pref_cleanup_key">KEY_CLEANUP</string>    
+    <string name="pref_cleanup_title">Aufräumen</string>    
+    <string name="pref_cleanup_summary">Löschen überflüssiger Daten-Dateien</string>
+    <string name="pref_cleanup_done">Aufräumen durchgeführt</string>
+    
+</resources>

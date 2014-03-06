@@ -3,7 +3,7 @@
     android:id="@+id/drawer_layout"    
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/gradient_background">
+    android:background="@drawable/bg_activity">
     
     <!-- The main content view -->
     <FrameLayout
@@ -18,7 +18,7 @@
         android:layout_width="200dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="@color/gray_very_light"
+        android:background="@drawable/nd_solid_hololight"
         android:choiceMode="singleChoice"
         android:divider="@android:color/transparent"
         android:dividerHeight="0dp"/>

@@ -212,7 +212,7 @@ public class EditTrailActivity extends Activity {
 		
 		// references to UI elements
 		private TextView textViewNo;
-		private Switch switchShowOnMap;
+		private ToggleButton toggleBtnShowOnMap;
 		private Spinner spinnerAccuracy;
 		private EditText editTextHint;
 		private LinearLayout layoutImages;
@@ -232,7 +232,7 @@ public class EditTrailActivity extends Activity {
 
 			// get references to UI elements
 			textViewNo = (TextView) view.findViewById(R.id.textView_checkpoint_no);
-			switchShowOnMap = (Switch) view.findViewById(R.id.switch_show_on_map);
+			toggleBtnShowOnMap = (ToggleButton) view.findViewById(R.id.toggleBtn_show_on_map);
 			spinnerAccuracy = (Spinner) view.findViewById(R.id.spinner_accuracy);
 			editTextHint = (EditText) view.findViewById(R.id.editText_hint);
 			layoutImages = (LinearLayout) view.findViewById(R.id.layout_images);
@@ -287,7 +287,7 @@ public class EditTrailActivity extends Activity {
 				}
 			});
 
-			switchShowOnMap.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			toggleBtnShowOnMap.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 				@Override
 				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 					// ignore if we are loading
@@ -374,12 +374,12 @@ public class EditTrailActivity extends Activity {
 			loading = true;
 			if (checkpoint != null) {
 				textViewNo.setText("#" + (checkpoint.getIndex() + 1));
-				switchShowOnMap.setChecked(checkpoint.showLocation);
+				toggleBtnShowOnMap.setChecked(checkpoint.showLocation);
 				editTextHint.setText(checkpoint.hint);				
 				spinnerAccuracy.setSelection(accuracyAdapter.getSelection(checkpoint.accuracy));
 			} else {
 				textViewNo.setText("#");
-				switchShowOnMap.setChecked(false);
+				toggleBtnShowOnMap.setChecked(false);
 				editTextHint.setText("");
 				spinnerAccuracy.setSelection(0);
 			}
@@ -427,8 +427,8 @@ public class EditTrailActivity extends Activity {
 			if (buttonDeleteCheckpoint != null) {
 				buttonDeleteCheckpoint.setVisibility(delete ? View.VISIBLE : View.INVISIBLE);
 			}			
-			if (switchShowOnMap != null) {
-				switchShowOnMap.setVisibility(backward ? View.VISIBLE : View.INVISIBLE);
+			if (toggleBtnShowOnMap != null) {
+				toggleBtnShowOnMap.setVisibility(backward ? View.VISIBLE : View.INVISIBLE);
 			}			
 		}
 
@@ -500,7 +500,7 @@ public class EditTrailActivity extends Activity {
 			}
 
 			// read back from UI
-			boolean showLocation = switchShowOnMap.isChecked();
+			boolean showLocation = toggleBtnShowOnMap.isChecked();
 			String hint = editTextHint.getText().toString();
 			int accuracy = (Integer)spinnerAccuracy.getSelectedItem();
 
@@ -920,11 +920,11 @@ public class EditTrailActivity extends Activity {
 			uploadTrail();
 			return true;
 			
-		case R.id.action_lock_trail:
+		case R.id.action_protect_trail:
 			// cancel adding checkpoint
 			addingCheckpoint = false;
 			// lock the trail
-			lockTrail(false);
+			protectTrail(false);
 			return true;
 			
 		}
@@ -1130,7 +1130,7 @@ public class EditTrailActivity extends Activity {
 	 * 
 	 * @param retry
 	 */
-	private void lockTrail(boolean retry) {
+	private void protectTrail(boolean retry) {
 
 		LinearLayout.LayoutParams lp; 
 		
@@ -1158,9 +1158,9 @@ public class EditTrailActivity extends Activity {
 		layout.addView(editText2);
 		
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle(R.string.action_lock_trail);
+		builder.setTitle(R.string.action_protect_trail);
 		builder.setView(layout);
-		builder.setIcon(R.drawable.ic_lock);
+		builder.setIcon(R.drawable.ic_protect);
 		builder.setCancelable(true);
 		builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface d, int whichButton) {
@@ -1180,12 +1180,12 @@ public class EditTrailActivity extends Activity {
 							trail.save(EditTrailActivity.this);
 						}
 						else {
-							lockTrail(true);
+							protectTrail(true);
 						}
 					}
 				});
 		if (!TextUtils.isEmpty(trail.password)) {
-			builder.setNeutralButton(R.string.dialog_set_password_button_unlock, new DialogInterface.OnClickListener() {
+			builder.setNeutralButton(R.string.dialog_set_password_button_unprotect, new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface d, int whichButton) {
 							// clear password in database
 							trail.password = null;

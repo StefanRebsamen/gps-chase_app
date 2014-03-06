@@ -20,7 +20,8 @@
     <string name="drawer_selectable_cloud_trails">Trails in cloud</string>
     <string name="drawer_section_general">General</string>
     <string name="drawer_selectable_settings">Settings</string>                            
-
+    <string name="drawer_selectable_website">Website</string>                            
+    
     <string name="activity_title_edit_trail">Edit trail</string>
     <string name="activity_title_trail_info">Trail information</string>
     <string name="activity_title_chase_trail">Chase trail</string>           
@@ -34,13 +35,15 @@
     <string name="section_trail_general">General</string>    
     
     <string name="action_new_trail">New trail</string>
-    <string name="action_upload_trail">Upload</string>
+    <string name="action_upload_trail">Upload trail</string>
     <string name="action_download_trail">Download trail</string>
     <string name="action_delete_trail">Delete trail</string>
     <string name="action_edit_trail">Edit trail</string>
-    <string name="action_lock_trail">Lock trail</string>
+    <string name="action_protect_trail">Protect trail</string>
     <string name="action_share_trail">Share trail</string>
-
+    <string name="action_chase_trail">Chase trail</string>
+    <string name="action_continue_chase">Continue chase</string>
+    <string name="action_delete_chase">Delete chase</string>  
     <string name="action_new_checkpoint">Add checkpoint</string>
     <string name="action_reorder_checkpoint_backward">Backward</string>
     <string name="action_reorder_checkpoint_forward">Forward</string>
@@ -49,9 +52,6 @@
     <string name="action_new_image_capture">Capture image from Camera</string>
     <string name="action_new_image_import">Import image from Gallery</string>
     <string name="action_delete_image">Delete image</string>    
-    <string name="action_chase_trail">Chase trail</string>
-    <string name="action_continue_chase">Continue chase</string>
-    <string name="action_delete_chase">Delete chase</string>
 
     <string name="context_menu_image_title">Image</string>
     
@@ -65,8 +65,6 @@
     <string name="field_password">Password</string>
     <string name="field_password_confirmation">Confirm password</string>    
     <string name="field_hint">Hint</string>
-    <string name="field_show_on_map_shown">Shown</string>    
-    <string name="field_show_on_map_hidden">Hidden</string>    
     <string name="label_no_of_checkpoints">No. of checkpoints</string>    
     <string name="label_trail_length">Total length (air-line)</string>            
     
@@ -85,7 +83,7 @@
     <string name="dialog_upload_trail_error_message">An error occurred while uploading the trail.</string>    
     <string name="dialog_share_trail_error_message">An error occurred while sharing the trail.</string>    
     <string name="dialog_delete_trail_error_message">An error occurred while deleting the trail.</string>           
-    <string name="dialog_set_password_button_unlock">Unlock</string>
+    <string name="dialog_set_password_button_unprotect">Unprotect</string>
     <string name="dialog_delete_checkpoint_message">Delete the selected checkpoint?</string>    
     <string name="dialog_show_image_title">Image</string>
     <string name="dialog_delete_image_message">Delete the image?</string>
@@ -95,8 +93,8 @@
     <string name="toast_new_checkpoint">Click on map to add new checkpoint</string>
     <string name="toast_chase_already_finished">Chase is already finished and can\'t be continued</string>
 
-    <string name="share_trail_message">By following the appended link, you will be able to play a great game!</string>
-    
+    <string name="share_trail_subject">Link to GPSchase trail \'%s\'</string>
+    <string name="share_trail_text">"Please use the Android app %1$s to download the trail \'%2$s\' at %3$s</string>
     <!-- Trail information -->
 
     <string name="toast_finished_chase">Chase has been finished</string>
@@ -107,14 +105,14 @@
     <string name="pref_map_type_key">KEY_MAP_TYPE</string>
     <string name="pref_map_type_title">Map type</string>
     <string name="pref_map_type_normal">Normal</string>
-	<string name="pref_map_type_satellite">Satellite</string>    
-	<string name="pref_map_type_hybrid">Hybrid</string>
-	<string name="pref_map_type_terrain">Terrain</string>
+		<string name="pref_map_type_satellite">Satellite</string>    
+		<string name="pref_map_type_hybrid">Hybrid</string>
+		<string name="pref_map_type_terrain">Terrain</string>
 
     <string name="pref_cat_chase_title">Chase</string>
     <string name="pref_cat_chase_key">CAT_CHASE</string>
     	
-	<string name="pref_keep_awake_key">KEY_KEEP_AWAKE</string>
+		<string name="pref_keep_awake_key">KEY_KEEP_AWAKE</string>
     <string name="pref_keep_awake_title">Keep awake</string>
     <string name="pref_keep_awake_summary">Keeps the device awake during a chase</string>
 

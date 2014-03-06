@@ -17,11 +17,11 @@
      </item>
 
     <item
-         android:id="@+id/action_lock_trail"
-         android:icon="@drawable/ic_lock"
+         android:id="@+id/action_protect_trail"
+         android:icon="@drawable/ic_protect"
          android:showAsAction="ifRoom|withText"
          android:orderInCategory="20"
-         android:title="@string/action_lock_trail">
+         android:title="@string/action_protect_trail">
      </item>
     
 </menu>

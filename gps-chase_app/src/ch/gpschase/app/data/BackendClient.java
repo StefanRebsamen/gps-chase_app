@@ -202,8 +202,8 @@ public class BackendClient {
 		}
 	}
 
-	private final static Uri BASE_URI = Uri.parse("http://192.168.0.20:5000/api");
-	//private final static Uri BASE_URI = Uri.parse("http://www-gpschase.rhcloud.com/api");
+	//private final static Uri BASE_URI = Uri.parse("http://192.168.0.20:5000/api");
+	private final static Uri BASE_URI = Uri.parse("http://www.gpschase.ch/api");
 
 	// field or parameter name for token
 	private static final String PARAM_TOKEN = "token";
