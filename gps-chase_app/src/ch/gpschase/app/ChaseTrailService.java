@@ -1,35 +1,25 @@
 package ch.gpschase.app;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
-import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.location.LocationRequest;
-
-import ch.gpschase.app.data.Chase;
-import ch.gpschase.app.data.Checkpoint;
-import ch.gpschase.app.data.Hit;
-import ch.gpschase.app.data.Image;
-import ch.gpschase.app.data.Trail;
 import android.app.Service;
-import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Intent;
-import android.database.Cursor;
 import android.location.Location;
-
-import com.google.android.gms.location.LocationListener;
-
-import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import ch.gpschase.app.data.Chase;
+import ch.gpschase.app.data.Checkpoint;
+import ch.gpschase.app.data.Hit;
+import ch.gpschase.app.data.Trail;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
 
 /**
  * Service which does the real work behind chasing a trail. Acts as a lasting
@@ -51,6 +41,7 @@ public class ChaseTrailService extends Service {
 		public void onFinished();
 	}
 
+	
 	/**
 	 * 
 	 */
@@ -135,6 +126,7 @@ public class ChaseTrailService extends Service {
 		}
 	}
 
+
 	/**
 	 * 
 	 */
@@ -162,6 +154,7 @@ public class ChaseTrailService extends Service {
 	// location client (used to receive updates about current position)
 	private LocationClient locationClient;
 
+			
 	@Override
 	public void onCreate() {
 		Log.d("ChaseService", "onCreate");
@@ -183,12 +176,12 @@ public class ChaseTrailService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d("ChaseService", "onStartCommand");
 
-		// get chase id from intent extra
-		long trailId = intent.getLongExtra(ChaseTrailActivity.INTENT_EXTRA_TRAILID, 0);
-		long chaseId = intent.getLongExtra(ChaseTrailActivity.INTENT_EXTRA_CHASEID, 0);
-
 		// load data
 		try {
+			// get chase id from intent extra
+			long trailId = intent.getLongExtra(ChaseTrailActivity.INTENT_EXTRA_TRAILID, 0);		
+			long chaseId = intent.getLongExtra(ChaseTrailActivity.INTENT_EXTRA_CHASEID, 0);
+	
 			// load chase
 			load(trailId, chaseId);
 			
@@ -321,7 +314,7 @@ public class ChaseTrailService extends Service {
 		if (currentCheckpoint != null && locationClient.isConnected()) {
 			Location lastLocation = locationClient.getLastLocation();
 			if (lastLocation != null) {
-				return lastLocation.distanceTo(currentCheckpoint.location);
+				return lastLocation.distanceTo(currentCheckpoint.location);				
 			} else {
 				return Float.NaN;
 			}
@@ -330,6 +323,24 @@ public class ChaseTrailService extends Service {
 		}
 	}
 
+	/**
+	 * Returns the bearing to the next checkpoint
+	 * 
+	 * @return bearing in degrees or Float.NaN if not available
+	 */
+	public float getBearingToNextCheckpoint() {
+		if (currentCheckpoint != null && locationClient.isConnected()) {
+			Location lastLocation = locationClient.getLastLocation();
+			if (lastLocation != null) {
+				return lastLocation.bearingTo(currentCheckpoint.location);				
+			} else {
+				return Float.NaN;
+			}
+		} else {
+			return Float.NaN;
+		}
+	}
+	
 	/**
 	 * Return the checkpoints we're chasing
 	 * 

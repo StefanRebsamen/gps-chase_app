@@ -13,7 +13,12 @@
             android:summary="@string/pref_keep_awake_summary"
             android:title="@string/pref_keep_awake_title" >
         </CheckBoxPreference>
-    </PreferenceCategory>
+        <CheckBoxPreference
+            android:key="@string/pref_direction_indicator_key"
+            android:summary="@string/pref_direction_indicator_summary"
+            android:title="@string/pref_direction_indicator_title" >
+        </CheckBoxPreference>
+        </PreferenceCategory>
     
     <PreferenceCategory
         android:key="@string/pref_cat_data_key"

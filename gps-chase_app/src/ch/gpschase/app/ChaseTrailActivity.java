@@ -12,6 +12,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Paint.Cap;
+import android.graphics.Paint.Style;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -33,10 +41,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Surface;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -66,6 +76,86 @@ public class ChaseTrailActivity extends Activity {
 	// determines if a mock location is set by cliking on the map in debug mode
 	// Needes the permission ACCESS_MOCK_LOCATION
 	private final boolean setMockLocations = false;
+	
+	/**
+	 * 
+	 */
+	private class SensorCallback implements SensorEventListener {
+
+		float[] acceleration = { 0, 0, 0 };
+		float[] magnetic = { 0, 0, 0 };
+
+		/*
+		 * time smoothing constant for low-pass filter 0 ≤ alpha ≤ 1 ; a smaller
+		 * value basically means more smoothing See:
+		 * http://en.wikipedia.org/wiki
+		 * /Low-pass_filter#Discrete-time_realization
+		 */
+		static final float ALPHA = 0.15f;
+
+		/**
+		 * @see http
+		 *      ://en.wikipedia.org/wiki/Low-pass_filter#Algorithmic_implementation
+		 * @see http
+		 *      ://developer.android.com/reference/android/hardware/SensorEvent
+		 *      .html#values
+		 */
+		protected float[] lowPass(float[] input, float[] output) {
+			if (output == null)
+				return input;
+
+			for (int i = 0; i < input.length; i++) {
+				output[i] = output[i] + ALPHA * (input[i] - output[i]);
+			}
+			return output;
+		}
+
+		@Override
+		public void onAccuracyChanged(Sensor arg0, int arg1) {
+		}
+
+		@Override
+		public void onSensorChanged(SensorEvent event) {
+			// accelerometer?
+			if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+				acceleration = lowPass(event.values, acceleration);
+			}
+			// geomagnetic sensor?
+			if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+				magnetic = lowPass(event.values, magnetic);
+			}
+			// both set?
+			if (acceleration != null && magnetic != null) {
+				float R[] = new float[9];
+				float I[] = new float[9];
+				boolean success = SensorManager.getRotationMatrix(R, I, acceleration, magnetic);
+				if (success) {
+
+					// compensate device orientation
+					// http://android-developers.blogspot.de/2010/09/one-screen-turn-deserves-another.html
+					float[] remappedR = new float[9];
+					switch (getWindowManager().getDefaultDisplay().getRotation()) {
+					case Surface.ROTATION_0:
+						SensorManager.remapCoordinateSystem(R, SensorManager.AXIS_X, SensorManager.AXIS_Y, remappedR);
+						break;
+					case Surface.ROTATION_90:
+						SensorManager.remapCoordinateSystem(R, SensorManager.AXIS_Y, SensorManager.AXIS_MINUS_X, remappedR);
+						break;
+					case Surface.ROTATION_180:
+						SensorManager.remapCoordinateSystem(R, SensorManager.AXIS_MINUS_X, SensorManager.AXIS_MINUS_Y, remappedR);
+						break;
+					case Surface.ROTATION_270:
+						SensorManager.remapCoordinateSystem(R, SensorManager.AXIS_MINUS_Y, SensorManager.AXIS_X, remappedR);
+						break;
+					}
+
+					float orientation[] = new float[3];
+					SensorManager.getOrientation(remappedR, orientation);
+					deviceBearing = orientation[0] * 360 / (2 * 3.14159f);
+				}
+			}
+		}
+	}
 	
 	/**
 	 * 
@@ -234,6 +324,11 @@ public class ChaseTrailActivity extends Activity {
 
 			public void run() {
 				textViewTime.setText(duration);
+
+				// force indicator to be redrawn (if it exists)
+				if (directionIndicator != null) {
+					directionIndicator.invalidate();
+				}
 			}
 		}
 
@@ -313,6 +408,7 @@ public class ChaseTrailActivity extends Activity {
 						}
 					}
 				}
+			
 				
 				// wait a second
 				try {
@@ -446,15 +542,58 @@ public class ChaseTrailActivity extends Activity {
 				}
 			}
 		}
-		
-		
-	
-		
+			
 	}
 
+	/**
+	 * 
+	 */
+	public class DirectionIndicatorView extends View {
+		Paint paint = new Paint();
+
+		public DirectionIndicatorView(Context context) {
+			super(context);
+			paint.setColor(getResources().getColor(R.color.purple_light));
+			paint.setStyle(Style.STROKE);
+			paint.setStrokeCap(Cap.ROUND);
+			paint.setStrokeWidth(40);
+			paint.setAntiAlias(true);
+		};
+
+		protected void onDraw(Canvas canvas) {			
+						
+			if (Float.isNaN(deviceBearing))
+				return;
+						
+			if (service == null)
+				return;
+
+			float bearingToNextCp = service.getBearingToNextCheckpoint();
+			if (Float.isNaN(bearingToNextCp))
+				return;
+			
+			int cX = getWidth() / 2;
+			int cY = getHeight() / 2;
+			
+			if (cY > cX)
+				cY = cX;
+			
+			int r = (int)(Math.min(getWidth()/2,  getHeight()/2) * 0.8);
+			int a = (int)(r * 0.4);	// arrow size 
+			
+			canvas.rotate(-deviceBearing + bearingToNextCp, cX, cY);
+			canvas.drawLine(cX, cY+r, cX, cY-r, paint);
+			canvas.drawLine(cX, cY-r, cX-a, cY-r+a, paint);
+			canvas.drawLine(cX, cY-r, cX+a, cY-r+a, paint);
+			
+		}
+	}
+	
 	// map fragment to be reused
 	private TrailMapFragment map;
 
+	private DirectionIndicatorView directionIndicator;
+	
 	// references to UI elements
 	private TextView textViewTime;
 	private TextView textViewProgress;
@@ -464,6 +603,7 @@ public class ChaseTrailActivity extends Activity {
 	// reference to case service
 	private ChaseTrailService service;
 
+	// reference to the location manager
 	private LocationManager locationManager;
 
 	// mock location provider and resource (just for debugging purposes)
@@ -484,7 +624,14 @@ public class ChaseTrailActivity extends Activity {
 
 	// 
 	private ViewCheckpointFragment checkpointView;	
+	
+	// reference to the sensor manager
+	private SensorManager sensorManager;
 
+	private SensorCallback sensorCallback = new SensorCallback();
+	
+	// current bearing of device
+	private float deviceBearing = Float.NaN; 
 
 	/**
 	 * Open the activity for the specified chase
@@ -556,7 +703,16 @@ public class ChaseTrailActivity extends Activity {
 		textViewTime = (TextView) findViewById(R.id.textView_Time);
 		textViewProgress = (TextView) findViewById(R.id.textView_checkpoint_progress);
 		progressBar = (ProgressBar) findViewById(R.id.progressBar);
-
+		
+		// show direction indicator (if wanted)
+		if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.pref_direction_indicator_key), false)) {		
+			FrameLayout frameLayout = (FrameLayout)findViewById(R.id.frameLayout);
+			directionIndicator = new DirectionIndicatorView(this);
+			frameLayout.addView(directionIndicator, 1);
+			// get reference to sensor manager
+			sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+		}
+		
 		// create and add fragments (if not recreated)
 		FragmentTransaction ft = getFragmentManager().beginTransaction();
 		
@@ -584,15 +740,22 @@ public class ChaseTrailActivity extends Activity {
 		if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(getString(R.string.pref_keep_awake_key), false)) {		
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		}
+		
+		Log.d("ChaseTrailActivity", "starting Service ...");
 
-		// register and bind service
-		bindService(new Intent(this, ChaseTrailService.class),
-				chaseServiceConnection, Context.BIND_AUTO_CREATE);		
 		// start service. Pass id of trail as intent extra
 		Intent intent = new Intent(Intent.ACTION_DEFAULT, getIntent().getData(), this,  ChaseTrailService.class);
 		intent.putExtra(INTENT_EXTRA_TRAILID, getIntent().getLongExtra(INTENT_EXTRA_TRAILID, 0));
 		intent.putExtra(INTENT_EXTRA_CHASEID, getIntent().getLongExtra(INTENT_EXTRA_CHASEID, 0));
-		startService(intent);		
+		startService(intent);
+		Log.d("ChaseTrailActivity", "Service started");
+		
+		Log.d("ChaseTrailActivity", "Binding Service ...");
+		// register and bind service
+		bindService(new Intent(this, ChaseTrailService.class),
+						chaseServiceConnection, Context.BIND_AUTO_CREATE);
+		
+		Log.d("ChaseTrailActivity", "onCreate done");
 	}
 
 	@Override
@@ -668,6 +831,28 @@ public class ChaseTrailActivity extends Activity {
 		}
 	}
 
+	@Override
+	protected void onResume() {
+		super.onResume();
+		// register sensor callbacks
+		if (sensorManager != null) {
+			Sensor accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+		    sensorManager.registerListener(sensorCallback, accelerometer, 500 * 1000);
+			Sensor magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);		
+		    sensorManager.registerListener(sensorCallback, magnetometer, 500 * 1000);
+		}
+	}
+		 
+	@Override
+	protected void onPause() {
+		super.onPause();
+		// unregister sensor callback
+		if (sensorManager != null) {
+			sensorManager.unregisterListener(sensorCallback);
+			deviceBearing = Float.NaN;
+		}
+	}
+		  
 	@Override
 	public void onStop() {
 		super.onStop();

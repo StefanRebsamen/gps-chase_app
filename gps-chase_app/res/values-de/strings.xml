@@ -116,6 +116,10 @@
     <string name="pref_keep_awake_title">Aktiviert halten</string>
     <string name="pref_keep_awake_summary">Gerät bleibt während Verfolgung aktiv</string>
 
+		<string name="pref_direction_indicator_key">KEY_DIRECTION_INDICATOR</string>
+    <string name="pref_direction_indicator_title">Richtungsanzeige</string>
+    <string name="pref_direction_indicator_summary">Zeigt die Richtung zum nächsten Posten an</string>
+    
     <string name="pref_update_frequency_key">UPDATE_FREQUENCY</string>
     <string name="pref_update_frequency_title">Aktualisierungs-Häufigkeit</string>
     <string name="pref_update_frequency_summary">Häufigkeit zum Überprüfen auf Spur-Aktualisierungen</string>

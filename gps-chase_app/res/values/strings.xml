@@ -116,6 +116,10 @@
     <string name="pref_keep_awake_title">Keep awake</string>
     <string name="pref_keep_awake_summary">Keeps the device awake during a chase</string>
 
+		<string name="pref_direction_indicator_key">KEY_DIRECTION_INDICATOR</string>
+    <string name="pref_direction_indicator_title">Direction indicator</string>
+    <string name="pref_direction_indicator_summary">Show a direction indicator to help finding the next checkpoint</string>
+    
     <string name="pref_update_frequency_key">UPDATE_FREQUENCY</string>
     <string name="pref_update_frequency_title">Update frequency</string>
     <string name="pref_update_frequency_summary">Frequency to check for trail update</string>

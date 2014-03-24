@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ch.gpschase.app"
-    android:versionCode="1"
-    android:versionName="1.0" >
+    android:versionCode="2"
+    android:versionName="1.2" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -31,7 +31,7 @@
         android:theme="@style/Theme.Hololight" >
 
         <activity
-            android:name="ch.gpschase.app.MainActivity"
+            android:name=".MainActivity"
             android:label="@string/app_name"
             android:windowSoftInputMode="stateHidden|adjustResize">
             <intent-filter>
@@ -76,7 +76,7 @@
             android:value="AIzaSyCUacrr7rZWj0FrUThL0nsWysL1X_lpNWE" />
 
         <provider
-            android:name="ch.gpschase.app.data.Provider"
+            android:name=".data.Provider"
             android:authorities="ch.gpschase.app.data.Trails"
             android:exported="false" />
     </application>
