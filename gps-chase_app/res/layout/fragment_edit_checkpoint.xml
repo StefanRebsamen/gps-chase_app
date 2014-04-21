@@ -60,14 +60,20 @@
 			
 	        <EditText
 	            android:id="@+id/editText_hint"
-	            android:layout_width="match_parent"
+	            android:layout_width="wrap_content"
 	            android:layout_height="wrap_content"
 	            android:layout_gravity="center_vertical"
+	            android:layout_weight="1"
+	            android:drawableBottom="@color/green_dark"
+	            android:drawableLeft="@color/gray_shadow"
+	            android:drawableRight="@color/gray_very_light"
+	            android:drawableTop="@color/gray_light"
 	            android:ems="10"
 	            android:hint="@string/field_hint"
 	            android:inputType="textCapSentences|textMultiLine"
-	            android:maxLines="6" />
-
+	            android:maxLines="6"
+	            android:minLines="2" />
+	        	        
         </LinearLayout>
 	        
         <LinearLayout
@@ -82,14 +88,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
+                android:minWidth="48dip"
                 android:src="@drawable/ic_new_image"
                 android:text="Button" />
 
             <HorizontalScrollView
                 android:id="@+id/scrollView_images"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical" >
+                android:layout_gravity="center_vertical"
+                android:layout_weight="1" >
 
                 <LinearLayout
                     android:id="@+id/layout_images"
@@ -98,6 +106,15 @@
                     android:orientation="horizontal" >
                 </LinearLayout>
             </HorizontalScrollView>
+
+            <ImageButton
+                android:id="@+id/button_speak"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="48dip"
+                android:src="@drawable/ic_speak" />
+
         </LinearLayout>
 
     </LinearLayout>
@@ -106,14 +123,12 @@
         style="@color/gray"
         android:layout_width="1dp"
         android:layout_height="match_parent"
-        android:layout_marginBottom="4dp"
-        android:layout_marginLeft="4dp"
-        android:layout_marginTop="4dp"
+        android:layout_margin="4dp"
         android:background="@color/gray_dark" />
     
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical" >
 
         <ImageButton
@@ -121,6 +136,7 @@
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="48dip"
             android:src="@drawable/ic_up" />
 
         <ImageButton
@@ -128,14 +144,22 @@
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="48dip"
             android:src="@drawable/ic_down" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
 
         <ImageButton
             android:id="@+id/button_delete_checkpoint"
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="48dip"
             android:src="@drawable/ic_delete" />
+
     </LinearLayout>
 
 </LinearLayout>

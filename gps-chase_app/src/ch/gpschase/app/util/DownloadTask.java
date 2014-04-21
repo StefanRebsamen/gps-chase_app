@@ -1,7 +1,5 @@
 package ch.gpschase.app.util;
 
-import java.util.UUID;
-
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;

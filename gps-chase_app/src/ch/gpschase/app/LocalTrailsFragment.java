@@ -1,9 +1,6 @@
 package ch.gpschase.app;
 
 import java.util.List;
-import java.util.UUID;
-
-import com.google.android.gms.maps.GoogleMap.InfoWindowAdapter;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -24,11 +21,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 import ch.gpschase.app.data.BackendClient;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.util.DownloadTask;
 import ch.gpschase.app.util.SelectableListFragment;
 import ch.gpschase.app.util.TrailActions;
 

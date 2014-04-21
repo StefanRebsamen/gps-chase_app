@@ -4,10 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.PolygonOptions;
-
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -19,18 +15,14 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
-import android.support.v4.app.NavUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import ch.gpschase.app.data.Chase;
@@ -39,6 +31,10 @@ import ch.gpschase.app.data.Trail;
 import ch.gpschase.app.util.SelectableListFragment;
 import ch.gpschase.app.util.TrailActions;
 import ch.gpschase.app.util.TrailMapFragment;
+
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.PolygonOptions;
 
 /**
  * Activity to show information about a trail
@@ -227,7 +223,7 @@ public class TrailInfoActivity extends Activity {
 
 			// several checkpoints?
 			if (locations.size() > 1) {
-				// draw a rectangle to show region. Add a bit overhead, so the start marker isn't right at the edgeare
+				// draw a rectangle to show region. Add a bit overhead, so the start marker isn't right at the edge
 				LatLngBounds bounds =  boundsBuilder.build();
 				PolygonOptions rectOptions = new PolygonOptions();
 				double latOverhead = Math.abs(bounds.northeast.latitude - bounds.southwest.latitude) * 0.05; 

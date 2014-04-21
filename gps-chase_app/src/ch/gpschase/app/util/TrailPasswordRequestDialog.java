@@ -8,7 +8,6 @@ import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import ch.gpschase.app.EditTrailActivity;
 import ch.gpschase.app.R;
 import ch.gpschase.app.data.Trail;
 

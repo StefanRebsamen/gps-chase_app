@@ -1,12 +1,8 @@
 package ch.gpschase.app.util;
 
 import android.app.AlertDialog;
-import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.net.Uri;
 import android.widget.EditText;
 import ch.gpschase.app.ChaseTrailActivity;
 import ch.gpschase.app.R;

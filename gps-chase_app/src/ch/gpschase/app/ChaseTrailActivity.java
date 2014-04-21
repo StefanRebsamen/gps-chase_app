@@ -35,7 +35,6 @@ import android.os.Vibrator;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceManager;
-import android.support.v4.app.NavUtils;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -47,6 +46,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -58,6 +58,7 @@ import ch.gpschase.app.data.Image;
 import ch.gpschase.app.data.ImageFileManager;
 import ch.gpschase.app.data.Trail;
 import ch.gpschase.app.util.DownloadTask;
+import ch.gpschase.app.util.TextSpeaker;
 import ch.gpschase.app.util.TrailMapFragment;
 import ch.gpschase.app.util.ViewImageDialog;
 
@@ -412,7 +413,7 @@ public class ChaseTrailActivity extends Activity {
 				
 				// wait a second
 				try {
-					Thread.sleep(1000);
+					Thread.sleep(500);
 				} catch (InterruptedException e) {
 					// nothing to worry about
 				}
@@ -424,25 +425,17 @@ public class ChaseTrailActivity extends Activity {
 	/**
 	 * 
 	 */
-	public static class ViewCheckpointFragment extends Fragment {
-		
+	public static class ViewCheckpointFragment extends Fragment implements TextSpeaker.Listener {
+	
 		// reference to the service
-		ChaseTrailService service;
+		private ChaseTrailService service;
 		
-		
-		/**
-		 * 	
-		 * @param service
-		 */
-		public void setService(ChaseTrailService service) {
-			if (service == null)
-				throw new  IllegalArgumentException();
-			
-			this.service = service;
-		}
+		// TextSpeaker instance
+		private TextSpeaker textSpeaker;		
 			
 		// references to UI elements
 		private TextView textViewHint;
+		private ImageButton buttonSpeak;
 		private TextView textViewNo;
 		private ImageView imageViewShowLocation;
 		private TextView textViewDistance;
@@ -456,19 +449,56 @@ public class ChaseTrailActivity extends Activity {
 			
 			// get references to UI elements
 			textViewHint = (TextView)view.findViewById(R.id.textView_checkpoint_hint);
+			buttonSpeak = (ImageButton) view.findViewById(R.id.button_speak);
 			textViewNo = (TextView)view.findViewById(R.id.textView_checkpoint_no);
 			imageViewShowLocation = (ImageView)view.findViewById(R.id.imageView_show_location);
 			textViewDistance = (TextView)view.findViewById(R.id.textView_distance);
 			layoutImages = (LinearLayout)view.findViewById(R.id.layout_images);		
-						
+									
+			// init TTS
+			textSpeaker = new TextSpeaker(getActivity(), this);
+			
+			buttonSpeak.setOnClickListener(new OnClickListener() {				
+				@Override
+				public void onClick(View v) {
+					textSpeaker.speak(textViewHint.getText().toString());
+				}
+			});
+
 			updateHintAndImages();
 			updateDistance(Float.NaN);		
 			
 			return view;			
 		}
+
+		@Override
+	    public void onDestroy() {
+			textSpeaker.shutdown();
+	        super.onDestroy();			
+	    }
+
+		/**
+		 * callback from TTS
+		 */
+		@Override
+		public void onSpeakerInitialized(boolean available) {
+			// hide button if not visible
+			buttonSpeak.setVisibility(available && textViewHint.getText().length() > 0 ? View.VISIBLE : View.GONE);			
+		}
+
+		/**
+		 * 	
+		 * @param service
+		 */
+		public void setService(ChaseTrailService service) {
+			if (service == null)
+				throw new  IllegalArgumentException();
+			
+			this.service = service;
+		}
 		
 		/**
-		 * 
+		 * Update hint and image display
 		 */
 		private void updateHintAndImages() {
 						
@@ -529,9 +559,16 @@ public class ChaseTrailActivity extends Activity {
 				textViewNo.setText("");
 				imageViewShowLocation.setImageResource(android.R.color.transparent);
 				layoutImages.removeAllViews();			
-			}				
-		}
+			}
 			
+			// hide speak button if not available or no text
+			buttonSpeak.setVisibility(textSpeaker.isAvailable() && textViewHint.getText().length() > 0 ? View.VISIBLE : View.GONE);			
+		}
+		
+		/**
+		 * Updates the distance display
+		 * @param distance
+		 */
 		private void updateDistance(float distance) {
 			if (textViewDistance != null) {
 				// format distance
@@ -886,7 +923,7 @@ public class ChaseTrailActivity extends Activity {
 			@Override
 			public void run() {
 				// start from scratch
-				map.clearCheckpoints();
+				map.clear();
 
 				Iterable<Checkpoint> checkpoints = null;
 				if (service != null )

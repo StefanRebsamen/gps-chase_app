@@ -10,7 +10,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
-import android.location.Location;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -23,11 +22,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import ch.gpschase.app.R;
-import ch.gpschase.app.R.color;
-import ch.gpschase.app.R.drawable;
-import ch.gpschase.app.R.id;
-import ch.gpschase.app.R.menu;
-import ch.gpschase.app.R.string;
 import ch.gpschase.app.data.Checkpoint;
 
 import com.google.android.gms.maps.CameraUpdate;
@@ -170,7 +164,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		// set map type
 		map.setMapType(getMapType());
 
-		// we need to knwo when the layout is done
+		// we need to know when the layout is done
 		map.setOnCameraChangeListener(new OnCameraChangeListener() {
 
 			@Override
@@ -263,6 +257,15 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 		traiLineColor = getResources().getColor(R.color.purple_dark);
 	}
 
+	@Override
+	public void onDestroyView() {
+		
+		// clear everything
+		clear();
+		
+		super.onDestroyView();
+	}
+	
 	@Override
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		// inflate menu
@@ -536,7 +539,7 @@ public class TrailMapFragment extends com.google.android.gms.maps.MapFragment im
 	/**
 	 * Removes all points
 	 */
-	public void clearCheckpoints() {
+	public void clear() {
 		for (Point p : points) {
 			if (p.marker != null) {
 				p.marker.remove();

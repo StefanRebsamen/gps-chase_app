@@ -1,7 +1,5 @@
 package ch.gpschase.app.util;
 
-import java.util.UUID;
-
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -9,10 +7,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
+import ch.gpschase.app.R;
 import ch.gpschase.app.data.BackendClient;
 import ch.gpschase.app.data.Trail;
-import ch.gpschase.app.EditTrailActivity;
-import ch.gpschase.app.R;
 
 	/**
 	 * An asynchronous task to upload to specified trail
@@ -87,7 +84,6 @@ import ch.gpschase.app.R;
 				Uri link = TrailDownloadLink.createDownloadLink(trail);							
 								
 				// send through any app that is capable 
-				CharSequence appName = context.getResources().getText(R.string.app_name);
 				Intent sendIntent = new Intent();
 				sendIntent.setAction(Intent.ACTION_SEND);
 				sendIntent.putExtra(Intent.EXTRA_SUBJECT, context.getResources().getString(R.string.share_trail_subject, trail.name));

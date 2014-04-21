@@ -1,12 +1,9 @@
 package ch.gpschase.app.data;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-
-import com.google.android.gms.internal.cg;
 
 import android.content.ContentUris;
 import android.content.ContentValues;

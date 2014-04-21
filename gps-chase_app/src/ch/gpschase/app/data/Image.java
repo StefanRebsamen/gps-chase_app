@@ -1,16 +1,13 @@
 package ch.gpschase.app.data;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.UUID;
 
-import ch.gpschase.app.App;
-import android.app.Application;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import ch.gpschase.app.App;
 
 /**
  * DTO for an image

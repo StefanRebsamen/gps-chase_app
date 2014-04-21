@@ -7,17 +7,15 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ch.gpschase.app.App;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.media.ExifInterface;
 import android.media.ThumbnailUtils;
-import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
+import ch.gpschase.app.App;
 
 /**
  * Manage the image.

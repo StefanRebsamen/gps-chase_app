@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -75,7 +74,6 @@ public class Chase extends Item {
 	 */
 	protected static Chase load(Context context, Trail trail, Cursor cursor) {
 		
-		long trailId = cursor.getLong(Contract.Chases.READ_PROJECTION_TRAIL_ID_INDEX);		
 		Chase chase = new Chase(trail);
 
 		chase.setId(cursor.getLong(Contract.Chases.READ_PROJECTION_ID_INDEX));

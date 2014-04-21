@@ -16,22 +16,17 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.v4.app.NavUtils;
-import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -39,10 +34,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
-import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
@@ -50,7 +42,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -59,6 +50,7 @@ import ch.gpschase.app.data.Image;
 import ch.gpschase.app.data.ImageFileManager;
 import ch.gpschase.app.data.Trail;
 import ch.gpschase.app.util.HashUtils;
+import ch.gpschase.app.util.TextSpeaker;
 import ch.gpschase.app.util.TrailMapFragment;
 import ch.gpschase.app.util.TrailPasswordRequestDialog;
 import ch.gpschase.app.util.UploadTask;
@@ -66,7 +58,6 @@ import ch.gpschase.app.util.ViewImageDialog;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.PolygonOptions;
 
 /**
  * Activity to edit a trail
@@ -83,7 +74,7 @@ public class EditTrailActivity extends Activity {
 	/**
 	 * Fragment to edit a single checkpoint
 	 */
-	public static class EditCheckpointFragment extends Fragment {
+	public static class EditCheckpointFragment extends Fragment implements TextSpeaker.Listener {
 
 		// request codes used to iddentify results from other apps
 		private static final int REQUEST_CODE_CAPTURE_IMAGE = 1;
@@ -160,10 +151,6 @@ public class EditTrailActivity extends Activity {
 		    protected ContextMenuInfo getContextMenuInfo() {
 		        return contextMenuInfo;
 		    }
-
-		    public boolean isContextView(ContextMenuInfo menuInfo) {
-		        return menuInfo == (ContextMenuInfo)contextMenuInfo;
-		    }
 		    
 		    /**
 		     * ContextMenuInfo for ImageView
@@ -197,10 +184,7 @@ public class EditTrailActivity extends Activity {
 		}
 
 		// indicates that we're currently loading data into UI elements
-		boolean loading = false;
-		
-		// list of possible choices
-		private final List<String> accuracyChoices = new ArrayList<String>();
+		boolean loading = false;		
 		
 		// listener for callbacks
 		private Listener listener;
@@ -217,13 +201,17 @@ public class EditTrailActivity extends Activity {
 		private EditText editTextHint;
 		private LinearLayout layoutImages;
 		private ImageButton buttonNewImage;
+		private ImageButton buttonSpeak;
 		private ImageButton buttonMoveBackward;
 		private ImageButton buttonMoveForward;
 		private ImageButton buttonDeleteCheckpoint;
 
-		// Temp fir used to capture images
+		// Temp file used to capture images
 		private File captureTmpFile;
 
+		// TTS wrapper
+		private TextSpeaker textSpeaker;		
+		
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
@@ -237,6 +225,7 @@ public class EditTrailActivity extends Activity {
 			editTextHint = (EditText) view.findViewById(R.id.editText_hint);
 			layoutImages = (LinearLayout) view.findViewById(R.id.layout_images);
 			buttonNewImage = (ImageButton) view.findViewById(R.id.button_add_image);
+			buttonSpeak = (ImageButton) view.findViewById(R.id.button_speak);
 			buttonMoveBackward = (ImageButton) view.findViewById(R.id.button_reorder_checkpoint_backward);
 			buttonMoveForward = (ImageButton) view.findViewById(R.id.button_reorder_checkpoint_forward);
 			buttonDeleteCheckpoint = (ImageButton) view.findViewById(R.id.button_delete_checkpoint);
@@ -300,7 +289,17 @@ public class EditTrailActivity extends Activity {
 					}					
 				}
 			});
-			
+
+			buttonSpeak.setOnClickListener(new OnClickListener() {				
+				@Override
+				public void onClick(View v) {
+					// speak current hint
+					textSpeaker.speak(editTextHint.getText().toString());
+				}
+			});
+						
+			// init TTS
+			textSpeaker = new TextSpeaker(getActivity(), this);
 			
 			return view;
 		}
@@ -313,6 +312,13 @@ public class EditTrailActivity extends Activity {
 			save();
 		}
 
+		@Override
+	    public void onDestroy() {
+	        // shutdown TTS
+			textSpeaker.shutdown();
+			super.onDestroy();			
+	    }
+		
 		@Override
 		public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
 			super.onCreateContextMenu(menu, v, menuInfo);
@@ -347,6 +353,15 @@ public class EditTrailActivity extends Activity {
 			return super.onContextItemSelected(item);
 		}
 
+		/**
+		 * callback from TTS
+		 */
+		@Override
+		public void onSpeakerInitialized(boolean available) {
+			// hide button if not available
+			buttonSpeak.setVisibility(available ? View.VISIBLE : View.GONE);			
+		}
+		
 		/**
 		 * 
 		 */
@@ -933,7 +948,7 @@ public class EditTrailActivity extends Activity {
 
 	private void refresh() {
 		// init and refresh map
-		map.clearCheckpoints();
+		map.clear();
 		LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
 		List<LatLng> locations = new ArrayList<LatLng>(); 
 		for (Checkpoint checkpoint : trail.getCheckpoints()) {
@@ -955,8 +970,6 @@ public class EditTrailActivity extends Activity {
 		
 		// several checkpoints?
 		if (locations.size() > 1) {
-			// draw a rectangle to show region. Add a bit overhead, so the start marker isn't right at the edgeare
-			LatLngBounds bounds =  boundsBuilder.build();
 			// place camera to include the call
 			map.setCamera(locations);				
 		}

@@ -2,15 +2,15 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical" 
-    android:background="@drawable/bg_item">
+    android:background="@drawable/bg_item"
+    android:orientation="vertical" >
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:layout_marginLeft="2dp"
-        android:layout_marginRight="2dp" >
+        android:layout_marginRight="2dp"
+        android:orientation="horizontal" >
 
         <TextView
             android:id="@+id/textView_checkpoint_no"
@@ -39,6 +39,7 @@
             android:gravity="right"
             android:text="350 m"
             android:textSize="24sp"
+            android:textStyle="bold"
             android:typeface="normal" />
 
     </LinearLayout>
@@ -51,16 +52,33 @@
         android:layout_marginRight="2dp"
         android:textSize="24sp" />
 
-    <HorizontalScrollView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
 
-        <LinearLayout
-            android:id="@+id/layout_images"
+        <HorizontalScrollView
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal" >
-        </LinearLayout>
-    </HorizontalScrollView>
+            android:layout_height="wrap_content"
+            android:layout_weight="1" >
+
+            <LinearLayout
+                android:id="@+id/layout_images"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal" >
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <ImageButton
+            android:id="@+id/button_speak"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:minWidth="48dip"
+            android:src="@drawable/ic_speak" />
+
+    </LinearLayout>
 
 </LinearLayout>

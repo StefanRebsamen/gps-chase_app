@@ -3,37 +3,26 @@ package ch.gpschase.app;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.w3c.dom.ls.LSInput;
-
-import android.app.ActionBar;
-import android.app.ActionBar.Tab;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.Adapter;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.Space;
 import android.widget.TextView;
 import ch.gpschase.app.LocalTrailsFragment.Mode;
 import ch.gpschase.app.data.Trail;
@@ -65,12 +54,10 @@ public class MainActivity extends Activity {
 	/**
 	 * A space in the drawer
 	 */
-	private class DrawerSpace extends DrawerItem {
-		
+	private class DrawerSpace extends DrawerItem {		
 		public DrawerSpace() {
 			type = Type.SPACE;
 		}
-
 	}
 
 	/**

@@ -1,8 +1,6 @@
 package ch.gpschase.app.data;
 
 import android.content.ContentUris;
-import android.content.Context;
-import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
 

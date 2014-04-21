@@ -1,8 +1,5 @@
 package ch.gpschase.app.data;
 
-import java.util.LinkedList;
-import java.util.List;
-
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
