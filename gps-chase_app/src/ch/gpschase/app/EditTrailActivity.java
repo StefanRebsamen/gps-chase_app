@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
+import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -17,8 +17,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -55,7 +57,6 @@ import ch.gpschase.app.util.TrailMapFragment;
 import ch.gpschase.app.util.TrailPasswordRequestDialog;
 import ch.gpschase.app.util.UploadTask;
 import ch.gpschase.app.util.ViewImageDialog;
-
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 
@@ -241,7 +242,7 @@ public class EditTrailActivity extends Activity {
 				}
 			});
 						
-			// register handler for buttons
+			// register handler for buttons			
 			buttonNewImage.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(View v) {
@@ -617,6 +618,7 @@ public class EditTrailActivity extends Activity {
 		/**
 		 * Notification about an activity
 		 */
+		@SuppressLint("NewApi")
 		@Override
 		public void onActivityResult(int requestCode, int resultCode, Intent data) {
 			// was it successful and something we were expecting?
@@ -633,13 +635,30 @@ public class EditTrailActivity extends Activity {
 					added = App.getImageManager().add(image, captureTmpFile);
 				} else if (requestCode == REQUEST_CODE_IMPORT_IMAGE) {
 					// determine file path
-					Uri uri = data.getData();
-					String[] projection = { MediaStore.Images.Media.DATA };
-					Cursor cursor = getActivity().getContentResolver().query(uri, projection, null, null, null);
-					int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-					cursor.moveToFirst();
-					String path = cursor.getString(column_index);
-					cursor.close();
+					// Unfortunately, this seems to have change with KitKat, so we
+					// do it different from this API on
+					Uri uri = data.getData();										
+					String path = null;
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+						String wholeID = DocumentsContract.getDocumentId(uri);
+		        String id = wholeID.split(":")[1];
+		        String[] column = { MediaStore.Images.Media.DATA };     
+		        String sel = MediaStore.Images.Media._ID + "=?";
+		        Cursor cursor = getActivity().getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, 
+		                                   column, sel, new String[]{ id }, null);
+		        int columnIndex = cursor.getColumnIndex(column[0]);	
+						cursor.moveToFirst();
+						path = cursor.getString(columnIndex);
+						cursor.close();
+					}
+					else {
+						String[] projection = { MediaStore.Images.Media.DATA };
+						Cursor cursor = getActivity().getContentResolver().query(uri, projection, null, null, null);						
+						int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+						cursor.moveToFirst();
+						path = cursor.getString(columnIndex);
+						cursor.close();
+					}
 					// import from file
 					added = App.getImageManager().add(image, new File(path));
 				}
