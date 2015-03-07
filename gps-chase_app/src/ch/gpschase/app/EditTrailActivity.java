@@ -995,7 +995,7 @@ public class EditTrailActivity extends Activity {
 		// just one?
 		else if (locations.size() == 1) {
 			// place camera to this one
-			map.setCameraTarget(locations.get(1));
+			map.setCameraTarget(locations.get(0));
 			map.setCameraZoom(TrailMapFragment.DEFAULT_ZOOM);
 		}
 		else {

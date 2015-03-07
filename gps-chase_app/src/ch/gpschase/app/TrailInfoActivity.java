@@ -242,7 +242,7 @@ public class TrailInfoActivity extends Activity {
 			// just one?
 			else if (locations.size() == 1) {
 				// place camera to this one
-				setCameraTarget(locations.get(1));
+				setCameraTarget(locations.get(0));
 				setCameraZoom(DEFAULT_ZOOM);
 			}
 			else {
